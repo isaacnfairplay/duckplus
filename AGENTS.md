@@ -158,6 +158,23 @@ CI should run the same steps.
 
 ---
 
+## Living Implementation Plan
+
+* Review and update `IMPLEMENTATION_PLAN.md` before starting work on `src/duckplus` or related tests.
+* Record stage progress and any reprioritization in that file so later agents understand what has shipped and what remains.
+* Keep the ordering and rationale from the plan intact unless a follow-up change explicitly revises it.
+
+---
+
+## Historical Context (LEGACY.md)
+
+* `LEGACY.md` documents the retired monolithic `Duck` helper that bundled connection prompts, identifier validation, filesystem discovery, IO adapters, table mutation, and debugging into a single ~3k-line class.
+* Modern Duck+ intentionally split these responsibilities across focused modules (`connect`, `core`, `io`, `util`) to preserve immutability boundaries between `DuckRel` (transformations) and `DuckTable` (mutations).
+* Legacy helpers relied on interactive credentials (keyring/getpass) and global extension loading (`nanodbc`). New contributions must continue to avoid interactive flows and keep extension loading explicit.
+* The historical API offered convenience wrappers across Parquet/CSV/JSON/ODBC readers, HTML rendering, caching, joins, set ops, and window functions. Reintroduce functionality only when it aligns with current principles (non-interactive core, explicit projections, separation of concerns).
+
+---
+
 ## Security & Privacy
 
 * Do not add telemetry or phone-home code.
