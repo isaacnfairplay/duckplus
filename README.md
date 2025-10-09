@@ -1,0 +1,2 @@
+# duck
+A uckDB Wrapper
