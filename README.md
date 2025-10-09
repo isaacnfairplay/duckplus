@@ -1,2 +1,2 @@
 # duck
-A uckDB Wrapper
+A DuckDB Wrapper
