@@ -10,6 +10,8 @@ This living document captures the staged build-out plan for Duck+. Update it as 
 ## Stage 0 — Foundations & Shared Utilities
 Establish common helpers that every module depends on. Implement these before higher-level features to avoid circular work.
 
+*Status*: ✅ Completed — shared utility helpers and connection extensions are in place.
+
 ### Module: `util`
 *Goals*: provide identifier validation, column casing utilities, and small type helpers that keep `core` lean.
 
