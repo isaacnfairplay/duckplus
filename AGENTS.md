@@ -158,6 +158,14 @@ CI should run the same steps.
 
 ---
 
+## Living Implementation Plan
+
+* Review and update `IMPLEMENTATION_PLAN.md` before starting work on `src/duckplus` or related tests.
+* Record stage progress and any reprioritization in that file so later agents understand what has shipped and what remains.
+* Keep the ordering and rationale from the plan intact unless a follow-up change explicitly revises it.
+
+---
+
 ## Historical Context (LEGACY.md)
 
 * `LEGACY.md` documents the retired monolithic `Duck` helper that bundled connection prompts, identifier validation, filesystem discovery, IO adapters, table mutation, and debugging into a single ~3k-line class.
