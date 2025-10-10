@@ -70,6 +70,10 @@ Implementation sequence:
 ## Stage 2 — Table Mutations
 Introduce stateful operations only after `DuckRel` is stable.
 
+*Status*: ✅ Completed — `DuckTable` now wraps mutation helpers with append,
+antijoin, and continuous-ID insert strategies, each covered by unit tests in
+`tests/test_table.py`.
+
 ### Module: `table`
 *Goals*: wrap `DuckRel` targets with mutation helpers that respect insert semantics.
 
