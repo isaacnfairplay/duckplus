@@ -1,0 +1,150 @@
+"""Mutable table wrapper for Duck+."""
+
+from __future__ import annotations
+
+from collections.abc import Sequence
+from typing import Any, Optional, Tuple
+
+from . import util
+from .connect import DuckConnection
+from .core import DuckRel
+
+
+def _quote_identifier(identifier: str) -> str:
+    """Return *identifier* quoted for SQL usage."""
+
+    escaped = identifier.replace('"', '""')
+    return f'"{escaped}"'
+
+
+def _normalize_table_reference(name: str) -> str:
+    """Return a sanitized table reference supporting dotted paths."""
+
+    if not isinstance(name, str):
+        raise TypeError("Table name must be a string")
+
+    parts: list[str] = []
+    current: list[str] = []
+    in_quotes = False
+    index = 0
+    length = len(name)
+    while index < length:
+        char = name[index]
+        if char == '"':
+            current.append(char)
+            if in_quotes and index + 1 < length and name[index + 1] == '"':
+                current.append('"')
+                index += 2
+                continue
+            in_quotes = not in_quotes
+            index += 1
+            continue
+        if char == "." and not in_quotes:
+            part = "".join(current).strip()
+            if not part:
+                raise ValueError("Empty identifier segment in table name")
+            util.ensure_identifier(part, allow_quoted=True)
+            parts.append(part)
+            current = []
+            index += 1
+            continue
+        current.append(char)
+        index += 1
+
+    if in_quotes:
+        raise ValueError("Unterminated quoted identifier in table name")
+
+    part = "".join(current).strip()
+    if not part:
+        raise ValueError("Empty identifier segment in table name")
+    util.ensure_identifier(part, allow_quoted=True)
+    parts.append(part)
+
+    return ".".join(parts)
+
+
+class DuckTable:
+    """Mutable wrapper around a DuckDB table."""
+
+    def __init__(self, connection: DuckConnection, name: str) -> None:
+        self._connection = connection
+        self._name = _normalize_table_reference(name)
+
+    @property
+    def name(self) -> str:
+        """Return the normalized table name."""
+
+        return self._name
+
+    def append(self, rel: DuckRel, *, by_name: bool = True) -> None:
+        """Append rows from *rel* into the table."""
+
+        table_columns = self._table_columns()
+        relation = rel
+
+        if by_name:
+            ordered = util.resolve_columns(table_columns, rel.columns)
+            relation = rel.project_columns(*ordered)
+        else:
+            if len(rel.columns) != len(table_columns):
+                raise ValueError("Relation column count must match table when by_name is False")
+
+        relation.relation.insert_into(self._name)
+
+    def insert_antijoin(self, rel: DuckRel, *, keys: Sequence[str]) -> int:
+        """Insert rows from *rel* missing in the table based on *keys*."""
+
+        if not keys:
+            raise ValueError("At least one key column is required")
+
+        table_columns = self._table_columns()
+        resolved_keys = util.resolve_columns(keys, table_columns)
+
+        table_rel = DuckRel(self._connection.raw.table(self._name))
+        existing = table_rel.project_columns(*resolved_keys)
+        filtered = rel.anti_join(existing, on=resolved_keys)
+
+        count_relation = filtered.relation.aggregate("count(*)")
+        result: Optional[Tuple[Any, ...]] = count_relation.fetchone()
+        count = 0
+        if result is not None:
+            first = result[0]
+            count = int(first or 0)
+
+        if count > 0:
+            self.append(filtered)
+
+        return count
+
+    def insert_by_continuous_id(
+        self,
+        rel: DuckRel,
+        *,
+        id_column: str,
+        inclusive: bool = False,
+    ) -> int:
+        """Insert rows from *rel* with IDs beyond the table's current maximum."""
+
+        table_columns = self._table_columns()
+        resolved_id = util.resolve_columns([id_column], table_columns)[0]
+
+        raw = self._connection.raw
+        query = f"SELECT max({_quote_identifier(resolved_id)}) FROM {self._name}"
+        max_row: Optional[Tuple[Any, ...]] = raw.execute(query).fetchone()
+        current_max = None if max_row is None else max_row[0]
+
+        if current_max is None:
+            candidate = rel
+        else:
+            rel_id = util.resolve_columns([resolved_id], rel.columns)[0]
+            op = ">=" if inclusive else ">"
+            candidate = rel.filter(f"{_quote_identifier(rel_id)} {op} ?", current_max)
+
+        return self.insert_antijoin(candidate, keys=[resolved_id])
+
+    # Internal helpers -------------------------------------------------
+
+    def _table_columns(self) -> list[str]:
+        relation = self._connection.raw.table(self._name)
+        return list(relation.columns)
+
