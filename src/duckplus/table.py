@@ -21,7 +21,10 @@ def _normalize_table_reference(name: str) -> str:
     """Return a sanitized table reference supporting dotted paths."""
 
     if not isinstance(name, str):
-        raise TypeError("Table name must be a string")
+        raise TypeError(
+            "Table name must be provided as a string; "
+            f"received {type(name).__name__}."
+        )
 
     parts: list[str] = []
     current: list[str] = []
@@ -42,7 +45,10 @@ def _normalize_table_reference(name: str) -> str:
         if char == "." and not in_quotes:
             part = "".join(current).strip()
             if not part:
-                raise ValueError("Empty identifier segment in table name")
+                raise ValueError(
+                    "Table name contains an empty identifier segment around '.' separators; "
+                    f"original value {name!r}."
+                )
             util.ensure_identifier(part, allow_quoted=True)
             parts.append(part)
             current = []
@@ -52,11 +58,16 @@ def _normalize_table_reference(name: str) -> str:
         index += 1
 
     if in_quotes:
-        raise ValueError("Unterminated quoted identifier in table name")
+        raise ValueError(
+            f"Table name {name!r} contains an unterminated quoted identifier."
+        )
 
     part = "".join(current).strip()
     if not part:
-        raise ValueError("Empty identifier segment in table name")
+        raise ValueError(
+            "Table name contains an empty identifier segment around '.' separators; "
+            f"original value {name!r}."
+        )
     util.ensure_identifier(part, allow_quoted=True)
     parts.append(part)
 
@@ -87,7 +98,11 @@ class DuckTable:
             relation = rel.project_columns(*ordered)
         else:
             if len(rel.columns) != len(table_columns):
-                raise ValueError("Relation column count must match table when by_name is False")
+                raise ValueError(
+                    "Relation column count must match table when by_name is False; "
+                    f"relation has {len(rel.columns)} column(s) but table {self._name} "
+                    f"has {len(table_columns)} column(s)."
+                )
 
         relation.relation.insert_into(self._name)
 
@@ -95,7 +110,9 @@ class DuckTable:
         """Insert rows from *rel* missing in the table based on *keys*."""
 
         if not keys:
-            raise ValueError("At least one key column is required")
+            raise ValueError(
+                "insert_antijoin() requires at least one key column name."
+            )
 
         table_columns = self._table_columns()
         resolved_keys = util.resolve_columns(keys, table_columns)

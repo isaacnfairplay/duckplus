@@ -127,14 +127,20 @@ class Materialized:
         """Return the Arrow table or raise if unavailable."""
 
         if self.table is None:
-            raise ValueError("Materialization strategy did not produce an Arrow table")
+            raise ValueError(
+                "Materialization strategy did not retain an Arrow table; "
+                "call require_table() only when the chosen strategy keeps a table in memory."
+            )
         return self.table
 
     def require_relation(self) -> DuckRel:
         """Return the materialized :class:`DuckRel` or raise if unavailable."""
 
         if self.relation is None:
-            raise ValueError("Materialization strategy did not produce a relation")
+            raise ValueError(
+                "Materialization strategy did not materialize into a relation; "
+                "ensure a target connection was provided when required."
+            )
         return self.relation
 
 
