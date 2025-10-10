@@ -307,6 +307,14 @@ class DuckRel:
         right_columns = [
             column for column in other._columns if column.casefold() not in right_key_set
         ]
+        collisions = [
+            column for column in right_columns if column.casefold() in self._lookup
+        ]
+        if collisions:
+            duplicates = ", ".join(sorted({name for name in collisions}))
+            raise ValueError(
+                f"Join would produce duplicate columns: {duplicates}"
+            )
         projection = _format_projection(self._columns, alias="l")
         projection.extend(_format_projection(right_columns, alias="r"))
         relation = joined.project(", ".join(projection))
