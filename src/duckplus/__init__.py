@@ -1,5 +1,20 @@
 """Duck+ public API."""
 
-from .connect import DuckConnection, connect
+from __future__ import annotations
 
-__all__ = ["DuckConnection", "connect"]
+from .connect import DuckConnection, connect
+from .core import DuckRel
+from .materialize import (
+    ArrowMaterializeStrategy,
+    Materialized,
+    ParquetMaterializeStrategy,
+)
+
+__all__ = [
+    "ArrowMaterializeStrategy",
+    "DuckConnection",
+    "DuckRel",
+    "Materialized",
+    "ParquetMaterializeStrategy",
+    "connect",
+]
