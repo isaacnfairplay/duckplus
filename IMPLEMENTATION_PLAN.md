@@ -76,6 +76,8 @@ antijoin, and continuous-ID insert strategies. Focused unit tests in
 scenarios in `tests/test_table_integration.py` validate dimension and stream
 ingestion flows under the `mutable_with_approval` marker so they can evolve as
 real-world pipelines expand.
+antijoin, and continuous-ID insert strategies, each covered by unit tests in
+`tests/test_table.py`.
 
 ### Module: `table`
 *Goals*: wrap `DuckRel` targets with mutation helpers that respect insert semantics.
