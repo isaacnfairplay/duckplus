@@ -47,9 +47,14 @@ def test_columns_metadata_preserves_case(sample_rel: DuckRel) -> None:
     assert sample_rel.columns_lower_set == frozenset({"id", "name", "score"})
 
 
+def test_column_types_metadata(sample_rel: DuckRel) -> None:
+    assert sample_rel.column_types == ["INTEGER", "VARCHAR", "INTEGER"]
+
+
 def test_project_columns_case_insensitive(sample_rel: DuckRel) -> None:
     selected = sample_rel.project_columns("name", "ID")
     assert selected.columns == ["Name", "id"]
+    assert selected.column_types == ["VARCHAR", "INTEGER"]
     assert table_rows(selected.materialize().require_table()) == [
         ("Alpha", 1),
         ("Beta", 2),
@@ -65,6 +70,7 @@ def test_project_columns_missing_ok_returns_original(sample_rel: DuckRel) -> Non
 def test_project_allows_computed_columns(sample_rel: DuckRel) -> None:
     projected = sample_rel.project({"id": '"id"', "label": 'upper("Name")', "score": '"score"'})
     assert projected.columns == ["id", "label", "score"]
+    assert projected.column_types == ["INTEGER", "VARCHAR", "INTEGER"]
     assert table_rows(projected.materialize().require_table())[0] == (1, "ALPHA", 10)
 
 
@@ -111,6 +117,7 @@ def test_inner_join_defaults_to_shared_keys(connection: duckdb.DuckDBPyConnectio
 
     joined = left.inner_join(right)
     assert joined.columns == ["id", "left_val", "right_val"]
+    assert joined.column_types == ["INTEGER", "VARCHAR", "VARCHAR"]
     assert table_rows(joined.materialize().require_table()) == [(1, "L1", "R1")]
 
 
@@ -119,6 +126,7 @@ def test_left_join_with_missing_rows(connection: duckdb.DuckDBPyConnection) -> N
     right = DuckRel(connection.sql("SELECT * FROM (VALUES (1, 'R1')) AS t(id, right_val)"))
 
     joined = left.left_join(right)
+    assert joined.column_types == ["INTEGER", "VARCHAR", "VARCHAR"]
     assert table_rows(joined.materialize().require_table()) == [(1, "L1", "R1"), (2, "L2", None)]
 
 
@@ -158,6 +166,28 @@ def test_semi_and_anti_join(connection: duckdb.DuckDBPyConnection) -> None:
 
     assert table_rows(semi.materialize().require_table()) == [(2,), (3,)]
     assert table_rows(anti.materialize().require_table()) == [(1,)]
+
+
+def test_cast_columns_updates_types(sample_rel: DuckRel) -> None:
+    casted = sample_rel.cast_columns(id="UTINYINT")
+    assert casted.column_types == ["UTINYINT", "VARCHAR", "INTEGER"]
+    assert table_rows(casted.materialize().require_table())[0] == (1, "Alpha", 10)
+
+
+def test_cast_columns_requires_targets(sample_rel: DuckRel) -> None:
+    with pytest.raises(ValueError):
+        sample_rel.cast_columns()
+
+
+def test_cast_columns_rejects_unknown_type(sample_rel: DuckRel) -> None:
+    with pytest.raises(ValueError):
+        sample_rel.cast_columns({"id": "UNKNOWN"})  # type: ignore[arg-type]
+
+
+def test_try_cast_columns_handles_invalid_values(sample_rel: DuckRel) -> None:
+    casted = sample_rel.try_cast_columns({"Name": "UTINYINT"})
+    assert casted.column_types == ["INTEGER", "UTINYINT", "INTEGER"]
+    assert table_rows(casted.materialize().require_table())[0] == (1, None, 10)
 
 
 def test_order_by_and_limit(sample_rel: DuckRel) -> None:
