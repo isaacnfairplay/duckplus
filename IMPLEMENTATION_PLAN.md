@@ -50,20 +50,20 @@ Implementation sequence:
 1. `class DuckRel`
    - Constructor signature: `def __init__(self, relation: duckdb.DuckDBPyRelation, *, columns: Sequence[str] | None = None)`
    - Stores relation and column metadata using `util.normalize_columns`.
-2. `def select(self, *columns: str, missing_ok: bool = False) -> DuckRel`
-   - Uses `util.resolve_columns` to enforce casing rules.
+2. `def project_columns(self, *columns: str, missing_ok: bool = False) -> DuckRel`
+   - Uses `util.resolve_columns` to enforce casing rules while keeping the name explicit.
 3. `def project(self, expressions: Mapping[str, str]) -> DuckRel`
    - Allows computed columns with explicit aliases.
 4. `def filter(self, expression: str, /, *args: Any) -> DuckRel`
    - Parameterized expressions; uses `coerce_scalar` for args.
-5. `def join(self, other: DuckRel, *, how: Literal["inner", "left", "semi", "anti"] = "inner", on: Sequence[str] | None = None) -> DuckRel`
-   - Applies default shared-column logic when `on` is `None`.
-6. `def order_by(self, *columns: str) -> DuckRel`
+5. `def inner_join/left_join/semi_join/anti_join(self, other: DuckRel, *, on: Sequence[str] | None = None) -> DuckRel`
+   - Each join style remains explicit; defaults to shared columns when `on` is `None` and documents the key-based-only stance (rename before joining for complex cases).
+6. `def order_by(self, **orders: Literal["asc", "desc"]) -> DuckRel`
 7. `def limit(self, count: int) -> DuckRel`
-8. `def collect(self) -> duckdb.DuckDBPyRelation`
-   - Materialization boundary.
+8. `def materialize(self, *, strategy: MaterializeStrategy | None = None, into: duckdb.DuckDBPyConnection | None = None) -> Materialized`
+   - Materialization boundary returning configurable artefacts (Arrow table by default, with pluggable Parquet/temp strategies) and optionally re-hosting data on another connection. Shared strategy implementations now live in a dedicated `materialize` module to keep `core` focused on relational transforms.
 
-*Why this order*: start with construction to capture metadata; selection/projection shape columns before filters; joins rely on prior column validation; ordering/limit require the base operations; `collect` finishes to hand results to callers.
+*Why this order*: start with construction to capture metadata; selection/projection shape columns before filters; joins rely on prior column validation; ordering/limit require the base operations; `materialize` finishes to hand results to callers.
 
 ## Stage 2 — Table Mutations
 Introduce stateful operations only after `DuckRel` is stable.
@@ -114,4 +114,4 @@ Only start extras once core and IO pieces are reliable.
 - Always cover strict column handling, join defaults, and IO defaults as described in `AGENTS.md`.
 
 ---
-*Last updated*: pending first execution of Stage 0 tasks.
+*Last updated*: materialize now supports strategies and cross-connection transfers.
