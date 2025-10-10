@@ -102,7 +102,7 @@ class DuckTable:
 
         table_rel = DuckRel(self._connection.raw.table(self._name))
         existing = table_rel.project_columns(*resolved_keys)
-        filtered = rel.anti_join(existing, on=resolved_keys)
+        filtered = rel.anti_join(existing)
 
         count_relation = filtered.relation.aggregate("count(*)")
         result: Optional[Tuple[Any, ...]] = count_relation.fetchone()
