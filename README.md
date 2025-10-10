@@ -15,8 +15,8 @@ analytics pipelines that need safety as much as speed.
   collisions unless you explicitly opt into suffixes mirroring DuckDB (`_1`, `_2`).
 - **Case-aware column handling** – columns preserve their original case while still supporting case-insensitive
   lookup helpers (`columns_lower`, `columns_lower_set`).
-- **Batteries-included I/O** – helpers in `duckplus.io` read Parquet, CSV, and JSON inputs from paths or sequences of
-  paths, and provide appenders for CSV and NDJSON outputs with sensible defaults (UTF-8, headers on, temp-then-rename).
+- **Mutation helpers** – `DuckTable` adds append, anti-join inserts, and continuous-ID ingestion without reaching for
+  handwritten SQL.
 
 ## Installation
 
@@ -37,56 +37,59 @@ This will create and manage the virtual environment with development dependencie
 ## Quickstart
 
 ```python
-from pathlib import Path
-
-from duckplus import connect
-from duckplus.io import read_parquet
+from duckplus import DuckRel, DuckTable, connect
 
 with connect() as conn:
-    orders = read_parquet(conn, Path("data/orders.parquet"))
-
-    # `DuckRel` exposes relational transformations without mutating the source.
-    totals = (
-        orders
-        .select("customer_id", "order_total")
-        .group_by("customer_id")
-        .aggregate(total_amount=("sum", "order_total"))
+    base = DuckRel(
+        conn.raw.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                (1, 'Alpha', 10),
+                (2, 'Beta', 5),
+                (3, 'Gamma', 8)
+            ) AS t(id, name, score)
+            """
+        )
     )
 
-    # Convert the relation to a pandas DataFrame (or Arrow table) when you need to materialize it.
-    df = totals.to_df()
-    print(df.head())
+    # `DuckRel` exposes immutable relational transformations.
+    top_scores = (
+        base
+        .filter('"score" >= ?', 8)
+        .project_columns("id", "name", "score")
+        .order_by(score="desc")
+    )
+
+    table = top_scores.materialize().require_table()
+    print(table.to_pylist())
+
+    # Need to persist results? Promote the relation to a table wrapper and append safely.
+    conn.raw.execute("CREATE TABLE scores(id INTEGER, name VARCHAR, score INTEGER)")
+    table_wrapper = DuckTable(conn, "scores")
+    table_wrapper.insert_antijoin(top_scores, keys=["id"])
 ```
 
-Need to persist results? Promote a relation to a mutable table and append safely:
-
-```python
-from duckplus.core import DuckTable
-
-with connect() as conn:
-    DuckTable.create(conn, "analytics.daily_totals", schema=totals)
-    DuckTable.append(conn, totals, by_name=True)
-```
-
-The insert helpers `insert_antijoin` and `insert_by_continuous_id` ensure that appends remain idempotent by checking
-keys or monotonically increasing identifiers before inserting.
+`DuckTable.insert_antijoin` and `DuckTable.insert_by_continuous_id` keep appends idempotent by filtering existing
+rows before inserting.
 
 ## Project layout
 
 ```
 src/duckplus/
-  __init__.py      # public exports (`connect`, `DuckRel`, `DuckTable`, io helpers)
+  __init__.py      # public exports (`connect`, `DuckRel`, `DuckTable`, materialize helpers)
   connect.py       # connection context manager and facade
-  core.py          # `DuckRel` (immutable) and `DuckTable` (mutating) implementations
-  io.py            # read_* / write_* helpers and appenders
-  util.py          # case-insensitive resolution, path helpers, shared utilities
+  core.py          # `DuckRel` immutable relational wrapper
+  materialize.py   # materialization strategies for DuckRel
+  table.py         # `DuckTable` mutation helpers
+  util.py          # case-insensitive resolution and shared utilities
   py.typed         # marks the package as typed for downstream type-checkers
 
 tests/
-  test_columns.py
-  test_select_and_rename.py
-  test_join_projection.py
-  test_insert_strategies.py
+  test_connect.py
+  test_core.py
+  test_table.py
+  test_util.py
 ```
 
 Tests exercise the guarantees Duck+ makes around casing, projections, joins, and insert safety. If you add new
