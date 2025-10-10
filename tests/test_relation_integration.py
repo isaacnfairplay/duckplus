@@ -3,13 +3,18 @@ from __future__ import annotations
 """Integration-style exploratory tests exercising DuckRel flows."""
 
 from datetime import datetime
+from decimal import Decimal
 
 import pytest
 
 from duckplus import (
     ArrowMaterializeStrategy,
+    AsofOrder,
+    ColumnPredicate,
     DuckConnection,
     DuckRel,
+    ExpressionPredicate,
+    JoinSpec,
     ParquetMaterializeStrategy,
     connect,
 )
@@ -111,10 +116,10 @@ def test_exploratory_feature_engineering_pipeline(connection: DuckConnection) ->
 
     curated = (
         events
-        .semi_join(eligible_loyalty, on=["user_id"])
-        .inner_join(eligible_loyalty, on=["user_id"])
-        .inner_join(active_profiles, on=["user_id"])
-        .inner_join(channel_map, on=["channel"])
+        .semi_join(eligible_loyalty)
+        .natural_inner(eligible_loyalty)
+        .natural_inner(active_profiles)
+        .natural_inner(channel_map)
         .project(
             {
                 "user_id": '"user_id"',
@@ -217,8 +222,8 @@ def test_exploratory_backlog_snapshot(connection: DuckConnection) -> None:
     backlog = (
         orders
         .filter('"status" IN (?, ?)', "open", "backorder")
-        .anti_join(shipments, on=["order_id"])
-        .left_join(risk_profiles, on=["account"])
+        .anti_join(shipments)
+        .natural_left(risk_profiles)
     )
 
     prioritized = backlog.project(
@@ -284,5 +289,171 @@ def test_exploratory_backlog_snapshot(connection: DuckConnection) -> None:
             75.0,
             datetime(2024, 1, 9, 0, 0),
             "Monitor",
+        ),
+    ]
+
+
+def test_multi_stage_event_budget_enrichment(connection: DuckConnection) -> None:
+    """Complex dataflow blending natural ASOF joins with explicit JoinSpec pipelines."""
+
+    events = DuckRel(
+        connection.raw.sql(
+            """
+            SELECT * FROM (
+                VALUES
+                    (1001, 201, 'email', TIMESTAMP '2024-01-10 09:00:00', 25.0),
+                    (1002, 202, 'web', TIMESTAMP '2024-01-10 11:00:00', 40.0),
+                    (1003, 203, 'email', TIMESTAMP '2024-01-10 15:00:00', 55.0),
+                    (1004, 204, 'web', TIMESTAMP '2024-01-11 13:30:00', 15.0)
+            ) AS events(event_id, user_id, channel, occurred_at, revenue)
+            """
+        )
+    )
+
+    budgets = DuckRel(
+        connection.raw.sql(
+            """
+            SELECT * FROM (
+                VALUES
+                    ('email', TIMESTAMP '2024-01-10 08:00:00', 1000),
+                    ('email', TIMESTAMP '2024-01-10 12:00:00', 1200),
+                    ('web', TIMESTAMP '2024-01-10 07:30:00', 1500),
+                    ('web', TIMESTAMP '2024-01-11 09:00:00', 1600)
+            ) AS budgets(channel, effective_at, budget_amount)
+            """
+        )
+    )
+
+    segments = DuckRel(
+        connection.raw.sql(
+            """
+            SELECT * FROM (
+                VALUES
+                    (201, 'NA', TIMESTAMP '2023-12-01 00:00:00'),
+                    (202, 'EMEA', TIMESTAMP '2024-01-09 00:00:00'),
+                    (203, 'NA', TIMESTAMP '2024-01-05 00:00:00'),
+                    (204, 'APAC', TIMESTAMP '2024-01-12 00:00:00')
+            ) AS segments(user_id, region, segment_start)
+            """
+        )
+    )
+
+    targets = DuckRel(
+        connection.raw.sql(
+            """
+            SELECT * FROM (
+                VALUES
+                    ('NA', 'email', 900),
+                    ('NA', 'web', 1400),
+                    ('EMEA', 'web', 1300),
+                    ('APAC', 'web', 1700)
+            ) AS targets(region, channel, quota_amount)
+            """
+        )
+    )
+
+    events_with_budget = events.natural_asof(
+        budgets,
+        order=AsofOrder(left="occurred_at", right="effective_at"),
+    )
+
+    events_with_segments = events_with_budget.left_outer(
+        segments,
+        JoinSpec(
+            equal_keys=[("user_id", "user_id")],
+            predicates=[ColumnPredicate("occurred_at", ">=", "segment_start")],
+        ),
+    )
+
+    enriched = events_with_segments.left_outer(
+        targets,
+        JoinSpec(
+            equal_keys=[("channel", "channel"), ("region", "region")],
+            predicates=[ExpressionPredicate('r."quota_amount" >= 1000')],
+        ),
+    ).project(
+        {
+            "event_id": '"event_id"',
+            "user_id": '"user_id"',
+            "channel": 'upper("channel")',
+            "occurred_at": '"occurred_at"',
+            "revenue": '"revenue"',
+            "budget_refresh_at": '"effective_at"',
+            "budget_amount": '"budget_amount"',
+            "region": '"region"',
+            "segment_started_at": '"segment_start"',
+            "quota_amount": '"quota_amount"',
+            "budget_gap": '"budget_amount" - coalesce("quota_amount", 0)',
+        }
+    ).order_by(event_id="asc")
+
+    table = enriched.materialize(strategy=ArrowMaterializeStrategy()).require_table()
+
+    assert table.schema.names == [
+        "event_id",
+        "user_id",
+        "channel",
+        "occurred_at",
+        "revenue",
+        "budget_refresh_at",
+        "budget_amount",
+        "region",
+        "segment_started_at",
+        "quota_amount",
+        "budget_gap",
+    ]
+
+    assert table_rows(table) == [
+        (
+            1001,
+            201,
+            "EMAIL",
+            datetime(2024, 1, 10, 9, 0, 0),
+            Decimal("25.0"),
+            datetime(2024, 1, 10, 8, 0, 0),
+            1000,
+            "NA",
+            datetime(2023, 12, 1, 0, 0, 0),
+            None,
+            1000,
+        ),
+        (
+            1002,
+            202,
+            "WEB",
+            datetime(2024, 1, 10, 11, 0, 0),
+            Decimal("40.0"),
+            datetime(2024, 1, 10, 7, 30, 0),
+            1500,
+            "EMEA",
+            datetime(2024, 1, 9, 0, 0, 0),
+            1300,
+            200,
+        ),
+        (
+            1003,
+            203,
+            "EMAIL",
+            datetime(2024, 1, 10, 15, 0, 0),
+            Decimal("55.0"),
+            datetime(2024, 1, 10, 12, 0, 0),
+            1200,
+            "NA",
+            datetime(2024, 1, 5, 0, 0, 0),
+            None,
+            1200,
+        ),
+        (
+            1004,
+            204,
+            "WEB",
+            datetime(2024, 1, 11, 13, 30, 0),
+            Decimal("15.0"),
+            datetime(2024, 1, 11, 9, 0, 0),
+            1600,
+            None,
+            None,
+            None,
+            1600,
         ),
     ]

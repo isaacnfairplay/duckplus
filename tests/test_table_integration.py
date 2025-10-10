@@ -166,7 +166,7 @@ def test_exploratory_streaming_fact_ingestion_flow(
             """
         )
     )
-    normalized_seed = seed_events.inner_join(origin_map, on=["origin"]).project_columns(
+    normalized_seed = seed_events.natural_inner(origin_map).project_columns(
         "event_id",
         "order_id",
         "amount",
@@ -188,7 +188,7 @@ def test_exploratory_streaming_fact_ingestion_flow(
         )
     )
     incremental_curated = (
-        incremental_events.inner_join(origin_map, on=["origin"])
+        incremental_events.natural_inner(origin_map)
         .filter("amount >= ?", 40)
         .project_columns("event_id", "order_id", "amount", "source", "processed_at")
     )
@@ -206,7 +206,7 @@ def test_exploratory_streaming_fact_ingestion_flow(
             """
         )
     )
-    catch_up_curated = catch_up_events.inner_join(origin_map, on=["origin"]).project_columns(
+    catch_up_curated = catch_up_events.natural_inner(origin_map).project_columns(
         "event_id",
         "order_id",
         "amount",

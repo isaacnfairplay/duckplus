@@ -4,9 +4,18 @@ import duckdb
 import pyarrow as pa
 import pytest
 
+from datetime import date, datetime
 from pathlib import Path
 
-from duckplus.core import DuckRel
+from duckplus.core import (
+    AsofOrder,
+    AsofSpec,
+    ColumnPredicate,
+    DuckRel,
+    ExpressionPredicate,
+    JoinProjection,
+    JoinSpec,
+)
 from duckplus.materialize import ParquetMaterializeStrategy
 
 
@@ -91,7 +100,7 @@ def test_filter_parameter_validation(values: tuple[object, ...], error: type[Exc
         sample_rel.filter('"id" = ? AND "Name" = ?', *values)
 
 
-def test_inner_join_defaults_to_shared_keys(connection: duckdb.DuckDBPyConnection) -> None:
+def test_natural_inner_defaults_to_shared_keys(connection: duckdb.DuckDBPyConnection) -> None:
     left = DuckRel(
         connection.sql(
             """
@@ -115,46 +124,324 @@ def test_inner_join_defaults_to_shared_keys(connection: duckdb.DuckDBPyConnectio
         )
     )
 
-    joined = left.inner_join(right)
+    joined = left.natural_inner(right)
     assert joined.columns == ["id", "left_val", "right_val"]
     assert joined.column_types == ["INTEGER", "VARCHAR", "VARCHAR"]
     assert table_rows(joined.materialize().require_table()) == [(1, "L1", "R1")]
 
 
-def test_left_join_with_missing_rows(connection: duckdb.DuckDBPyConnection) -> None:
+def test_natural_left_with_missing_rows(connection: duckdb.DuckDBPyConnection) -> None:
     left = DuckRel(connection.sql("SELECT * FROM (VALUES (1, 'L1'), (2, 'L2')) AS t(id, left_val)"))
     right = DuckRel(connection.sql("SELECT * FROM (VALUES (1, 'R1')) AS t(id, right_val)"))
 
-    joined = left.left_join(right)
+    joined = left.natural_left(right)
     assert joined.column_types == ["INTEGER", "VARCHAR", "VARCHAR"]
     assert table_rows(joined.materialize().require_table()) == [(1, "L1", "R1"), (2, "L2", None)]
 
 
-def test_join_raises_on_non_key_column_collision(connection: duckdb.DuckDBPyConnection) -> None:
-    left = DuckRel(
-        connection.sql("SELECT * FROM (VALUES (1, 'L')) AS t(id, value)")
+def test_natural_join_with_alias(connection: duckdb.DuckDBPyConnection) -> None:
+    orders = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                (1, 100),
+                (2, 200)
+            ) AS t(order_id, customer_ref)
+            """
+        )
     )
-    right = DuckRel(
-        connection.sql("SELECT * FROM (VALUES (1, 'R')) AS t(id, value)")
+    customers = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                (100, 'Alice'),
+                (300, 'Charlie')
+            ) AS t(id, name)
+            """
+        )
     )
 
-    with pytest.raises(ValueError):
-        left.inner_join(right, on=["id"])
-
-
-def test_explicit_join_requires_matching_right_columns(connection: duckdb.DuckDBPyConnection) -> None:
-    left = DuckRel(connection.sql("SELECT * FROM (VALUES (1, 'L')) AS t(id, value)"))
-    right = DuckRel(connection.sql("SELECT * FROM (VALUES (1, 'R')) AS t(id_right, value)"))
-
-    with pytest.raises(KeyError):
-        left.inner_join(right, on=["id"])
+    joined = orders.natural_inner(customers, customer_ref="id")
+    assert joined.columns == ["order_id", "customer_ref", "name"]
+    assert table_rows(joined.materialize().require_table()) == [(1, 100, "Alice")]
 
 
 def test_join_missing_shared_keys_raises(connection: duckdb.DuckDBPyConnection) -> None:
     left = DuckRel(connection.sql("SELECT 1 AS a"))
     right = DuckRel(connection.sql("SELECT 1 AS b"))
     with pytest.raises(ValueError):
-        left.inner_join(right)
+        left.natural_inner(right)
+
+
+def test_explicit_join_requires_matching_right_columns(connection: duckdb.DuckDBPyConnection) -> None:
+    left = DuckRel(connection.sql("SELECT * FROM (VALUES (1, 'L')) AS t(id, value)"))
+    right = DuckRel(connection.sql("SELECT * FROM (VALUES (1, 'R')) AS t(id_right, value)"))
+
+    spec = JoinSpec(equal_keys=[("id", "id")])
+    with pytest.raises(KeyError):
+        left.inner_join(right, spec)
+
+
+def test_join_projection_raises_on_collision_without_suffix(connection: duckdb.DuckDBPyConnection) -> None:
+    left = DuckRel(connection.sql("SELECT * FROM (VALUES (1, 'L')) AS t(id, value)"))
+    right = DuckRel(connection.sql("SELECT * FROM (VALUES (1, 'R')) AS t(id, value)"))
+
+    spec = JoinSpec(equal_keys=[("id", "id")])
+    with pytest.raises(ValueError):
+        left.inner_join(right, spec)
+
+
+def test_join_projection_suffix_override(connection: duckdb.DuckDBPyConnection) -> None:
+    left = DuckRel(connection.sql("SELECT * FROM (VALUES (1, 'L')) AS t(id, value)"))
+    right = DuckRel(connection.sql("SELECT * FROM (VALUES (1, 'R')) AS t(id, value)"))
+
+    spec = JoinSpec(equal_keys=[("id", "id")])
+    joined = left.inner_join(
+        right, spec, project=JoinProjection(allow_collisions=True, suffixes=("_left", "_right"))
+    )
+    assert joined.columns == ["id", "value_left", "value_right"]
+    assert table_rows(joined.materialize().require_table()) == [(1, "L", "R")]
+
+
+def test_join_spec_rejects_invalid_key_sequence() -> None:
+    with pytest.raises(TypeError):
+        JoinSpec(equal_keys="id")  # type: ignore[arg-type]
+
+
+def test_join_spec_rejects_non_predicate_entries() -> None:
+    with pytest.raises(TypeError):
+        JoinSpec(
+            equal_keys=[("id", "id")],
+            predicates=("unsupported",),  # type: ignore[arg-type]
+        )
+
+
+def test_explicit_join_with_predicate(connection: duckdb.DuckDBPyConnection) -> None:
+    left = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                (1, DATE '2024-01-01'),
+                (2, DATE '2024-02-01')
+            ) AS t(order_id, order_date)
+            """
+        )
+    )
+    right = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                (1, DATE '2023-12-15', 'A'),
+                (1, DATE '2024-01-15', 'B')
+            ) AS t(customer_id, customer_since, tier)
+            """
+        )
+    )
+
+    spec = JoinSpec(
+        equal_keys=[("order_id", "customer_id")],
+        predicates=[ColumnPredicate("order_date", ">=", "customer_since")],
+    )
+    joined = left.left_outer(right, spec, project=JoinProjection(allow_collisions=True))
+    assert joined.columns == ["order_id", "order_date", "customer_since", "tier"]
+    assert table_rows(joined.materialize().require_table()) == [
+        (1, date(2024, 1, 1), date(2023, 12, 15), "A"),
+        (2, date(2024, 2, 1), None, None),
+    ]
+
+
+def test_explicit_join_with_expression_predicate(
+    connection: duckdb.DuckDBPyConnection,
+) -> None:
+    left = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                (1, 'keep'),
+                (2, 'also_keep')
+            ) AS t(id, label)
+            """
+        )
+    )
+    right = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                (1, 'primary', TRUE),
+                (1, 'secondary', FALSE),
+                (2, 'primary', TRUE)
+            ) AS t(id, status, is_primary)
+            """
+        )
+    )
+
+    spec = JoinSpec(
+        equal_keys=[("id", "id")],
+        predicates=[ExpressionPredicate('r."is_primary"')],
+    )
+    joined = left.inner_join(
+        right,
+        spec,
+        project=JoinProjection(allow_collisions=True, suffixes=("_left", "_right")),
+    )
+
+    assert joined.columns == ["id", "label", "status", "is_primary"]
+    assert table_rows(joined.materialize().require_table()) == [
+        (1, "keep", "primary", True),
+        (2, "also_keep", "primary", True),
+    ]
+
+
+def test_natural_asof_backward(connection: duckdb.DuckDBPyConnection) -> None:
+    trades = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                ('A', TIMESTAMP '2024-01-01 00:00:03', 10),
+                ('A', TIMESTAMP '2024-01-01 00:00:06', 12),
+                ('B', TIMESTAMP '2024-01-01 00:00:04', 15)
+            ) AS t(symbol, trade_ts, price)
+            """
+        )
+    )
+    quotes = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                ('A', TIMESTAMP '2024-01-01 00:00:01', 9),
+                ('A', TIMESTAMP '2024-01-01 00:00:05', 11),
+                ('B', TIMESTAMP '2024-01-01 00:00:02', 14)
+            ) AS t(symbol, quote_ts, quote_price)
+            """
+        )
+    )
+
+    joined = trades.natural_asof(quotes, order=AsofOrder(left="trade_ts", right="quote_ts"))
+    assert joined.columns == ["symbol", "trade_ts", "price", "quote_ts", "quote_price"]
+    assert table_rows(joined.materialize().require_table()) == [
+        ("A", datetime(2024, 1, 1, 0, 0, 3), 10, datetime(2024, 1, 1, 0, 0, 1), 9),
+        ("A", datetime(2024, 1, 1, 0, 0, 6), 12, datetime(2024, 1, 1, 0, 0, 5), 11),
+        ("B", datetime(2024, 1, 1, 0, 0, 4), 15, datetime(2024, 1, 1, 0, 0, 2), 14),
+    ]
+
+
+def test_explicit_right_join_keeps_unmatched_rows(
+    connection: duckdb.DuckDBPyConnection,
+) -> None:
+    left = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                (1, 'left')
+            ) AS t(order_ref, left_val)
+            """
+        )
+    )
+    right = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                (1, 'match'),
+                (2, 'orphan')
+            ) AS t(order_ref, right_val)
+            """
+        )
+    )
+
+    spec = JoinSpec(equal_keys=[("order_ref", "order_ref")])
+    joined = left.left_right(right, spec).order_by(right_val="asc")
+
+    assert joined.columns == ["order_ref", "left_val", "right_val"]
+    assert table_rows(joined.materialize().require_table()) == [
+        (1, "left", "match"),
+        (None, None, "orphan"),
+    ]
+
+
+def test_natural_asof_forward(connection: duckdb.DuckDBPyConnection) -> None:
+    trades = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                ('A', TIMESTAMP '2024-01-01 00:00:03', 10),
+                ('A', TIMESTAMP '2024-01-01 00:00:06', 12),
+                ('B', TIMESTAMP '2024-01-01 00:00:04', 15)
+            ) AS t(symbol, trade_ts, price)
+            """
+        )
+    )
+    quotes = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                ('A', TIMESTAMP '2024-01-01 00:00:04', 13),
+                ('A', TIMESTAMP '2024-01-01 00:00:07', 15),
+                ('B', TIMESTAMP '2024-01-01 00:00:06', 18)
+            ) AS t(symbol, quote_ts, quote_price)
+            """
+        )
+    )
+
+    joined = trades.natural_asof(
+        quotes,
+        order=AsofOrder(left="trade_ts", right="quote_ts"),
+        direction="forward",
+    )
+    assert table_rows(joined.materialize().require_table()) == [
+        ("A", datetime(2024, 1, 1, 0, 0, 3), 10, datetime(2024, 1, 1, 0, 0, 4), 13),
+        ("A", datetime(2024, 1, 1, 0, 0, 6), 12, datetime(2024, 1, 1, 0, 0, 7), 15),
+        ("B", datetime(2024, 1, 1, 0, 0, 4), 15, datetime(2024, 1, 1, 0, 0, 6), 18),
+    ]
+
+
+def test_asof_join_nearest_with_tolerance(connection: duckdb.DuckDBPyConnection) -> None:
+    trades = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                ('A', TIMESTAMP '2024-01-01 00:00:06', 12),
+                ('A', TIMESTAMP '2024-01-01 00:00:09', 14)
+            ) AS t(symbol, trade_ts, price)
+            """
+        )
+    )
+    quotes = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                ('A', TIMESTAMP '2024-01-01 00:00:04', 10),
+                ('A', TIMESTAMP '2024-01-01 00:00:08', 13),
+                ('A', TIMESTAMP '2024-01-01 00:00:15', 16)
+            ) AS t(symbol, quote_ts, quote_price)
+            """
+        )
+    )
+
+    spec = AsofSpec(
+        equal_keys=[("symbol", "symbol")],
+        order=AsofOrder(left="trade_ts", right="quote_ts"),
+        direction="nearest",
+        tolerance="3 seconds",
+    )
+    joined = trades.asof_join(quotes, spec)
+    assert table_rows(joined.materialize().require_table()) == [
+        ("A", datetime(2024, 1, 1, 0, 0, 6), 12, datetime(2024, 1, 1, 0, 0, 4), 10),
+        ("A", datetime(2024, 1, 1, 0, 0, 9), 14, datetime(2024, 1, 1, 0, 0, 8), 13),
+    ]
 
 
 def test_semi_and_anti_join(connection: duckdb.DuckDBPyConnection) -> None:

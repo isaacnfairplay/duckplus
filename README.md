@@ -70,6 +70,62 @@ with connect() as conn:
     table_wrapper.insert_antijoin(top_scores, keys=["id"])
 ```
 
+### Join interface
+
+Duck+ exposes two families of joins: *natural* helpers that line up shared
+column names automatically, and explicit joins driven by structured
+specifications. Natural joins can accept keyword aliases when the right-hand
+column differs in name, while explicit joins use `JoinSpec` to describe the
+relationship and optional predicates.
+
+```python
+from duckplus.core import (
+    AsofOrder,
+    AsofSpec,
+    ColumnPredicate,
+    JoinProjection,
+    JoinSpec,
+)
+
+# Natural join on shared columns plus an alias:
+orders_rel = DuckRel(conn.raw.sql("SELECT 1 AS order_id, 100 AS customer_ref"))
+customers_rel = DuckRel(conn.raw.sql("SELECT 100 AS id, 'Alice' AS name"))
+orders_with_customer = orders_rel.natural_inner(customers_rel, customer_ref="id")
+
+# Explicit join with a predicate and suffix handling:
+orders_dates = DuckRel(
+    conn.raw.sql("SELECT 1 AS order_id, DATE '2024-01-01' AS order_date")
+)
+customers_profile = DuckRel(
+    conn.raw.sql(
+        "SELECT 1 AS id, DATE '2023-12-01' AS customer_since, 'gold' AS tier"
+    )
+)
+spec = JoinSpec(
+    equal_keys=[("order_id", "id")],
+    predicates=[ColumnPredicate("order_date", ">=", "customer_since")],
+)
+joined = orders_dates.left_outer(
+    customers_profile, spec, project=JoinProjection(allow_collisions=True)
+)
+
+# Time-aware joins use ASOF helpers:
+trades_rel = DuckRel(conn.raw.sql("SELECT 'A' AS symbol, NOW() AS trade_ts"))
+quotes_rel = DuckRel(conn.raw.sql("SELECT 'A' AS symbol, NOW() - INTERVAL '5 seconds' AS quote_ts"))
+latest = trades_rel.natural_asof(
+    quotes_rel, order=AsofOrder(left="trade_ts", right="quote_ts")
+)
+nearest = trades_rel.asof_join(
+    quotes_rel,
+    AsofSpec(
+        equal_keys=[("symbol", "symbol")],
+        order=AsofOrder(left="trade_ts", right="quote_ts"),
+        direction="nearest",
+        tolerance="5 seconds",
+    ),
+)
+```
+
 `DuckTable.insert_antijoin` and `DuckTable.insert_by_continuous_id` keep appends idempotent by filtering existing
 rows before inserting.
 
