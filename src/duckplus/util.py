@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from enum import Enum
 from os import PathLike, fspath
-from typing import Any
+from typing import Any, Literal, get_args
 
 import re
 
@@ -125,3 +125,35 @@ def coerce_scalar(value: Any) -> Any:
         return value.item()
 
     return value
+DuckDBType = Literal[
+    "BOOLEAN",
+    "TINYINT",
+    "SMALLINT",
+    "INTEGER",
+    "BIGINT",
+    "HUGEINT",
+    "UTINYINT",
+    "USMALLINT",
+    "UINTEGER",
+    "UBIGINT",
+    "FLOAT",
+    "REAL",
+    "DOUBLE",
+    "DECIMAL",
+    "NUMERIC",
+    "VARCHAR",
+    "BLOB",
+    "DATE",
+    "TIME",
+    "TIME_TZ",
+    "TIMESTAMP",
+    "TIMESTAMP_S",
+    "TIMESTAMP_MS",
+    "TIMESTAMP_NS",
+    "TIMESTAMP_TZ",
+    "INTERVAL",
+    "UUID",
+    "JSON",
+]
+DUCKDB_TYPE_SET: frozenset[str] = frozenset(get_args(DuckDBType))
+

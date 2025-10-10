@@ -33,6 +33,12 @@ def _alias(expression: str, alias: str) -> str:
     return f"{expression} AS {_quote_identifier(alias)}"
 
 
+def _relation_types(relation: duckdb.DuckDBPyRelation) -> list[str]:
+    """Return the DuckDB type names for *relation* columns."""
+
+    return [str(type_name) for type_name in relation.types]
+
+
 def _format_projection(columns: Sequence[str], *, alias: str | None = None) -> list[str]:
     """Return projection expressions for *columns* optionally qualified."""
 
@@ -107,10 +113,11 @@ def _inject_parameters(expression: str, parameters: Sequence[Any]) -> str:
 class DuckRel:
     """Immutable wrapper around :class:`duckdb.DuckDBPyRelation`."""
 
-    __slots__ = ("_relation", "_columns", "_lookup")
+    __slots__ = ("_relation", "_columns", "_lookup", "_types")
     _relation: duckdb.DuckDBPyRelation
     _columns: tuple[str, ...]
     _lookup: dict[str, int]
+    _types: tuple[str, ...]
 
     def __setattr__(self, name: str, value: Any) -> None:  # pragma: no cover - defensive
         if name in self.__slots__ and hasattr(self, name):
@@ -122,12 +129,17 @@ class DuckRel:
         relation: duckdb.DuckDBPyRelation,
         *,
         columns: Sequence[str] | None = None,
+        types: Sequence[str] | None = None,
     ) -> None:
         super().__setattr__("_relation", relation)
         raw_columns = list(relation.columns if columns is None else columns)
         normalized, lookup = util.normalize_columns(raw_columns)
         super().__setattr__("_columns", tuple(normalized))
         super().__setattr__("_lookup", dict(lookup))
+        raw_types = list(_relation_types(relation) if types is None else types)
+        if len(raw_types) != len(normalized):
+            raise ValueError("Number of types does not match number of columns")
+        super().__setattr__("_types", tuple(raw_types))
 
     @property
     def relation(self) -> duckdb.DuckDBPyRelation:
@@ -153,6 +165,12 @@ class DuckRel:
 
         return frozenset(self._lookup)
 
+    @property
+    def column_types(self) -> list[str]:
+        """Return the DuckDB type name for each projected column."""
+
+        return list(self._types)
+
     def project_columns(self, *columns: str, missing_ok: bool = False) -> DuckRel:
         """Return a relation containing only the requested *columns*."""
 
@@ -166,7 +184,8 @@ class DuckRel:
             raise KeyError("No columns resolved from projection request")
         projection = _format_projection(resolved)
         relation = self._relation.project(", ".join(projection))
-        return type(self)(relation, columns=resolved)
+        types = [self._types[self._lookup[name.casefold()]] for name in resolved]
+        return type(self)(relation, columns=resolved, types=types)
 
     def project(self, expressions: Mapping[str, str]) -> DuckRel:
         """Project explicit *expressions* keyed by output column name."""
@@ -183,7 +202,7 @@ class DuckRel:
                 raise TypeError("Projection expressions must be strings")
             compiled.append(_alias(expression, alias))
         relation = self._relation.project(", ".join(compiled))
-        return type(self)(relation, columns=aliases)
+        return type(self)(relation, columns=aliases, types=_relation_types(relation))
 
     def filter(self, expression: str, /, *args: Any) -> DuckRel:
         """Filter the relation using a SQL *expression* with optional parameters."""
@@ -194,7 +213,7 @@ class DuckRel:
         parameters = [util.coerce_scalar(arg) for arg in args]
         rendered = _inject_parameters(expression, parameters)
         relation = self._relation.filter(rendered)
-        return type(self)(relation, columns=self._columns)
+        return type(self)(relation, columns=self._columns, types=self._types)
 
     def inner_join(self, other: DuckRel, *, on: Sequence[str] | None = None) -> DuckRel:
         """Perform an inner join with *other* on shared or explicit keys."""
@@ -231,7 +250,7 @@ class DuckRel:
             clause = f"{_quote_identifier(resolved)} {normalized.upper()}"
             order_clauses.append(clause)
         relation = self._relation.order(", ".join(order_clauses))
-        return type(self)(relation, columns=self._columns)
+        return type(self)(relation, columns=self._columns, types=self._types)
 
     def limit(self, count: int) -> DuckRel:
         """Limit the relation to *count* rows."""
@@ -241,7 +260,27 @@ class DuckRel:
         if count < 0:
             raise ValueError("Limit must be non-negative")
         relation = self._relation.limit(count)
-        return type(self)(relation, columns=self._columns)
+        return type(self)(relation, columns=self._columns, types=self._types)
+
+    def cast_columns(
+        self,
+        mapping: Mapping[str, util.DuckDBType] | None = None,
+        /,
+        **casts: util.DuckDBType,
+    ) -> DuckRel:
+        """Return a relation with specified columns ``CAST`` to DuckDB types."""
+
+        return self._cast_columns("CAST", mapping, casts)
+
+    def try_cast_columns(
+        self,
+        mapping: Mapping[str, util.DuckDBType] | None = None,
+        /,
+        **casts: util.DuckDBType,
+    ) -> DuckRel:
+        """Return a relation with specified columns ``TRY_CAST`` to DuckDB types."""
+
+        return self._cast_columns("TRY_CAST", mapping, casts)
 
     def materialize(
         self,
@@ -268,8 +307,16 @@ class DuckRel:
 
         wrapped: DuckRel | None = None
         if result.relation is not None:
-            resolved_columns = tuple(result.columns) if result.columns is not None else self._columns
-            wrapped = type(self)(result.relation, columns=resolved_columns)
+            resolved_columns = (
+                tuple(result.columns)
+                if result.columns is not None
+                else tuple(result.relation.columns)
+            )
+            wrapped = type(self)(
+                result.relation,
+                columns=resolved_columns,
+                types=_relation_types(result.relation),
+            )
 
         return Materialized(
             table=result.table,
@@ -278,6 +325,43 @@ class DuckRel:
         )
 
     # Internal helpers -------------------------------------------------
+
+    def _cast_columns(
+        self,
+        function: Literal["CAST", "TRY_CAST"],
+        mapping: Mapping[str, util.DuckDBType] | None,
+        casts: Mapping[str, util.DuckDBType],
+    ) -> DuckRel:
+        provided: dict[str, util.DuckDBType] = {}
+        if mapping:
+            provided.update(mapping)
+        provided.update(casts)
+
+        if not provided:
+            raise ValueError("At least one column must be provided for casting")
+
+        resolved: dict[str, str] = {}
+        for requested, type_name in provided.items():
+            if type_name not in util.DUCKDB_TYPE_SET:
+                raise ValueError(f"Unsupported DuckDB type: {type_name!r}")
+            resolved_name = util.resolve_columns([requested], self._columns)[0]
+            resolved[resolved_name] = str(type_name)
+
+        expressions: list[str] = []
+        updated_types: list[str] = []
+        for column, current_type in zip(self._columns, self._types, strict=True):
+            if column not in resolved:
+                expressions.append(_alias(_quote_identifier(column), column))
+                updated_types.append(current_type)
+                continue
+
+            cast_type = resolved[column]
+            expression = f"{function}({_quote_identifier(column)} AS {cast_type})"
+            expressions.append(_alias(expression, column))
+            updated_types.append(cast_type)
+
+        relation = self._relation.project(", ".join(expressions))
+        return type(self)(relation, columns=self._columns, types=updated_types)
 
     def _join(
         self,
@@ -301,7 +385,7 @@ class DuckRel:
         if how in {"semi", "anti"}:
             projection = _format_projection(self._columns, alias="l")
             relation = joined.project(", ".join(projection))
-            return type(self)(relation, columns=self._columns)
+            return type(self)(relation, columns=self._columns, types=self._types)
 
         right_key_set = {right.casefold() for _, right in pairs}
         right_columns = [
@@ -319,7 +403,13 @@ class DuckRel:
         projection.extend(_format_projection(right_columns, alias="r"))
         relation = joined.project(", ".join(projection))
         merged_columns = list(self._columns) + right_columns
-        return type(self)(relation, columns=merged_columns)
+        right_types = [
+            type_name
+            for column, type_name in zip(other._columns, other._types, strict=True)
+            if column.casefold() not in right_key_set
+        ]
+        merged_types = list(self._types) + right_types
+        return type(self)(relation, columns=merged_columns, types=merged_types)
 
     def _resolve_shared_keys(self, other: DuckRel) -> list[tuple[str, str]]:
         pairs: list[tuple[str, str]] = []
