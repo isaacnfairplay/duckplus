@@ -34,6 +34,9 @@ dev-dependencies = [
 [tool.pytest.ini_options]
 addopts = "-q"
 python_files = "test_*.py"
+markers = [
+    "mutable_with_approval: Exploratory integration coverage that maintainers may revise as APIs evolve",
+]
 
 [tool.mypy]
 python_version = "3.12"
