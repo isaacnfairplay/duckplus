@@ -43,7 +43,7 @@ Planned additions:
 ## Stage 1 — Core Relational Abstractions
 Build the immutable transformation layer first; mutations depend on it.
 
-*Status*: ✅ Completed — `DuckRel` covers projection, filtering, joins, ordering, limiting, and materialization. Tests in `tests/test_core.py` exercise default join semantics, strict column handling, parameter validation, and materialization strategies. Future work can build on this stable surface without revisiting Stage 1.
+*Status*: ✅ Completed — `DuckRel` covers projection, filtering, joins, ordering, limiting, and materialization. Unit tests in `tests/test_core.py` cover default join semantics, strict column handling, parameter validation, and materialization strategies, while exploratory pipelines in `tests/test_relation_integration.py::test_feature_engineering_flow` and `tests/test_relation_integration.py::test_backlog_snapshot_flow` verify multi-step usage patterns. Future work can build on this stable surface without revisiting Stage 1.
 
 ### Module: `core`
 *Goals*: define `DuckRel` with chainable operations, strict column semantics, and explicit projection.
@@ -69,6 +69,13 @@ Implementation sequence:
 
 ## Stage 2 — Table Mutations
 Introduce stateful operations only after `DuckRel` is stable.
+
+*Status*: ✅ Completed — `DuckTable` now wraps mutation helpers with append,
+antijoin, and continuous-ID insert strategies. Focused unit tests in
+`tests/test_table.py` guard alignment and ID edge cases, and exploratory
+scenarios in `tests/test_table_integration.py` validate dimension and stream
+ingestion flows under the `mutable_with_approval` marker so they can evolve as
+real-world pipelines expand.
 
 ### Module: `table`
 *Goals*: wrap `DuckRel` targets with mutation helpers that respect insert semantics.
@@ -114,6 +121,10 @@ Only start extras once core and IO pieces are reliable.
 ## Testing Strategy
 - Each stage introduces targeted tests in `tests/` mirroring the module name.
 - Always cover strict column handling, join defaults, and IO defaults as described in `AGENTS.md`.
+- Maintain exploratory integration suites (`tests/test_table_integration.py`,
+  `tests/test_relation_integration.py`) under the `mutable_with_approval`
+  marker to document realistic pipelines without locking the data scenarios in
+  place.
 
 ---
 *Last updated*: materialize now supports strategies and cross-connection transfers.
