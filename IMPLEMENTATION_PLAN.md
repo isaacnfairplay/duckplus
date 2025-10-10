@@ -10,7 +10,7 @@ This living document captures the staged build-out plan for Duck+. Update it as 
 ## Stage 0 — Foundations & Shared Utilities
 Establish common helpers that every module depends on. Implement these before higher-level features to avoid circular work.
 
-*Status*: ✅ Completed — shared utility helpers and connection extensions are in place.
+*Status*: ✅ Completed — shared utility helpers and connection extensions are in place. Reviewed 2024-05-11: current `util` and `connect` modules match the design intent and are protected by focused tests (`tests/test_util.py`, `tests/test_connect.py`), so no additional groundwork is required before moving forward.
 
 ### Module: `util`
 *Goals*: provide identifier validation, column casing utilities, and small type helpers that keep `core` lean.
@@ -42,6 +42,8 @@ Planned additions:
 
 ## Stage 1 — Core Relational Abstractions
 Build the immutable transformation layer first; mutations depend on it.
+
+*Status*: ✅ Completed — `DuckRel` covers projection, filtering, joins, ordering, limiting, and materialization. Tests in `tests/test_core.py` exercise default join semantics, strict column handling, parameter validation, and materialization strategies. Future work can build on this stable surface without revisiting Stage 1.
 
 ### Module: `core`
 *Goals*: define `DuckRel` with chainable operations, strict column semantics, and explicit projection.
