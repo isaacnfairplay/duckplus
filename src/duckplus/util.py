@@ -42,7 +42,10 @@ def ensure_identifier(name: str, *, allow_quoted: bool = False) -> str:
     """
 
     if not isinstance(name, str):
-        raise TypeError("Identifier must be a string")
+        raise TypeError(
+            "Identifier must be provided as a string; "
+            f"received {type(name).__name__}."
+        )
 
     if _IDENTIFIER_RE.fullmatch(name):
         return name
@@ -64,7 +67,10 @@ def normalize_columns(columns: Sequence[str]) -> tuple[list[str], dict[str, int]
 
     for index, column in enumerate(normalized):
         if not isinstance(column, str):
-            raise TypeError("Column names must be strings")
+            raise TypeError(
+                "Column names must be provided as strings; "
+                f"received {type(column).__name__}."
+            )
 
         key = column.casefold()
         if key in lookup:
@@ -94,7 +100,10 @@ def resolve_columns(
 
     for column in requested:
         if not isinstance(column, str):
-            raise TypeError("Requested column names must be strings")
+            raise TypeError(
+                "Requested column names must be provided as strings; "
+                f"received {type(column).__name__}."
+            )
 
         key = column.casefold()
         index = lookup.get(key)

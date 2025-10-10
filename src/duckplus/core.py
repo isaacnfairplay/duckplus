@@ -80,7 +80,10 @@ class ColumnPredicate:
 
     def __post_init__(self) -> None:
         if self.operator not in {"=", "!=", "<", "<=", ">", ">="}:
-            raise ValueError(f"Unsupported predicate operator: {self.operator!r}")
+            raise ValueError(
+                "Unsupported join predicate operator "
+                f"{self.operator!r}; expected one of '=, !=, <, <=, >, >='."
+            )
 
 
 @dataclass(frozen=True)
@@ -91,7 +94,10 @@ class ExpressionPredicate:
 
     def __post_init__(self) -> None:
         if not isinstance(self.expression, str) or not self.expression.strip():
-            raise ValueError("Join expression predicates must be non-empty strings")
+            raise ValueError(
+                "Join expression predicates must be provided as a non-empty string; "
+                f"received {type(self.expression).__name__} with value {self.expression!r}."
+            )
 
 
 JoinPredicate = ColumnPredicate | ExpressionPredicate
@@ -127,32 +133,55 @@ class JoinSpec:
 
     def __post_init__(self) -> None:
         if not isinstance(self.equal_keys, Sequence):
-            raise TypeError("JoinSpec.equal_keys must be a sequence of column pairs")
+            raise TypeError(
+                "JoinSpec.equal_keys must be a sequence of column pairs; "
+                f"received {type(self.equal_keys).__name__}."
+            )
         if not isinstance(self.predicates, Sequence):
-            raise TypeError("JoinSpec.predicates must be a sequence of predicates")
+            raise TypeError(
+                "JoinSpec.predicates must be a sequence of predicates; "
+                f"received {type(self.predicates).__name__}."
+            )
 
         normalized_keys: list[tuple[str, str]] = []
         for pair_obj in cast(Sequence[object], self.equal_keys):
             if isinstance(pair_obj, (str, bytes)):
-                raise TypeError("JoinSpec.equal_keys must contain pairs of column names")
+                raise TypeError(
+                    "JoinSpec.equal_keys must contain pairs of column names; "
+                    f"found single value {pair_obj!r}."
+                )
             if not isinstance(pair_obj, Sequence):
-                raise TypeError("JoinSpec.equal_keys must contain pairs of column names")
+                raise TypeError(
+                    "JoinSpec.equal_keys must contain pairs of column names; "
+                    f"found {type(pair_obj).__name__}."
+                )
             pair = tuple(pair_obj)
             if len(pair) != 2:
-                raise ValueError("JoinSpec.equal_keys must contain column name pairs")
+                raise ValueError(
+                    "JoinSpec.equal_keys must contain column name pairs; "
+                    f"received {len(pair)} values in {pair!r}."
+                )
             left, right = pair
             if not isinstance(left, str) or not isinstance(right, str):
-                raise TypeError("JoinSpec.equal_keys must contain string column names")
+                raise TypeError(
+                    "JoinSpec.equal_keys must contain string column names; "
+                    f"received {left!r} and {right!r}."
+                )
             normalized_keys.append((left, right))
 
         normalized_predicates: list[JoinPredicate] = []
         for predicate_obj in cast(Sequence[object], self.predicates):
             if not isinstance(predicate_obj, (ColumnPredicate, ExpressionPredicate)):
-                raise TypeError("JoinSpec.predicates must contain JoinPredicate instances")
+                raise TypeError(
+                    "JoinSpec.predicates must contain JoinPredicate instances; "
+                    f"received {type(predicate_obj).__name__}."
+                )
             normalized_predicates.append(predicate_obj)
 
         if not normalized_keys and not normalized_predicates:
-            raise ValueError("JoinSpec requires at least one equality key or predicate")
+            raise ValueError(
+                "JoinSpec requires at least one equality key or predicate; both inputs were empty."
+            )
 
         object.__setattr__(self, "equal_keys", tuple(normalized_keys))
         object.__setattr__(self, "predicates", tuple(normalized_predicates))
@@ -189,9 +218,14 @@ class AsofSpec(JoinSpec):
         object.__setattr__(self, "direction", direction)
         object.__setattr__(self, "tolerance", tolerance)
         if direction not in {"backward", "forward", "nearest"}:
-            raise ValueError("ASOF direction must be 'backward', 'forward', or 'nearest'")
+            raise ValueError(
+                "ASOF direction must be 'backward', 'forward', or 'nearest'; "
+                f"received {direction!r}."
+            )
         if direction == "nearest" and tolerance is None:
-            raise ValueError("ASOF nearest direction requires a tolerance")
+            raise ValueError(
+                "ASOF joins with direction 'nearest' require a tolerance expression."
+            )
 
 
 @dataclass(frozen=True)
@@ -204,7 +238,10 @@ class JoinProjection:
     def __post_init__(self) -> None:
         if self.suffixes is not None:
             if len(self.suffixes) != 2:
-                raise ValueError("JoinProjection.suffixes must contain exactly two values")
+                raise ValueError(
+                    "JoinProjection.suffixes must contain exactly two values; "
+                    f"received {len(self.suffixes)} in {self.suffixes!r}."
+                )
 
 
 def _format_value(value: Any) -> str:
@@ -243,11 +280,17 @@ def _inject_parameters(expression: str, parameters: Sequence[Any]) -> str:
     placeholder_count = len(parts) - 1
     if placeholder_count == 0:
         if parameters:
-            raise ValueError("Number of parameters does not match placeholders")
+            raise ValueError(
+                "Filter expression contains no '?' placeholders but "
+                f"received {len(parameters)} parameter(s)."
+            )
         return expression
 
     if placeholder_count != len(parameters):
-        raise ValueError("Number of parameters does not match placeholders")
+        raise ValueError(
+            "Mismatch between '?' placeholders and provided parameters; "
+            f"expected {placeholder_count} parameter(s) but received {len(parameters)}."
+        )
 
     result: list[str] = []
     for index, segment in enumerate(parts[:-1]):
@@ -286,7 +329,10 @@ class DuckRel:
         super().__setattr__("_lookup", dict(lookup))
         raw_types = list(_relation_types(relation) if types is None else types)
         if len(raw_types) != len(normalized):
-            raise ValueError("Number of types does not match number of columns")
+            raise ValueError(
+                "Number of column types does not match the projected columns; "
+                f"expected {len(normalized)} types but received {len(raw_types)}."
+            )
         super().__setattr__("_types", tuple(raw_types))
 
     @property
@@ -323,13 +369,17 @@ class DuckRel:
         """Return a relation containing only the requested *columns*."""
 
         if not columns:
-            raise ValueError("At least one column must be provided")
+            raise ValueError("project_columns() requires at least one column name.")
 
         resolved = util.resolve_columns(columns, self._columns, missing_ok=missing_ok)
         if not resolved:
             if missing_ok:
                 return self
-            raise KeyError("No columns resolved from projection request")
+            requested = ", ".join(repr(column) for column in columns)
+            raise KeyError(
+                "None of the requested columns could be resolved from the relation; "
+                f"requested {requested}."
+            )
         projection = _format_projection(resolved)
         relation = self._relation.project(", ".join(projection))
         types = [self._types[self._lookup[name.casefold()]] for name in resolved]
@@ -339,7 +389,7 @@ class DuckRel:
         """Project explicit *expressions* keyed by output column name."""
 
         if not expressions:
-            raise ValueError("Projection requires at least one expression")
+            raise ValueError("project() requires at least one expression mapping.")
 
         alias_candidates = list(expressions.keys())
         aliases, _ = util.normalize_columns(alias_candidates)
@@ -347,7 +397,10 @@ class DuckRel:
         for alias in aliases:
             expression = expressions[alias]
             if not isinstance(expression, str):
-                raise TypeError("Projection expressions must be strings")
+                raise TypeError(
+                    "Projection expressions must be provided as strings; "
+                    f"alias {alias!r} mapped to {type(expression).__name__}."
+                )
             compiled.append(_alias(expression, alias))
         relation = self._relation.project(", ".join(compiled))
         return type(self)(relation, columns=aliases, types=_relation_types(relation))
@@ -356,7 +409,10 @@ class DuckRel:
         """Filter the relation using a SQL *expression* with optional parameters."""
 
         if not isinstance(expression, str):
-            raise TypeError("Filter expression must be a string")
+            raise TypeError(
+                "Filter expression must be a string; "
+                f"received {type(expression).__name__}."
+            )
 
         parameters = [util.coerce_scalar(arg) for arg in args]
         rendered = _inject_parameters(expression, parameters)
@@ -558,14 +614,22 @@ class DuckRel:
         """Return a relation ordered by the specified *orders* mapping."""
 
         if not orders:
-            raise ValueError("At least one column required for ordering")
+            raise ValueError("order_by() requires at least one column/direction pair.")
 
         order_clauses: list[str] = []
         for column, direction in orders.items():
             resolved = util.resolve_columns([column], self._columns)[0]
+            if not isinstance(direction, str):
+                raise TypeError(
+                    "Ordering direction must be a string literal 'asc' or 'desc'; "
+                    f"received {type(direction).__name__} for column {column!r}."
+                )
             normalized = direction.lower()
             if normalized not in {"asc", "desc"}:
-                raise ValueError("Ordering direction must be 'asc' or 'desc'")
+                raise ValueError(
+                    "Ordering direction must be 'asc' or 'desc'; "
+                    f"received {direction!r} for column {column!r}."
+                )
             clause = f"{_quote_identifier(resolved)} {normalized.upper()}"
             order_clauses.append(clause)
         relation = self._relation.order(", ".join(order_clauses))
@@ -575,9 +639,12 @@ class DuckRel:
         """Limit the relation to *count* rows."""
 
         if not isinstance(count, int):
-            raise TypeError("Limit count must be an integer")
+            raise TypeError(
+                "limit() expects an integer count; "
+                f"received {type(count).__name__}."
+            )
         if count < 0:
-            raise ValueError("Limit must be non-negative")
+            raise ValueError(f"limit() requires a non-negative count; received {count}.")
         relation = self._relation.limit(count)
         return type(self)(relation, columns=self._columns, types=self._types)
 
@@ -619,10 +686,16 @@ class DuckRel:
         result = runner.materialize(self._relation, self._columns, into=into)
 
         if into is not None and result.relation is None:
-            raise ValueError("Materialization strategy did not yield a relation for the target connection")
+            raise ValueError(
+                "Materialization strategy did not yield a relation for the target connection; "
+                f"strategy={type(runner).__name__}."
+            )
 
         if into is None and result.table is None and result.path is None:
-            raise ValueError("Materialization strategy did not produce any artefact")
+            raise ValueError(
+                "Materialization strategy did not produce any artefact (table, relation, or path); "
+                f"strategy={type(runner).__name__}."
+            )
 
         wrapped: DuckRel | None = None
         if result.relation is not None:
@@ -657,7 +730,7 @@ class DuckRel:
         provided.update(casts)
 
         if not provided:
-            raise ValueError("At least one column must be provided for casting")
+            raise ValueError("cast_columns()/try_cast_columns() require at least one column mapping.")
 
         resolved: dict[str, str] = {}
         for requested, type_name in provided.items():
@@ -732,7 +805,10 @@ class DuckRel:
                 output = f"{column}{suffix_left}"
             lower = output.casefold()
             if lower in seen:
-                raise ValueError("Join projection produced duplicate column names")
+                raise ValueError(
+                    "Join projection produced duplicate column name "
+                    f"{output!r} while processing left relation columns."
+                )
             seen.add(lower)
             expressions.append(_alias(_qualify("l", column), output))
             columns.append(output)
@@ -746,7 +822,10 @@ class DuckRel:
                 output = f"{column}{suffix_right}"
             lower = output.casefold()
             if lower in seen:
-                raise ValueError("Join projection produced duplicate column names")
+                raise ValueError(
+                    "Join projection produced duplicate column name "
+                    f"{output!r} while processing right relation columns."
+                )
             seen.add(lower)
             expressions.append(_alias(_qualify("r", column), output))
             columns.append(output)
@@ -774,7 +853,10 @@ class DuckRel:
 
         for requested_left, requested_right in key_aliases.items():
             if not isinstance(requested_left, str) or not isinstance(requested_right, str):
-                raise TypeError("Join key aliases must map string column names")
+                raise TypeError(
+                    "Join key aliases must map string column names; "
+                    f"received {requested_left!r} -> {requested_right!r}."
+                )
 
             left_candidates = util.resolve_columns(
                 [requested_left], self._columns, missing_ok=not strict
@@ -797,7 +879,10 @@ class DuckRel:
                 left_positions[left_column.casefold()] = len(pairs) - 1
 
         if not pairs:
-            raise ValueError("No shared columns to join on")
+            raise ValueError(
+                "Natural join could not find shared columns between relations; "
+                f"left columns={self.columns}, right columns={other.columns}."
+            )
 
         left_keys = frozenset(name.casefold() for name, _ in pairs)
         right_keys = frozenset(name.casefold() for _, name in pairs)
@@ -810,7 +895,10 @@ class DuckRel:
         left_positions: dict[str, int] = {}
         for left_name, right_name in spec.equal_keys:
             if not isinstance(left_name, str) or not isinstance(right_name, str):
-                raise TypeError("JoinSpec.equal_keys must contain string column names")
+                raise TypeError(
+                    "JoinSpec.equal_keys must contain string column names; "
+                    f"received {left_name!r} -> {right_name!r}."
+                )
             left_column = util.resolve_columns([left_name], self._columns)[0]
             right_column = util.resolve_columns([right_name], other._columns)[0]
             position = left_positions.get(left_column.casefold())
@@ -832,7 +920,10 @@ class DuckRel:
                 predicates.append(predicate.expression)
 
         if not pairs and not predicates:
-            raise ValueError("Join specification produced no columns or predicates")
+            raise ValueError(
+                "Join specification produced no columns or predicates after resolution; "
+                f"equal_keys={spec.equal_keys!r}, predicates={spec.predicates!r}."
+            )
 
         left_keys = frozenset(name.casefold() for name, _ in pairs)
         right_keys = frozenset(name.casefold() for _, name in pairs)
@@ -851,7 +942,10 @@ class DuckRel:
             clauses.append(_format_join_condition(resolved.pairs, left_alias="l", right_alias="r"))
         clauses.extend(resolved.predicates)
         if not clauses:
-            raise ValueError("Join requires at least one condition")
+            raise ValueError(
+                "Join requires at least one equality key or predicate; "
+                f"resolved specification was empty for how={how!r}."
+            )
 
         condition = " AND ".join(clauses)
         left_alias = self._relation.set_alias("l")
@@ -881,7 +975,10 @@ class DuckRel:
         right_type = other._types[other._lookup[right_column.casefold()]]
 
         if _is_temporal_type(left_type) != _is_temporal_type(right_type):
-            raise ValueError("ASOF order columns must be both temporal or both numeric")
+            raise ValueError(
+                "ASOF order columns must both be temporal types or both be numeric; "
+                f"left column {left_column!r} is {left_type!r}, right column {right_column!r} is {right_type!r}."
+            )
 
         return _ResolvedAsofSpec(
             join=base,
@@ -926,7 +1023,9 @@ class DuckRel:
 
     def _tolerance_value_expression(self, spec: _ResolvedAsofSpec) -> str:
         if spec.tolerance is None:
-            raise ValueError("Tolerance not provided")
+            raise ValueError(
+                "ASOF join tolerance was requested but no tolerance expression was provided."
+            )
         if _is_temporal_type(spec.left_type):
             escaped = spec.tolerance.replace("'", "''")
             return f"epoch(INTERVAL '{escaped}')"
