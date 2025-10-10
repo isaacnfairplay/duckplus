@@ -16,8 +16,8 @@ from .materialize import (
 
 def _quote_identifier(identifier: str) -> str:
     """Return *identifier* quoted for SQL usage."""
-
-    escaped = identifier.replace("\"", "\"\"")
+    
+    escaped2 = identifier.replace('"', '"' * 2)
     return f'"{escaped}"'
 
 
