@@ -122,6 +122,26 @@ def test_left_join_with_missing_rows(connection: duckdb.DuckDBPyConnection) -> N
     assert table_rows(joined.materialize().require_table()) == [(1, "L1", "R1"), (2, "L2", None)]
 
 
+def test_join_raises_on_non_key_column_collision(connection: duckdb.DuckDBPyConnection) -> None:
+    left = DuckRel(
+        connection.sql("SELECT * FROM (VALUES (1, 'L')) AS t(id, value)")
+    )
+    right = DuckRel(
+        connection.sql("SELECT * FROM (VALUES (1, 'R')) AS t(id, value)")
+    )
+
+    with pytest.raises(ValueError):
+        left.inner_join(right, on=["id"])
+
+
+def test_explicit_join_requires_matching_right_columns(connection: duckdb.DuckDBPyConnection) -> None:
+    left = DuckRel(connection.sql("SELECT * FROM (VALUES (1, 'L')) AS t(id, value)"))
+    right = DuckRel(connection.sql("SELECT * FROM (VALUES (1, 'R')) AS t(id_right, value)"))
+
+    with pytest.raises(KeyError):
+        left.inner_join(right, on=["id"])
+
+
 def test_join_missing_shared_keys_raises(connection: duckdb.DuckDBPyConnection) -> None:
     left = DuckRel(connection.sql("SELECT 1 AS a"))
     right = DuckRel(connection.sql("SELECT 1 AS b"))
@@ -143,6 +163,11 @@ def test_semi_and_anti_join(connection: duckdb.DuckDBPyConnection) -> None:
 def test_order_by_and_limit(sample_rel: DuckRel) -> None:
     ordered = sample_rel.order_by(score="desc").limit(2)
     assert table_rows(ordered.materialize().require_table()) == [(1, "Alpha", 10), (3, "Gamma", 8)]
+
+
+def test_order_by_rejects_invalid_direction(sample_rel: DuckRel) -> None:
+    with pytest.raises(ValueError):
+        sample_rel.order_by(score="up")
 
 
 def test_materialize_returns_arrow_table(sample_rel: DuckRel) -> None:
