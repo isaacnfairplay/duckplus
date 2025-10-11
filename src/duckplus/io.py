@@ -743,7 +743,55 @@ def read_parquet(
     /,
     **options: Unpack[ParquetReadOptions],
 ) -> DuckRel:
-    """Read Parquet files into a :class:`DuckRel`."""
+    """Read Parquet files into a :class:`DuckRel`.
+
+    Parameters
+    ----------
+    conn:
+        Connection that will execute the DuckDB read.
+    paths:
+        A :class:`~pathlib.Path`, ``os.DirEntry`` or any ``__fspath__`` value, or a
+        non-empty sequence of such paths.
+    **options:
+        Keyword arguments forwarded to :meth:`duckdb.DuckDBPyConnection.read_parquet`
+        after type validation.
+
+    Supported options
+    -----------------
+    binary_as_string: bool
+        Treat Parquet ``BINARY`` columns as strings.
+    file_row_number: bool
+        Add a row-number column per file.
+    filename: bool
+        Add a column containing the originating file name.
+    hive_partitioning: bool
+        Enable Hive partition discovery for directory inputs.
+    union_by_name: bool
+        Align schemas by column name when files differ.
+    can_have_nan: bool
+        Permit ``NaN`` values inside statistics.
+    compression: :class:`Literal`["auto", "none", "uncompressed", "snappy", "gzip", "zstd", "lz4", "brotli"]
+        Override the compression codec DuckDB expects in the source file.
+    parquet_version: :class:`Literal`["PARQUET_1_0", "PARQUET_2_0"]
+        Force DuckDB to interpret the files as the specified Parquet version.
+    debug_use_openssl: bool
+        Prefer OpenSSL over the builtin crypto routines.
+    explicit_cardinality: int
+        Provide an expected row count for planner optimisations.
+
+    Examples
+    --------
+    >>> from pathlib import Path
+    >>> from duckplus import connect
+    >>> with connect() as conn:
+    ...     rel = conn.read_parquet(
+    ...         [Path("/data/events/2024-05-01.parquet")],
+    ...         union_by_name=True,
+    ...         filename=True,
+    ...     )
+    ...     rel.columns
+    ...
+    """
 
     normalized = _normalize_paths(paths)
     read_options = _validate_parquet_read_options(options)
@@ -762,7 +810,87 @@ def read_csv(
     header: bool = True,
     **options: Unpack[CSVReadOptions],
 ) -> DuckRel:
-    """Read CSV files into a :class:`DuckRel`."""
+    """Read CSV files into a :class:`DuckRel`.
+
+    Parameters
+    ----------
+    conn:
+        Connection that will execute the DuckDB read.
+    paths:
+        A :class:`~pathlib.Path`, ``os.DirEntry`` or any ``__fspath__`` value, or a
+        non-empty sequence of such paths.
+    encoding:
+        Text encoding name supplied to DuckDB (defaults to ``"utf-8"``).
+    header:
+        Either ``True``/``False`` to indicate whether the file includes a header
+        row or an integer index for the header line.
+    **options:
+        Additional keyword arguments validated against DuckDB's CSV reader.
+
+    Supported options
+    -----------------
+    delimiter: str
+        Column delimiter (defaults to ",").
+    quote: str | None
+        Single-character quote marker or ``None`` to disable quoting.
+    escape: str | None
+        Escape character used for quoted fields.
+    nullstr: str | Sequence[str] | None
+        Values interpreted as SQL ``NULL``.
+    sample_size: int
+        Number of bytes to scan for auto-detection.
+    auto_detect: bool
+        Enable DuckDB's schema auto-detection.
+    ignore_errors: bool
+        Skip malformed rows instead of raising.
+    dateformat: str
+        Format string for DATE columns.
+    timestampformat: str
+        Format string for TIMESTAMP columns.
+    decimal_separator: :class:`Literal`[",", "."]
+        Decimal separator when parsing numeric values.
+    columns: Mapping[str, :data:`duckplus.util.DuckDBType`]
+        Explicit column type mapping.
+    all_varchar: bool
+        Force every column to be ``VARCHAR``.
+    parallel: bool
+        Allow parallel CSV parsing.
+    allow_quoted_nulls: bool
+        Interpret quoted ``nullstr`` values as ``NULL``.
+    null_padding: bool
+        Enable null padding for fixed-width values.
+    normalize_names: bool
+        Request DuckDB to normalise column identifiers.
+    union_by_name: bool
+        Align schemas by column name when loading multiple files.
+    filename: bool
+        Add a column containing the originating file name.
+    hive_partitioning: bool
+        Enable Hive partition discovery for directory inputs.
+    hive_types_autocast: bool
+        Automatically cast partition values based on Hive metadata.
+    hive_types: Mapping[str, :data:`duckplus.util.DuckDBType`]
+        Override Hive partition column types.
+    files_to_sniff: int
+        Limit the number of files inspected for schema inference.
+    compression: :class:`Literal`["auto", "none", "gzip", "zstd", "bz2", "lz4", "xz", "snappy"]
+        Compression codec to expect from the source files.
+    thousands: str
+        Thousands separator for numeric parsing.
+
+    Examples
+    --------
+    >>> from pathlib import Path
+    >>> from duckplus import connect
+    >>> with connect() as conn:
+    ...     rel = conn.read_csv(
+    ...         [Path("/data/customers.csv")],
+    ...         delimiter="|",
+    ...         dateformat="%Y-%m-%d",
+    ...     )
+    ...     rel.columns
+    ...
+    """
 
     if not isinstance(encoding, str) or not encoding:
         raise TypeError("encoding must be provided as a non-empty string.")
@@ -787,7 +915,75 @@ def read_json(
     /,
     **options: Unpack[JSONReadOptions],
 ) -> DuckRel:
-    """Read JSON or NDJSON files into a :class:`DuckRel`."""
+    """Read JSON or NDJSON files into a :class:`DuckRel`.
+
+    Parameters
+    ----------
+    conn:
+        Connection that will execute the DuckDB read.
+    paths:
+        A :class:`~pathlib.Path`, ``os.DirEntry`` or any ``__fspath__`` value, or a
+        non-empty sequence of such paths.
+    **options:
+        Keyword arguments forwarded to DuckDB's JSON reader.
+
+    Supported options
+    -----------------
+    columns: Mapping[str, :data:`duckplus.util.DuckDBType`]
+        Explicit column type mapping.
+    sample_size: int
+        Number of bytes sampled for schema detection.
+    maximum_depth: int
+        Depth limit for nested objects.
+    records: :class:`Literal`["auto", "array", "records"]
+        Interpret the input as a JSON array, individual records, or let DuckDB
+        auto-detect.
+    format: :class:`Literal`["auto", "newline_delimited", "unstructured"]
+        Choose between JSON, NDJSON, or unstructured log parsing.
+    dateformat: str
+        Format string for DATE coercion.
+    timestampformat: str
+        Format string for TIMESTAMP coercion.
+    compression: :class:`Literal`["auto", "none", "gzip", "zstd", "bz2", "lz4", "xz", "snappy"]
+        Compression codec to expect when reading files.
+    maximum_object_size: int
+        Upper bound on parsed JSON object size.
+    ignore_errors: bool
+        Skip malformed records instead of raising.
+    convert_strings_to_integers: bool
+        Attempt integer coercion for numeric-looking strings.
+    field_appearance_threshold: float
+        Fraction of rows required before creating a struct field.
+    map_inference_threshold: int
+        Minimum object size before inferring a ``MAP`` type.
+    maximum_sample_files: int
+        Number of files sampled during auto-detection.
+    filename: bool
+        Add a column containing the originating file name.
+    hive_partitioning: bool
+        Enable Hive partition discovery for directory inputs.
+    union_by_name: bool
+        Align schemas by column name when loading multiple files.
+    hive_types: Mapping[str, :data:`duckplus.util.DuckDBType`]
+        Override Hive partition column types.
+    hive_types_autocast: bool
+        Automatically cast partition values based on Hive metadata.
+    auto_detect: bool
+        Let DuckDB infer data types from the sampled data.
+
+    Examples
+    --------
+    >>> from pathlib import Path
+    >>> from duckplus import connect
+    >>> with connect() as conn:
+    ...     rel = conn.read_json(
+    ...         [Path("/data/events.ndjson")],
+    ...         format="newline_delimited",
+    ...         maximum_depth=3,
+    ...     )
+    ...     rel.columns
+    ...
+    """
 
     normalized = _normalize_paths(paths)
     read_options = _validate_json_options(options)
@@ -830,7 +1026,41 @@ def write_parquet(
     compression: ParquetCompression = "zstd",
     **options: Unpack[ParquetWriteOptions],
 ) -> None:
-    """Write a :class:`DuckRel` to a Parquet file."""
+    """Write a :class:`DuckRel` to a Parquet file.
+
+    Parameters
+    ----------
+    rel:
+        Relation to persist.
+    path:
+        Target file location, converted to :class:`~pathlib.Path`.
+    compression:
+        Compression codec supplied to DuckDB. Defaults to ``"zstd"``.
+    **options:
+        Additional DuckDB writer options documented below.
+
+    Supported options
+    -----------------
+    row_group_size: int
+        Number of rows per Parquet row group.
+    row_group_size_bytes: int
+        Maximum number of bytes per Parquet row group.
+    partition_by: Sequence[str]
+        Columns used for directory partitioning.
+    write_partition_columns: bool
+        Persist partition columns in the written files.
+    per_thread_output: bool
+        Allow DuckDB to emit one file per writer thread.
+
+    Examples
+    --------
+    >>> from pathlib import Path
+    >>> from duckplus import connect, write_parquet
+    >>> with connect() as conn:
+    ...     rel = conn.read_parquet([Path("/data/snapshot.parquet")])
+    ...     write_parquet(rel, Path("/exports/snapshot.parquet"), partition_by=["region"])
+    ...
+    """
 
     if compression not in {
         "auto",
@@ -868,7 +1098,56 @@ def write_csv(
     header: bool = True,
     **options: Unpack[CSVWriteOptions],
 ) -> None:
-    """Write a :class:`DuckRel` to a CSV file."""
+    """Write a :class:`DuckRel` to a CSV file.
+
+    Parameters
+    ----------
+    rel:
+        Relation to persist.
+    path:
+        Target file location, converted to :class:`~pathlib.Path`.
+    encoding:
+        Output text encoding (defaults to ``"utf-8"``).
+    header:
+        Whether DuckDB should emit a header row or the zero-based index of the
+        header line.
+    **options:
+        Additional DuckDB writer options documented below.
+
+    Supported options
+    -----------------
+    delimiter: str
+        Output delimiter (defaults to ",").
+    quote: str | None
+        Single-character quote marker or ``None`` to disable quoting.
+    escape: str | None
+        Escape character used for quoted fields.
+    null_rep: str | None
+        Representation for ``NULL`` values.
+    date_format: str | None
+        Format string for DATE values.
+    timestamp_format: str | None
+        Format string for TIMESTAMP values.
+    quoting: :class:`Literal`["all", "minimal", "nonnumeric", "none"]
+        Control DuckDB's quoting policy.
+    compression: :class:`Literal`["auto", "none", "gzip", "zstd", "bz2", "lz4", "xz", "snappy"]
+        Compression codec applied to the output file.
+    per_thread_output: bool
+        Allow DuckDB to emit one file per writer thread.
+    partition_by: Sequence[str]
+        Columns used for directory partitioning.
+    write_partition_columns: bool
+        Persist partition columns in the written files.
+
+    Examples
+    --------
+    >>> from pathlib import Path
+    >>> from duckplus import connect, write_csv
+    >>> with connect() as conn:
+    ...     rel = conn.read_csv([Path("/data/source.csv")])
+    ...     write_csv(rel, Path("/exports/source.csv"), quoting="nonnumeric")
+    ...
+    """
 
     if not isinstance(encoding, str) or not encoding:
         raise TypeError("encoding must be provided as a non-empty string.")
@@ -899,7 +1178,27 @@ def append_csv(
     header: bool = True,
     **options: Unpack[CSVReadOptions],
 ) -> None:
-    """Append rows from a CSV file into *table*."""
+    """Append rows from a CSV file into *table*.
+
+    Parameters
+    ----------
+    table:
+        Destination mutable table wrapper.
+    path:
+        CSV file to read. Accepts the same path types as :func:`read_csv`.
+    encoding, header, **options:
+        Forwarded to :func:`read_csv`; see its documentation for the complete
+        option reference.
+
+    Examples
+    --------
+    >>> from pathlib import Path
+    >>> from duckplus import DuckTable, connect
+    >>> with connect("warehouse.duckdb") as conn:
+    ...     table = DuckTable(conn, "staging.customers")
+    ...     table.append_csv(Path("/loads/customers_delta.csv"), delimiter="|")
+    ...
+    """
 
     rel = read_csv(
         table._connection,
@@ -917,7 +1216,27 @@ def append_parquet(
     /,
     **options: Unpack[ParquetReadOptions],
 ) -> None:
-    """Append rows from Parquet files into *table*."""
+    """Append rows from Parquet files into *table*.
+
+    Parameters
+    ----------
+    table:
+        Destination mutable table wrapper.
+    paths:
+        File or directory inputs accepted by :func:`read_parquet`.
+    **options:
+        Forwarded to :func:`read_parquet`; see its documentation for supported
+        arguments.
+
+    Examples
+    --------
+    >>> from pathlib import Path
+    >>> from duckplus import DuckTable, connect
+    >>> with connect("warehouse.duckdb") as conn:
+    ...     table = DuckTable(conn, "analytics.fact_orders")
+    ...     table.append_parquet([Path("/loads/fact_orders/*.parquet")], union_by_name=True)
+    ...
+    """
 
     rel = read_parquet(table._connection, paths, **options)
     table.append(rel)
@@ -929,7 +1248,27 @@ def append_ndjson(
     /,
     **options: Unpack[JSONReadOptions],
 ) -> None:
-    """Append rows from an NDJSON file into *table*."""
+    """Append rows from an NDJSON file into *table*.
+
+    Parameters
+    ----------
+    table:
+        Destination mutable table wrapper.
+    path:
+        NDJSON file to read. Accepts the same path types as :func:`read_json`.
+    **options:
+        Forwarded to :func:`read_json`. ``format`` defaults to
+        ``"newline_delimited"`` when omitted.
+
+    Examples
+    --------
+    >>> from pathlib import Path
+    >>> from duckplus import DuckTable, connect
+    >>> with connect("warehouse.duckdb") as conn:
+    ...     table = DuckTable(conn, "analytics.fact_events")
+    ...     table.append_ndjson(Path("/loads/events.ndjson"), maximum_depth=5)
+    ...
+    """
 
     json_options: dict[str, Any] = dict(options)
     json_options.setdefault("format", "newline_delimited")
