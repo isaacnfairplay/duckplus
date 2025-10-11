@@ -89,6 +89,39 @@ def test_filter_supports_parameters(sample_rel: DuckRel) -> None:
     assert table_rows(filtered.materialize().require_table()) == [(2, "Beta", 5)]
 
 
+def test_split_returns_matching_and_remainder(sample_rel: DuckRel) -> None:
+    matching, remainder = sample_rel.split('"score" >= ?', 8)
+
+    assert table_rows(matching.materialize().require_table()) == [
+        (1, "Alpha", 10),
+        (3, "Gamma", 8),
+    ]
+    assert table_rows(remainder.materialize().require_table()) == [(2, "Beta", 5)]
+
+
+def test_split_treats_nulls_as_non_matching(connection: duckdb.DuckDBPyConnection) -> None:
+    rel = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                (1, 10),
+                (2, NULL),
+                (3, -1)
+            ) AS t(id, score)
+            """
+        )
+    )
+
+    matching, remainder = rel.split('"score" > ?', 0)
+
+    assert table_rows(matching.materialize().require_table()) == [(1, 10)]
+    assert table_rows(remainder.materialize().require_table()) == [
+        (2, None),
+        (3, -1),
+    ]
+
+
 @pytest.mark.parametrize(
     "values, error",
     [
@@ -99,6 +132,8 @@ def test_filter_supports_parameters(sample_rel: DuckRel) -> None:
 def test_filter_parameter_validation(values: tuple[object, ...], error: type[Exception], sample_rel: DuckRel) -> None:
     with pytest.raises(error):
         sample_rel.filter('"id" = ? AND "Name" = ?', *values)
+    with pytest.raises(error):
+        sample_rel.split('"id" = ? AND "Name" = ?', *values)
 
 
 def test_natural_inner_defaults_to_shared_keys(connection: duckdb.DuckDBPyConnection) -> None:
