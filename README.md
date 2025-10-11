@@ -153,11 +153,29 @@ All commands operate against an in-memory DuckDB database unless you supply `--d
 connections are opened in read-only mode so ad-hoc exploration stays safe, while the in-memory default remains isolated to
 the current process.
 
+## HTML previews
+
+For quick notebook previews Duck+ includes a lightweight HTML renderer that works entirely inside DuckDB. The helper limits
+rows, escapes every value, and annotates the output when additional records were truncated.
+
+```python
+from duckplus import DuckRel, connect, to_html
+
+with connect() as conn:
+    rel = DuckRel(conn.raw.sql("SELECT 1 AS id, 'Alice & Bob' AS name UNION ALL SELECT 2, NULL"))
+
+html = to_html(rel, max_rows=10, null_display="∅", class_="preview")
+```
+
+By default NULL values render as a blank cell, but you can supply `null_display` to use an explicit marker. Optional `class_`
+and `id` keyword arguments attach CSS hooks without embedding styles directly in the markup.
+
 ## Project layout
 
 ```
 src/duckplus/
   cli.py          # read-only command line interface (extras module)
+  html.py         # HTML rendering helper (extras module)
   __init__.py      # public exports (`connect`, `DuckRel`, `DuckTable`, materialize helpers)
   connect.py       # connection context manager and facade
   secrets.py       # credential registry with DuckDB sync hooks

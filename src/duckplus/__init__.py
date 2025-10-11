@@ -13,6 +13,7 @@ from .core import (
     JoinProjection,
     JoinSpec,
 )
+from .html import to_html
 from .io import (
     append_csv,
     append_parquet,
@@ -57,5 +58,6 @@ __all__ = [
     "SecretRegistry",
     "write_csv",
     "write_parquet",
+    "to_html",
     "connect",
 ]
