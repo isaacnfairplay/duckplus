@@ -118,7 +118,8 @@ Only start extras once core and IO pieces are reliable.
 
 *Status*: 🔄 In progress — Stage 4.0 introduces credential helpers so future
 extras can authenticate against external systems without embedding secrets in
-code or configuration files.
+code or configuration files. **Outstanding work**: the CLI and HTML extras are
+not started yet; both remain blocked on design and test coverage listed below.
 
 ### Stage 4.0 — Secrets management
 *Status*: ✅ Completed — `SecretManager` and `SecretDefinition` provide a
@@ -128,11 +129,48 @@ validation, replacement, synchronization hooks, and error handling so future
 connection helpers can rely on predictable behavior.
 
 ### Module: `cli`
-- `def main(argv: Sequence[str] | None = None) -> int`
-- `def repl(conn: DuckConnection) -> None`
+*Status*: ⭕ Not started — no implementation or tests exist.
+
+*Goals*: provide an opt-in command line interface that surfaces read-only Duck
+transforms for quick inspection without introducing interactive prompts or
+write capabilities.
+
+*Implementation steps*:
+1. `def main(argv: Sequence[str] | None = None) -> int`
+   - Parse commands via `argparse` (no interactive input), initialize a
+     connection with `duckplus.connect()`, and dispatch to subcommands such as
+     `sql` (execute and print a relation) and `schema` (describe columns).
+2. `def repl(conn: DuckConnection) -> None`
+   - Provide a simple loop that reads statements from stdin when explicitly
+     invoked via a `--repl` flag, keeping evaluation read-only and reusing
+     `DuckRel` projection helpers for output formatting.
+3. Shared output helpers (pretty-print limited rows using materialize-to-Arrow)
+   - Live in a private `_printer` module or inside `cli` to avoid polluting the
+     public API.
+
+*Testing*: add `tests/test_cli.py` covering argument parsing, subcommand
+dispatch, and REPL exit handling using monkeypatched stdin/stdout.
 
 ### Module: `html`
-- `def to_html(rel: DuckRel, *, max_rows: int = 100) -> str`
+*Status*: ⭕ Not started — public API and rendering helpers still need to be
+defined.
+
+*Goals*: expose a light-weight HTML rendering helper suitable for notebooks and
+docs previews while preserving non-interactive guarantees.
+
+*Implementation steps*:
+1. `def to_html(rel: DuckRel, *, max_rows: int = 100) -> str`
+   - Materialize to Arrow (or DuckDB table), limit to `max_rows`, and generate a
+     minimal `<table>` with escaped cell values and column headers in the order
+     tracked by `DuckRel`.
+2. Optional styling hooks — accept keyword arguments for classes/IDs without
+   embedding CSS; default to semantic tags only.
+3. Guard against large relations by truncating output and annotating the
+   returned HTML with a footer row indicating remaining rows.
+
+*Testing*: introduce `tests/test_html.py` validating HTML structure, escaping of
+special characters, row truncation behavior, and the effect of optional styling
+hooks.
 
 *Why last*: extras must not block core delivery and can evolve independently once stable APIs exist.
 
