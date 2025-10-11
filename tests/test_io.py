@@ -13,9 +13,6 @@ from duckplus import (
     append_parquet,
     append_ndjson,
     connect,
-    read_csv,
-    read_json,
-    read_parquet,
     write_csv,
     write_parquet,
 )
@@ -30,7 +27,7 @@ def test_read_parquet_round_trip(tmp_path: Path) -> None:
     with connect() as conn:
         rel = DuckRel(conn.raw.sql("SELECT 1 AS id, 'Alpha' AS label"))
         write_parquet(rel, path)
-        loaded = read_parquet(conn, path)
+        loaded = conn.read_parquet(path)
         assert loaded.columns == ["id", "label"]
         assert _relation_rows(loaded) == [(1, "Alpha")]
         table = pq.read_table(path)
@@ -42,23 +39,23 @@ def test_read_parquet_accepts_sequence(tmp_path: Path) -> None:
     with connect() as conn:
         rel = DuckRel(conn.raw.sql("SELECT 42 AS value"))
         write_parquet(rel, path)
-        loaded = read_parquet(conn, [path])
+        loaded = conn.read_parquet([path])
         assert _relation_rows(loaded) == [(42,)]
 
 
 def test_read_parquet_validates_paths(tmp_path: Path) -> None:
     with connect() as conn:
         with pytest.raises(ValueError):
-            read_parquet(conn, [])  # type: ignore[arg-type]
+            conn.read_parquet([])  # type: ignore[arg-type]
         with pytest.raises(TypeError):
-            read_parquet(conn, 123)  # type: ignore[arg-type]
+            conn.read_parquet(123)  # type: ignore[arg-type]
 
 
 def test_read_parquet_runtime_error_includes_details(tmp_path: Path) -> None:
     missing = tmp_path / "missing.parquet"
     with connect() as conn:
         with pytest.raises(RuntimeError) as excinfo:
-            read_parquet(conn, missing)
+            conn.read_parquet(missing)
         message = str(excinfo.value)
         assert "DuckDB failed to read Parquet data" in message
         assert "DuckDB error:" in message
@@ -68,8 +65,7 @@ def test_read_csv_with_options(tmp_path: Path) -> None:
     csv_path = tmp_path / "values.csv"
     csv_path.write_text("id|name\n1|Alice\n2|Bob\n", encoding="utf-8")
     with connect() as conn:
-        rel = read_csv(
-            conn,
+        rel = conn.read_csv(
             csv_path,
             delimiter="|",
             encoding="utf-8",
@@ -86,7 +82,7 @@ def test_read_csv_rejects_invalid_delimiter(tmp_path: Path) -> None:
     csv_path.write_text("id,name\n1,A\n", encoding="utf-8")
     with connect() as conn:
         with pytest.raises(TypeError):
-            read_csv(conn, csv_path, delimiter="")
+            conn.read_csv(csv_path, delimiter="")
 
 
 def test_read_csv_rejects_invalid_header_type(tmp_path: Path) -> None:
@@ -94,7 +90,7 @@ def test_read_csv_rejects_invalid_header_type(tmp_path: Path) -> None:
     csv_path.write_text("id,name\n1,A\n", encoding="utf-8")
     with connect() as conn:
         with pytest.raises(TypeError) as excinfo:
-            read_csv(conn, csv_path, header="yes")  # type: ignore[arg-type]
+            conn.read_csv(csv_path, header="yes")  # type: ignore[arg-type]
         assert "header must be a boolean or integer value" in str(excinfo.value)
 
 
@@ -103,7 +99,7 @@ def test_read_csv_rejects_unknown_column_type(tmp_path: Path) -> None:
     csv_path.write_text("id,name\n1,A\n", encoding="utf-8")
     with connect() as conn:
         with pytest.raises(ValueError) as excinfo:
-            read_csv(conn, csv_path, columns={"id": "BAD"})  # type: ignore[arg-type]
+            conn.read_csv(csv_path, columns={"id": "BAD"})  # type: ignore[arg-type]
         assert "Unsupported DuckDB type" in str(excinfo.value)
 
 
@@ -111,7 +107,7 @@ def test_read_csv_runtime_error_includes_details(tmp_path: Path) -> None:
     missing = tmp_path / "missing.csv"
     with connect() as conn:
         with pytest.raises(RuntimeError) as excinfo:
-            read_csv(conn, missing)
+            conn.read_csv(missing)
         message = str(excinfo.value)
         assert "DuckDB failed to read CSV data" in message
         assert "DuckDB error:" in message
@@ -121,7 +117,7 @@ def test_read_json_supports_newline_format(tmp_path: Path) -> None:
     json_path = tmp_path / "rows.json"
     json_path.write_text("\n".join([json.dumps({"id": 1}), json.dumps({"id": 2})]), encoding="utf-8")
     with connect() as conn:
-        rel = read_json(conn, json_path, format="newline_delimited")
+        rel = conn.read_json(json_path, format="newline_delimited")
         assert rel.columns == ["id"]
         assert _relation_rows(rel) == [(1,), (2,)]
 
@@ -131,7 +127,7 @@ def test_write_csv_round_trip(tmp_path: Path) -> None:
     with connect() as conn:
         rel = DuckRel(conn.raw.sql("SELECT 1 AS id, 'Alpha' AS label"))
         write_csv(rel, csv_path, delimiter=",")
-        loaded = read_csv(conn, csv_path)
+        loaded = conn.read_csv(csv_path)
         assert _relation_rows(loaded) == [(1, "Alpha")]
         text = csv_path.read_text(encoding="utf-8")
         assert text.startswith("id,label\n")

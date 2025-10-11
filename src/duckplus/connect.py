@@ -6,12 +6,16 @@ from collections.abc import Mapping, Sequence
 from contextlib import AbstractContextManager
 from os import PathLike, fspath
 from types import TracebackType
-from typing import Literal, Optional, Self
+from typing import TYPE_CHECKING, Any, Literal, Optional, Self, Unpack
 
 import duckdb
 
 from . import util
 from .core import DuckRel
+
+if TYPE_CHECKING:
+    from . import io as io_module
+    from .odbc import MySQLStrategy, PostgresStrategy
 
 Pathish = str | PathLike[str]
 
@@ -88,6 +92,60 @@ class DuckConnection(AbstractContextManager["DuckConnection"]):
         """Return the underlying :class:`duckdb.DuckDBPyConnection`."""
 
         return self._raw
+
+    def read_parquet(
+        self,
+        paths: "io_module.PathsLike",
+        /,
+        **options: "Unpack[io_module.ParquetReadOptions]",
+    ) -> DuckRel:
+        """Read Parquet data via :mod:`duckplus.io`.
+
+        This mirrors :func:`duckplus.io.read_parquet` so callers can work
+        entirely through :class:`DuckConnection` without importing the IO
+        module explicitly.
+        """
+
+        from . import io as io_module
+
+        return io_module.read_parquet(self, paths, **options)
+
+    def read_csv(
+        self,
+        paths: "io_module.PathsLike",
+        /,
+        *,
+        encoding: str = "utf-8",
+        header: bool = True,
+        **options: "Unpack[io_module.CSVReadOptions]",
+    ) -> DuckRel:
+        """Read CSV data via :mod:`duckplus.io`.
+
+        The signature matches :func:`duckplus.io.read_csv`, forwarding the
+        keyword arguments through to DuckDB after validation.
+        """
+
+        from . import io as io_module
+
+        return io_module.read_csv(
+            self,
+            paths,
+            encoding=encoding,
+            header=header,
+            **options,
+        )
+
+    def read_json(
+        self,
+        paths: "io_module.PathsLike",
+        /,
+        **options: "Unpack[io_module.JSONReadOptions]",
+    ) -> DuckRel:
+        """Read JSON or NDJSON data via :mod:`duckplus.io`."""
+
+        from . import io as io_module
+
+        return io_module.read_json(self, paths, **options)
 
 
 def connect(
@@ -204,3 +262,28 @@ def query_nanodbc(
         params=(normalized_connection_string, normalized_query),
     )
     return DuckRel(relation)
+
+
+def __getattr__(name: str) -> Any:
+    if name in {"MySQLStrategy", "PostgresStrategy"}:
+        from .odbc import MySQLStrategy as _MySQLStrategy, PostgresStrategy as _PostgresStrategy
+
+        mapping = {
+            "MySQLStrategy": _MySQLStrategy,
+            "PostgresStrategy": _PostgresStrategy,
+        }
+        value = mapping[name]
+        globals()[name] = value
+        return value
+    raise AttributeError(name)
+
+
+__all__ = [
+    "DuckConnection",
+    "attach_nanodbc",
+    "connect",
+    "load_extensions",
+    "MySQLStrategy",
+    "PostgresStrategy",
+    "query_nanodbc",
+]

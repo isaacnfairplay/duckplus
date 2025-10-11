@@ -35,6 +35,11 @@ def test_connect_applies_configuration(monkeypatch) -> None:
     assert captured_config["config"] == {"Threads": "1"}
 
 
+def test_connect_module_exposes_odbc_strategies() -> None:
+    assert connect_mod.MySQLStrategy is duckplus.MySQLStrategy
+    assert connect_mod.PostgresStrategy is duckplus.PostgresStrategy
+
+
 def test_load_extensions_validates_names() -> None:
     class StubConnection:
         def __init__(self) -> None:
