@@ -247,17 +247,25 @@ All IO helpers accept :class:`pathlib.Path` objects or any value that implements
 ``__fspath__``. Sequences of paths are validated to be non-empty and converted
 into the formats DuckDB expects.【F:src/duckplus/io.py†L1-L161】【F:src/duckplus/io.py†L227-L275】
 
+The reader helpers are available directly on :class:`~duckplus.connect.DuckConnection`
+so callers can stay within the connection namespace. The original
+``duckplus.io`` functions remain as thin wrappers around those methods for
+backwards compatibility.【F:src/duckplus/connect.py†L51-L120】【F:src/duckplus/io.py†L680-L812】
+
 ### Readers
 
-- `read_parquet(conn, paths, **options)` wraps `DuckDBPyConnection.read_parquet`
-  after validating option names/types against `ParquetReadOptions`, returning a
-  `DuckRel`. Duck+ raises descriptive `RuntimeError` messages if DuckDB fails to
-  read the files.【F:src/duckplus/io.py†L680-L743】
-- `read_csv(conn, paths, encoding='utf-8', header=True, **options)` accepts the
-  same TypedDict-validated options as DuckDB's CSV reader and enforces explicit
-  encoding/header types before delegating to DuckDB.【F:src/duckplus/io.py†L745-L787】
-- `read_json(conn, paths, **options)` covers JSON and NDJSON ingestion with
-  strongly-typed options mirroring DuckDB's reader.【F:src/duckplus/io.py†L789-L812】
+- `DuckConnection.read_parquet(paths, **options)` (also available as
+  `duckplus.io.read_parquet(conn, paths, **options)`) wraps
+  `DuckDBPyConnection.read_parquet` after validating option names/types against
+  `ParquetReadOptions`, returning a `DuckRel`. Duck+ raises descriptive
+  `RuntimeError` messages if DuckDB fails to read the files.【F:src/duckplus/connect.py†L85-L106】【F:src/duckplus/io.py†L680-L743】
+- `DuckConnection.read_csv(paths, encoding='utf-8', header=True, **options)`
+  mirrors `duckplus.io.read_csv` so callers can configure the same
+  TypedDict-validated options while enforcing explicit encoding/header
+  types before delegating to DuckDB.【F:src/duckplus/connect.py†L108-L131】【F:src/duckplus/io.py†L745-L787】
+- `DuckConnection.read_json(paths, **options)` provides JSON and NDJSON
+  ingestion, forwarding strongly-typed options that mirror DuckDB's
+  reader implementation.【F:src/duckplus/connect.py†L133-L143】【F:src/duckplus/io.py†L789-L812】
 
 ### Writers
 
@@ -272,10 +280,13 @@ into the formats DuckDB expects.【F:src/duckplus/io.py†L1-L161】【F:src/duc
 ### Append helpers
 
 - `append_csv(table, path, encoding='utf-8', header=True, **options)` reads the
-  file via `read_csv` on the table's connection and delegates to `DuckTable.append`.
-- `append_parquet(table, paths, **options)` uses `read_parquet` for ingestion.
+  file via :meth:`DuckConnection.read_csv` on the table's connection and
+  delegates to `DuckTable.append`.
+- `append_parquet(table, paths, **options)` uses
+  :meth:`DuckConnection.read_parquet` for ingestion.
 - `append_ndjson(table, path, **options)` forces the JSON format to
-  ``newline_delimited`` before reading and appending the rows.【F:src/duckplus/io.py†L916-L954】
+  ``newline_delimited`` before calling :meth:`DuckConnection.read_json` and
+  appending the rows.【F:src/duckplus/io.py†L916-L954】
 
 ## Secrets management (`duckplus.secrets`)
 
@@ -333,12 +344,12 @@ before materializing it for downstream use.
 ```python
 from pathlib import Path
 
-from duckplus import connect, io
+from duckplus import connect
 
 with connect() as conn:
     # Load two datasets from disk into immutable DuckRel wrappers.
-    staging = io.read_parquet(conn, [Path("/data/staging_orders.parquet")])
-    reference = io.read_csv(conn, [Path("/data/customer_lookup.csv")])
+    staging = conn.read_parquet([Path("/data/staging_orders.parquet")])
+    reference = conn.read_csv([Path("/data/customer_lookup.csv")])
 
     enriched = (
         staging
@@ -356,8 +367,9 @@ with connect() as conn:
     arrow_snapshot = enriched.materialize().require_table()
 ```
 
-- `io.read_parquet` and `io.read_csv` validate paths and wrap the resulting
-  relations in `DuckRel` for further composition.【F:src/duckplus/io.py†L680-L812】
+- `DuckConnection.read_parquet` and `DuckConnection.read_csv` validate paths
+  and wrap the resulting relations in `DuckRel` for further
+  composition.【F:src/duckplus/connect.py†L85-L143】【F:src/duckplus/io.py†L680-L812】
 - `cast_columns`, `natural_left`, `filter`, `order_by`, and `limit` each return a
   new `DuckRel`, ensuring the pipeline stays immutable and case-aware.【F:src/duckplus/core.py†L533-L807】
 - `materialize()` defaults to the Arrow strategy and ensures the resulting table
@@ -369,11 +381,11 @@ Mutable table helpers complement the immutable pipeline by enforcing explicit
 ingestion semantics.
 
 ```python
-from duckplus import DuckTable, connect, io
+from duckplus import DuckTable, connect
 
 with connect("warehouse.duckdb") as conn:
     fact_orders = DuckTable(conn, "analytics.fact_orders")
-    staging = io.read_parquet(conn, [Path("/loads/fact_orders_delta.parquet")])
+    staging = conn.read_parquet([Path("/loads/fact_orders_delta.parquet")])
 
     inserted = fact_orders.insert_antijoin(staging, keys=["order_id"])
     print(f"Inserted {inserted} new rows")
@@ -383,8 +395,8 @@ with connect("warehouse.duckdb") as conn:
   schema ownership explicit.【F:src/duckplus/table.py†L1-L76】
 - `insert_antijoin` performs a case-aware anti join using the provided keys and
   returns the number of appended rows for observability.【F:src/duckplus/table.py†L113-L194】
-- `io.read_parquet` mirrors the same path validation behaviour shown earlier, so
-  ingestion always flows through typed helpers.【F:src/duckplus/io.py†L680-L787】
+- `DuckConnection.read_parquet` mirrors the same path validation behaviour shown
+  earlier, so ingestion always flows through typed helpers.【F:src/duckplus/connect.py†L85-L106】【F:src/duckplus/io.py†L680-L787】
 
 ### Demo: Provision and sync connection secrets
 
