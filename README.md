@@ -73,6 +73,13 @@ with connect() as conn:
     table_wrapper.insert_antijoin(top_scores, keys=["id"])
 ```
 
+## Demo gallery
+
+Looking for end-to-end walkthroughs? Explore the scenario-driven
+[Duck+ demo gallery](docs/demo_gallery.rst) for detailed examples covering
+joins, ingestion patterns, IO helpers, secrets management, materialization
+strategies, and the CLI.
+
 ### Join interface
 
 Duck+ exposes two families of joins: *natural* helpers that line up shared
