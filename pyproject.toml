@@ -16,6 +16,9 @@ dependencies = [
 cli = []
 html = []
 
+[project.scripts]
+duckplus = "duckplus.cli:main"
+
 [tool.setuptools.package-data]
 duckplus = ["py.typed"]
 
