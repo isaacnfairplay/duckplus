@@ -12,6 +12,16 @@ from .core import (
     JoinProjection,
     JoinSpec,
 )
+from .io import (
+    append_csv,
+    append_parquet,
+    append_ndjson,
+    read_csv,
+    read_json,
+    read_parquet,
+    write_csv,
+    write_parquet,
+)
 from .materialize import (
     ArrowMaterializeStrategy,
     Materialized,
@@ -22,6 +32,9 @@ from .table import DuckTable
 
 __all__ = [
     "ArrowMaterializeStrategy",
+    "append_csv",
+    "append_parquet",
+    "append_ndjson",
     "AsofOrder",
     "AsofSpec",
     "ColumnPredicate",
@@ -33,9 +46,14 @@ __all__ = [
     "JoinSpec",
     "Materialized",
     "ParquetMaterializeStrategy",
+    "read_csv",
+    "read_json",
+    "read_parquet",
     "SecretDefinition",
     "SecretManager",
     "SecretRecord",
     "SecretRegistry",
+    "write_csv",
+    "write_parquet",
     "connect",
 ]
