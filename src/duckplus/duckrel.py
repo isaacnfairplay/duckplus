@@ -259,8 +259,9 @@ class DuckRel:
         relation = self._relation.project(", ".join(compiled))
         return type(self)(relation, columns=aliases, types=_relation_types(relation))
 
-    def filter(self, expression: str, /, *args: Any) -> DuckRel:
-        """Filter the relation using a SQL *expression* with optional parameters."""
+    @staticmethod
+    def _render_filter_expression(expression: str, args: Sequence[Any]) -> str:
+        """Return *expression* with *args* coerced and injected."""
 
         if not isinstance(expression, str):
             raise TypeError(
@@ -269,9 +270,36 @@ class DuckRel:
             )
 
         parameters = [util.coerce_scalar(arg) for arg in args]
-        rendered = _inject_parameters(expression, parameters)
+        return _inject_parameters(expression, parameters)
+
+    def filter(self, expression: str, /, *args: Any) -> DuckRel:
+        """Filter the relation using a SQL *expression* with optional parameters."""
+
+        rendered = self._render_filter_expression(expression, args)
         relation = self._relation.filter(rendered)
         return type(self)(relation, columns=self._columns, types=self._types)
+
+    def split(self, expression: str, /, *args: Any) -> tuple[DuckRel, DuckRel]:
+        """Split the relation into matching and non-matching partitions.
+
+        Returns a ``(matching, remainder)`` tuple where the first relation
+        contains rows satisfying the provided *expression* and the second holds
+        rows where the expression evaluates to ``FALSE`` or ``NULL``.
+        """
+
+        rendered = self._render_filter_expression(expression, args)
+        matches = type(self)(
+            self._relation.filter(rendered),
+            columns=self._columns,
+            types=self._types,
+        )
+        remainder_expression = f"NOT (COALESCE(({rendered}), FALSE))"
+        remainder = type(self)(
+            self._relation.filter(remainder_expression),
+            columns=self._columns,
+            types=self._types,
+        )
+        return matches, remainder
 
     def natural_inner(
         self,

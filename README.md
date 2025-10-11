@@ -82,6 +82,11 @@ with connect() as conn:
     table = top_scores.materialize().require_table()
     print(table.to_pylist())
 
+    # Need both halves of a filter? `split()` partitions rows without mutating `base`.
+    passing, failing = base.split('"score" >= ?', 8)
+    print(passing.materialize().require_table().to_pylist())
+    print(failing.materialize().require_table().to_pylist())
+
     # Need to persist results? Promote the relation to a table wrapper and append safely.
     conn.raw.execute("CREATE TABLE scores(id INTEGER, name VARCHAR, score INTEGER)")
     table_wrapper = DuckTable(conn, "scores")
