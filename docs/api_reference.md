@@ -249,7 +249,7 @@ from DuckDB or the filesystem are surfaced as user-friendly messages.【F:src/du
 
 Importing from `duckplus` provides all of the classes and helpers documented
 above through the module's ``__all__`` definition, making `from duckplus import
-DuckRel, DuckTable, connect` the canonical entry point for most applications.【F:src/duckplus/__init__.py†L1-L44】
+DuckRel, DuckTable, connect` the canonical entry point for most applications.【F:src/duckplus/__init__.py†L64-L94】
 
 ## Demo walkthroughs
 
