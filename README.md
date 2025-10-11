@@ -92,6 +92,11 @@ Looking for end-to-end walkthroughs? Explore the scenario-driven
 joins, ingestion patterns, IO helpers, secrets management, materialization
 strategies, and the CLI.
 
+## Publishing to PyPI
+
+Ready to cut a release? Follow the [publishing checklist](docs/publishing.md)
+for the commands to run and the `uv` workflow to ship Duck+ to PyPI safely.
+
 ### Join interface
 
 Duck+ exposes two families of joins: *natural* helpers that line up shared

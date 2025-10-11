@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from importlib import metadata
+from pathlib import Path
+import tomllib
+
 from .cli import main as cli_main
 from .connect import DuckConnection, connect
 from .core import (
@@ -33,6 +37,30 @@ from .materialize import (
 from .secrets import SecretDefinition, SecretManager, SecretRecord, SecretRegistry
 from .table import DuckTable
 
+
+def _load_version() -> str:
+    """Return the installed distribution version.
+
+    When Duck+ is imported from a source checkout (e.g., in tests), fall back to
+    the `pyproject.toml` version so developers see the same identifier that will
+    be published to PyPI.
+    """
+
+    try:
+        return metadata.version("duckplus")
+    except metadata.PackageNotFoundError:
+        root = Path(__file__).resolve().parents[2]
+        pyproject = root / "pyproject.toml"
+        if not pyproject.exists():
+            return "0.0.0"
+        data = tomllib.loads(pyproject.read_text())
+        project = data.get("project", {})
+        version = project.get("version")
+        return version or "0.0.0"
+
+
+__version__ = _load_version()
+
 __all__ = [
     "ArrowMaterializeStrategy",
     "append_csv",
@@ -58,8 +86,9 @@ __all__ = [
     "SecretManager",
     "SecretRecord",
     "SecretRegistry",
+    "to_html",
     "write_csv",
     "write_parquet",
-    "to_html",
     "connect",
+    "__version__",
 ]
