@@ -132,10 +132,32 @@ nearest = trades_rel.asof_join(
 `DuckTable.insert_antijoin` and `DuckTable.insert_by_continuous_id` keep appends idempotent by filtering existing
 rows before inserting.
 
+## Command line interface
+
+Duck+ ships with a small, read-only CLI for quick inspection of databases or ad-hoc queries. Install the package and
+invoke the `duckplus` script (or run it via `uv run`) to execute SQL, inspect schemas, or drop into a REPL without
+leaving the terminal.
+
+```bash
+# Execute a SQL query and show up to 20 rows by default
+uv run duckplus sql "SELECT 42 AS answer"
+
+# Display column names and DuckDB types inferred from a query
+uv run duckplus schema "SELECT 1 AS id, 'alpha' AS label"
+
+# Start an interactive, read-only REPL
+uv run duckplus --repl
+```
+
+All commands operate against an in-memory DuckDB database unless you supply `--database /path/to/file.duckdb`. File-backed
+connections are opened in read-only mode so ad-hoc exploration stays safe, while the in-memory default remains isolated to
+the current process.
+
 ## Project layout
 
 ```
 src/duckplus/
+  cli.py          # read-only command line interface (extras module)
   __init__.py      # public exports (`connect`, `DuckRel`, `DuckTable`, materialize helpers)
   connect.py       # connection context manager and facade
   secrets.py       # credential registry with DuckDB sync hooks

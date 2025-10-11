@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from .cli import main as cli_main
 from .connect import DuckConnection, connect
 from .core import (
     AsofOrder,
@@ -42,6 +43,7 @@ __all__ = [
     "DuckRel",
     "DuckTable",
     "ExpressionPredicate",
+    "cli_main",
     "JoinProjection",
     "JoinSpec",
     "Materialized",
