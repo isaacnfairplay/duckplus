@@ -11,8 +11,39 @@ from typing import Literal, Optional, Self
 import duckdb
 
 from . import util
+from .core import DuckRel
 
 Pathish = str | PathLike[str]
+
+
+def _validate_connection_string(value: object) -> str:
+    """Return *value* cast to ``str`` after validation."""
+
+    if not isinstance(value, str):
+        raise TypeError(
+            "Connection string must be provided as a string; "
+            f"received {type(value).__name__}."
+        )
+
+    if not value or not value.strip():
+        raise ValueError("Connection string must not be empty.")
+
+    return value
+
+
+def _validate_query(value: object, *, parameter: str) -> str:
+    """Return *value* cast to ``str`` after validation."""
+
+    if not isinstance(value, str):
+        raise TypeError(
+            f"{parameter} must be provided as a string; "
+            f"received {type(value).__name__}."
+        )
+
+    if not value or not value.strip():
+        raise ValueError(f"{parameter} must not be empty.")
+
+    return value
 
 
 class DuckConnection(AbstractContextManager["DuckConnection"]):
@@ -91,3 +122,85 @@ def load_extensions(conn: DuckConnection, extensions: Sequence[str]) -> None:
     for name in extensions:
         normalized = util.ensure_identifier(name)
         raw.load_extension(normalized)
+
+
+def attach_nanodbc(
+    conn: DuckConnection,
+    *,
+    alias: str,
+    connection_string: str,
+    read_only: bool = True,
+    load_extension: bool = True,
+) -> None:
+    """Attach an ODBC data source via the ``nanodbc`` extension.
+
+    Parameters
+    ----------
+    conn:
+        Target connection that will host the attached database.
+    alias:
+        Schema name to expose the remote database under. Must be a valid
+        DuckDB identifier.
+    connection_string:
+        ODBC connection string describing the target data source.
+    read_only:
+        When ``True`` (the default) the attachment is marked as read-only. Set
+        to ``False`` to request write access when the ODBC source permits it.
+    load_extension:
+        Automatically load the ``nanodbc`` extension before attaching. Disable
+        when the extension is already loaded.
+    """
+
+    normalized_connection_string = _validate_connection_string(connection_string)
+
+    alias_identifier = util.ensure_identifier(alias)
+
+    if load_extension:
+        load_extensions(conn, ["nanodbc"])
+
+    options = ["TYPE ODBC"]
+    if read_only:
+        options.append("READ_ONLY")
+    else:
+        options.append("READ_ONLY=FALSE")
+
+    option_clause = ", ".join(options)
+
+    sql = f"ATTACH ? AS {alias_identifier} ({option_clause})"
+    conn.raw.execute(sql, [normalized_connection_string])
+
+
+def query_nanodbc(
+    conn: DuckConnection,
+    *,
+    connection_string: str,
+    query: str,
+    load_extension: bool = True,
+) -> DuckRel:
+    """Execute a remote query via the ``nanodbc`` extension.
+
+    Parameters
+    ----------
+    conn:
+        Target connection that will materialize the query results.
+    connection_string:
+        ODBC connection string describing the target data source.
+    query:
+        SQL query to execute upstream. The text is passed through to the ODBC
+        data source without modification.
+    load_extension:
+        Automatically load the ``nanodbc`` extension before querying. Disable
+        when the extension is already loaded.
+    """
+
+    normalized_connection_string = _validate_connection_string(connection_string)
+    normalized_query = _validate_query(query, parameter="Query text")
+
+    if load_extension:
+        load_extensions(conn, ["nanodbc"])
+
+    relation = conn.raw.sql(
+        "SELECT * FROM odbc_query(?, ?)",
+        params=(normalized_connection_string, normalized_query),
+    )
+    return DuckRel(relation)

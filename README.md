@@ -14,6 +14,9 @@ analytics pipelines that need safety as much as speed.
 - **Secrets-ready** – `SecretManager` fronts a connection-independent registry and
   synchronizes entries into DuckDB when the optional `secrets` extension is
   installed, so pipelines can avoid embedding passwords in code or config files.
+- **ODBC-aware** – strategy helpers in `duckplus.odbc` pair with secrets to build
+  connection strings for SQL Server, PostgreSQL, MySQL, IBM i Access, Microsoft
+  Excel/Access, and DuckDB DSNs without copying credentials into scripts.
 - **Opinionated defaults** – joins project columns explicitly, drop duplicate right-side keys, and error on naming
   collisions unless you explicitly opt into suffixes mirroring DuckDB (`_1`, `_2`).
 - **Case-aware column handling** – columns preserve their original case while still supporting case-insensitive

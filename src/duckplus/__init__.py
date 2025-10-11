@@ -7,7 +7,7 @@ from pathlib import Path
 import tomllib
 
 from .cli import main as cli_main
-from .connect import DuckConnection, connect
+from .connect import DuckConnection, attach_nanodbc, connect, query_nanodbc
 from .core import (
     AsofOrder,
     AsofSpec,
@@ -33,6 +33,16 @@ from .materialize import (
     ArrowMaterializeStrategy,
     Materialized,
     ParquetMaterializeStrategy,
+)
+from .odbc import (
+    AccessStrategy,
+    CustomODBCStrategy,
+    DuckDBDsnStrategy,
+    ExcelStrategy,
+    IBMiAccessStrategy,
+    MySQLStrategy,
+    PostgresStrategy,
+    SQLServerStrategy,
 )
 from .secrets import SecretDefinition, SecretManager, SecretRecord, SecretRegistry
 from .table import DuckTable
@@ -69,16 +79,23 @@ __all__ = [
     "AsofOrder",
     "AsofSpec",
     "ColumnPredicate",
+    "CustomODBCStrategy",
     "DuckConnection",
     "DuckRel",
+    "DuckDBDsnStrategy",
     "DuckTable",
     "ExpressionPredicate",
+    "ExcelStrategy",
     "cli_main",
+    "AccessStrategy",
     "JoinProjection",
     "JoinSpec",
+    "IBMiAccessStrategy",
     "PartitionSpec",
     "Materialized",
     "ParquetMaterializeStrategy",
+    "MySQLStrategy",
+    "PostgresStrategy",
     "read_csv",
     "read_json",
     "read_parquet",
@@ -89,6 +106,9 @@ __all__ = [
     "to_html",
     "write_csv",
     "write_parquet",
+    "attach_nanodbc",
+    "SQLServerStrategy",
+    "query_nanodbc",
     "connect",
     "__version__",
 ]
