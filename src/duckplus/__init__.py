@@ -12,12 +12,13 @@ from .core import (
     JoinProjection,
     JoinSpec,
 )
-from .table import DuckTable
 from .materialize import (
     ArrowMaterializeStrategy,
     Materialized,
     ParquetMaterializeStrategy,
 )
+from .secrets import SecretDefinition, SecretManager, SecretRecord, SecretRegistry
+from .table import DuckTable
 
 __all__ = [
     "ArrowMaterializeStrategy",
@@ -32,5 +33,9 @@ __all__ = [
     "JoinSpec",
     "Materialized",
     "ParquetMaterializeStrategy",
+    "SecretDefinition",
+    "SecretManager",
+    "SecretRecord",
+    "SecretRegistry",
     "connect",
 ]

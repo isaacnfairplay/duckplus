@@ -111,6 +111,17 @@ Sequence:
 ## Stage 4 — Extras
 Only start extras once core and IO pieces are reliable.
 
+*Status*: 🔄 In progress — Stage 4.0 introduces credential helpers so future
+extras can authenticate against external systems without embedding secrets in
+code or configuration files.
+
+### Stage 4.0 — Secrets management
+*Status*: ✅ Completed — `SecretManager` and `SecretDefinition` provide a
+connection-independent registry with an in-memory fallback when the DuckDB
+``secrets`` extension is unavailable. Tests in `tests/test_secrets.py` cover
+validation, replacement, synchronization hooks, and error handling so future
+connection helpers can rely on predictable behavior.
+
 ### Module: `cli`
 - `def main(argv: Sequence[str] | None = None) -> int`
 - `def repl(conn: DuckConnection) -> None`
