@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from . import cli
 from .connect import DuckConnection, connect
 from .core import (
     AsofOrder,
@@ -29,6 +30,7 @@ from .materialize import (
 )
 from .secrets import SecretDefinition, SecretManager, SecretRecord, SecretRegistry
 from .table import DuckTable
+from .html import to_html
 
 __all__ = [
     "ArrowMaterializeStrategy",
@@ -44,6 +46,7 @@ __all__ = [
     "ExpressionPredicate",
     "JoinProjection",
     "JoinSpec",
+    "cli",
     "Materialized",
     "ParquetMaterializeStrategy",
     "read_csv",
@@ -53,6 +56,7 @@ __all__ = [
     "SecretManager",
     "SecretRecord",
     "SecretRegistry",
+    "to_html",
     "write_csv",
     "write_parquet",
     "connect",
