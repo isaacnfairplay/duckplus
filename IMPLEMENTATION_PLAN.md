@@ -94,6 +94,11 @@ Planned functions/methods:
 ## Stage 3 — IO Boundaries
 After relational semantics are stable, add IO helpers.
 
+*Status*: ✅ Completed — `io.py` now provides typed readers, writers, and appenders
+mirroring DuckDB options with rigorous validation. Tests in `tests/test_io.py`
+exercise happy paths and error cases for the new helpers, ensuring Windows path
+conversion via :func:`os.fspath` happens before delegating to DuckDB.
+
 ### Module: `io`
 *Goals*: typed readers/writers mirroring DuckDB options while enforcing project conventions.
 
@@ -140,4 +145,4 @@ connection helpers can rely on predictable behavior.
   place.
 
 ---
-*Last updated*: materialize now supports strategies and cross-connection transfers.
+*Last updated*: Stage 3 completed with typed IO wrappers and accompanying tests.
