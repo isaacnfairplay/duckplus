@@ -259,13 +259,77 @@ backwards compatibility.【F:src/duckplus/connect.py†L51-L120】【F:src/duckp
   `DuckDBPyConnection.read_parquet` after validating option names/types against
   `ParquetReadOptions`, returning a `DuckRel`. Duck+ raises descriptive
   `RuntimeError` messages if DuckDB fails to read the files.【F:src/duckplus/connect.py†L85-L106】【F:src/duckplus/io.py†L680-L743】
+
+  Supported keyword arguments:
+
+  - `binary_as_string` (bool): Treat `BINARY` columns as strings.
+  - `file_row_number` (bool): Emit a row-number column per file.
+  - `filename` (bool): Include the originating file name.
+  - `hive_partitioning` (bool): Enable Hive-style directory discovery.
+  - `union_by_name` (bool): Align schemas by column name.
+  - `can_have_nan` (bool): Permit `NaN` statistics.
+  - `compression` (:class:`Literal`["auto", "none", "uncompressed", "snappy", "gzip", "zstd", "lz4", "brotli"]):
+    Override the expected codec.
+  - `parquet_version` (:class:`Literal`["PARQUET_1_0", "PARQUET_2_0"]): Force version handling.
+  - `debug_use_openssl` (bool): Prefer OpenSSL for crypto primitives.
+  - `explicit_cardinality` (int): Supply a planner hint with the expected row count.
 - `DuckConnection.read_csv(paths, encoding='utf-8', header=True, **options)`
   mirrors `duckplus.io.read_csv` so callers can configure the same
   TypedDict-validated options while enforcing explicit encoding/header
   types before delegating to DuckDB.【F:src/duckplus/connect.py†L108-L131】【F:src/duckplus/io.py†L745-L787】
+
+  Supported keyword arguments:
+
+  - `delimiter` (str): Column delimiter (default `","`).
+  - `quote` (str | None): Quote character; empty string disables quoting.
+  - `escape` (str | None): Escape character for quoted fields.
+  - `nullstr` (str | Sequence[str] | None): Values interpreted as `NULL`.
+  - `sample_size` (int): Bytes scanned for auto-detection.
+  - `auto_detect` (bool): Enable DuckDB's schema inference.
+  - `ignore_errors` (bool): Skip malformed rows.
+  - `dateformat` (str): Format string for `DATE` columns.
+  - `timestampformat` (str): Format string for `TIMESTAMP` columns.
+  - `decimal_separator` (:class:`Literal`[",", "."]): Decimal marker.
+  - `columns` (Mapping[str, :data:`duckplus.util.DuckDBType`]): Explicit column types.
+  - `all_varchar` (bool): Force every column to `VARCHAR`.
+  - `parallel` (bool): Allow parallel parsing.
+  - `allow_quoted_nulls` (bool): Interpret quoted `nullstr` values as `NULL`.
+  - `null_padding` (bool): Enable null padding for fixed-width values.
+  - `normalize_names` (bool): Request identifier normalisation.
+  - `union_by_name` (bool): Align schemas by column name.
+  - `filename` (bool): Include the originating file name.
+  - `hive_partitioning` (bool): Enable Hive directory discovery.
+  - `hive_types_autocast` (bool): Autocast Hive partition columns.
+  - `hive_types` (Mapping[str, :data:`duckplus.util.DuckDBType`]): Override partition types.
+  - `files_to_sniff` (int): Cap the number of sampled files.
+  - `compression` (:class:`Literal`["auto", "none", "gzip", "zstd", "bz2", "lz4", "xz", "snappy"]): Expected compression.
+  - `thousands` (str): Thousands separator.
 - `DuckConnection.read_json(paths, **options)` provides JSON and NDJSON
   ingestion, forwarding strongly-typed options that mirror DuckDB's
   reader implementation.【F:src/duckplus/connect.py†L133-L143】【F:src/duckplus/io.py†L789-L812】
+
+  Supported keyword arguments:
+
+  - `columns` (Mapping[str, :data:`duckplus.util.DuckDBType`]): Explicit column types.
+  - `sample_size` (int): Bytes sampled for schema inference.
+  - `maximum_depth` (int): Maximum nesting depth.
+  - `records` (:class:`Literal`["auto", "array", "records"]): Array/record interpretation.
+  - `format` (:class:`Literal`["auto", "newline_delimited", "unstructured"]): JSON, NDJSON or log parsing.
+  - `dateformat` (str): Format string for `DATE` coercion.
+  - `timestampformat` (str): Format string for `TIMESTAMP` coercion.
+  - `compression` (:class:`Literal`["auto", "none", "gzip", "zstd", "bz2", "lz4", "xz", "snappy"]): Expected compression.
+  - `maximum_object_size` (int): Limit on parsed object size.
+  - `ignore_errors` (bool): Skip malformed entries.
+  - `convert_strings_to_integers` (bool): Coerce numeric-looking strings.
+  - `field_appearance_threshold` (float): Minimum proportion before creating a struct field.
+  - `map_inference_threshold` (int): Minimum object size for `MAP` inference.
+  - `maximum_sample_files` (int): Files sampled during detection.
+  - `filename` (bool): Include the originating file name.
+  - `hive_partitioning` (bool): Enable Hive directory discovery.
+  - `union_by_name` (bool): Align schemas by column name.
+  - `hive_types` (Mapping[str, :data:`duckplus.util.DuckDBType`]): Override partition types.
+  - `hive_types_autocast` (bool): Autocast Hive partition values.
+  - `auto_detect` (bool): Enable DuckDB's schema inference.
 
 ### Writers
 
@@ -273,9 +337,31 @@ backwards compatibility.【F:src/duckplus/connect.py†L51-L120】【F:src/duckp
   using DuckDB's Parquet writer through a temporary file-and-rename sequence so
   partially written files are not left behind. Compression defaults to `zstd` and
   validated options mirror DuckDB's keyword arguments.【F:src/duckplus/io.py†L814-L873】
+
+  Supported keyword arguments:
+
+  - `row_group_size` (int): Rows per Parquet row group.
+  - `row_group_size_bytes` (int): Maximum bytes per row group.
+  - `partition_by` (Sequence[str]): Partition columns.
+  - `write_partition_columns` (bool): Persist partition columns in the output.
+  - `per_thread_output` (bool): Emit a file per writer thread.
 - `write_csv(rel, path, encoding='utf-8', header=True, **options)` mirrors the
   same durability pattern and validates encoding/header before dispatching to
   DuckDB.【F:src/duckplus/io.py†L875-L914】
+
+  Supported keyword arguments:
+
+  - `delimiter` (str): Output delimiter (default `","`).
+  - `quote` (str | None): Quote character; empty string disables quoting.
+  - `escape` (str | None): Escape character.
+  - `null_rep` (str | None): Representation for `NULL` values.
+  - `date_format` (str | None): Format string for `DATE` values.
+  - `timestamp_format` (str | None): Format string for `TIMESTAMP` values.
+  - `quoting` (:class:`Literal`["all", "minimal", "nonnumeric", "none"]): DuckDB quoting policy.
+  - `compression` (:class:`Literal`["auto", "none", "gzip", "zstd", "bz2", "lz4", "xz", "snappy"]): Output compression.
+  - `per_thread_output` (bool): Emit a file per writer thread.
+  - `partition_by` (Sequence[str]): Partition columns.
+  - `write_partition_columns` (bool): Persist partition columns in the output.
 
 ### Append helpers
 

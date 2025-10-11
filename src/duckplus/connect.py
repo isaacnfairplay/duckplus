@@ -101,9 +101,8 @@ class DuckConnection(AbstractContextManager["DuckConnection"]):
     ) -> DuckRel:
         """Read Parquet data via :mod:`duckplus.io`.
 
-        This mirrors :func:`duckplus.io.read_parquet` so callers can work
-        entirely through :class:`DuckConnection` without importing the IO
-        module explicitly.
+        Parameters mirror :func:`duckplus.io.read_parquet`; see that function for
+        the full list of supported options and examples.
         """
 
         from . import io as io_module
@@ -121,8 +120,8 @@ class DuckConnection(AbstractContextManager["DuckConnection"]):
     ) -> DuckRel:
         """Read CSV data via :mod:`duckplus.io`.
 
-        The signature matches :func:`duckplus.io.read_csv`, forwarding the
-        keyword arguments through to DuckDB after validation.
+        Parameters mirror :func:`duckplus.io.read_csv`; see that function for the
+        detailed option reference and examples.
         """
 
         from . import io as io_module
@@ -141,7 +140,11 @@ class DuckConnection(AbstractContextManager["DuckConnection"]):
         /,
         **options: "Unpack[io_module.JSONReadOptions]",
     ) -> DuckRel:
-        """Read JSON or NDJSON data via :mod:`duckplus.io`."""
+        """Read JSON or NDJSON data via :mod:`duckplus.io`.
+
+        Parameters mirror :func:`duckplus.io.read_json`; see that function for
+        the detailed option reference and examples.
+        """
 
         from . import io as io_module
 
