@@ -116,10 +116,11 @@ Sequence:
 ## Stage 4 — Extras
 Only start extras once core and IO pieces are reliable.
 
-*Status*: 🔄 In progress — Stage 4.0 introduces credential helpers so future
-extras can authenticate against external systems without embedding secrets in
-code or configuration files. **Outstanding work**: the CLI and HTML extras are
-not started yet; both remain blocked on design and test coverage listed below.
+*Status*: ✅ Completed — Stage 4.0 delivered the secrets registry while Stage 4.1
+now ships the CLI and HTML helpers. The CLI provides read-only inspection tools
+with unit and integration coverage, and the HTML helper renders relations into
+escaped tables with truncation metadata. Remaining enhancements can build on
+these foundations as future follow-ups.
 
 ### Stage 4.0 — Secrets management
 *Status*: ✅ Completed — `SecretManager` and `SecretDefinition` provide a
@@ -129,7 +130,11 @@ validation, replacement, synchronization hooks, and error handling so future
 connection helpers can rely on predictable behavior.
 
 ### Module: `cli`
-*Status*: ⭕ Not started — no implementation or tests exist.
+*Status*: ✅ Completed — `duckplus.cli` exposes a command line interface with
+`sql` and `schema` subcommands plus an opt-in REPL flag. Argument parsing,
+schema sanitization, result rendering, and REPL behaviour all carry focused
+tests, while integration scenarios exercise exploratory usage for multi-step
+inspection flows.
 
 *Goals*: provide an opt-in command line interface that surfaces read-only Duck
 transforms for quick inspection without introducing interactive prompts or
@@ -152,8 +157,10 @@ write capabilities.
 dispatch, and REPL exit handling using monkeypatched stdin/stdout.
 
 ### Module: `html`
-*Status*: ⭕ Not started — public API and rendering helpers still need to be
-defined.
+*Status*: ✅ Completed — `duckplus.html.to_html` materializes relations to
+Arrow, limits the rendered rows, escapes cell content, and annotates truncated
+outputs with footer metadata. Tests cover escaping, truncation, optional
+styling hooks, and empty-result messaging.
 
 *Goals*: expose a light-weight HTML rendering helper suitable for notebooks and
 docs previews while preserving non-interactive guarantees.
