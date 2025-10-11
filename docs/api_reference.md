@@ -250,3 +250,95 @@ from DuckDB or the filesystem are surfaced as user-friendly messages.【F:src/du
 Importing from `duckplus` provides all of the classes and helpers documented
 above through the module's ``__all__`` definition, making `from duckplus import
 DuckRel, DuckTable, connect` the canonical entry point for most applications.【F:src/duckplus/__init__.py†L1-L44】
+
+## Demo walkthroughs
+
+The following lightweight walkthroughs combine the primitives above so teams can
+visualize how the API reference maps onto everyday tasks without relying on any
+additional helpers.
+
+### Demo: Build a transformation pipeline
+
+This example chains a handful of `DuckRel` helpers to prepare a transformed view
+before materializing it for downstream use.
+
+```python
+from pathlib import Path
+
+from duckplus import connect, io
+
+with connect() as conn:
+    # Load two datasets from disk into immutable DuckRel wrappers.
+    staging = io.read_parquet(conn, [Path("/data/staging_orders.parquet")])
+    reference = io.read_csv(conn, [Path("/data/customer_lookup.csv")])
+
+    enriched = (
+        staging
+        # Cast total to a DECIMAL column for downstream precision.
+        .cast_columns(total="DECIMAL(18,2)")
+        # Join on shared customer_id while tolerating extra right-side columns.
+        .natural_left(reference, allow_collisions=True)
+        # Filter to shipped orders in the current quarter.
+        .filter("status = ? AND ship_date >= ?", "SHIPPED", "2024-01-01")
+        .order_by(order_id="asc")
+        .limit(1000)
+    )
+
+    # Spill the relation to an Arrow table for analytics clients.
+    arrow_snapshot = enriched.materialize().require_table()
+```
+
+- `io.read_parquet` and `io.read_csv` validate paths and wrap the resulting
+  relations in `DuckRel` for further composition.【F:src/duckplus/io.py†L680-L812】
+- `cast_columns`, `natural_left`, `filter`, `order_by`, and `limit` each return a
+  new `DuckRel`, ensuring the pipeline stays immutable and case-aware.【F:src/duckplus/core.py†L533-L807】
+- `materialize()` defaults to the Arrow strategy and ensures the resulting table
+  can be reused without mutating the original relation.【F:src/duckplus/core.py†L844-L904】【F:src/duckplus/materialize.py†L21-L55】
+
+### Demo: Append only unseen rows into a fact table
+
+Mutable table helpers complement the immutable pipeline by enforcing explicit
+ingestion semantics.
+
+```python
+from duckplus import DuckTable, connect, io
+
+with connect("warehouse.duckdb") as conn:
+    fact_orders = DuckTable(conn, "analytics.fact_orders")
+    staging = io.read_parquet(conn, [Path("/loads/fact_orders_delta.parquet")])
+
+    inserted = fact_orders.insert_antijoin(staging, keys=["order_id"])
+    print(f"Inserted {inserted} new rows")
+```
+
+- `DuckTable` validates the dotted identifier without changing casing, keeping
+  schema ownership explicit.【F:src/duckplus/table.py†L1-L76】
+- `insert_antijoin` performs a case-aware anti join using the provided keys and
+  returns the number of appended rows for observability.【F:src/duckplus/table.py†L113-L194】
+- `io.read_parquet` mirrors the same path validation behaviour shown earlier, so
+  ingestion always flows through typed helpers.【F:src/duckplus/io.py†L680-L787】
+
+### Demo: Provision and sync connection secrets
+
+Secrets management is designed to be connection-aware without relying on global
+state.
+
+```python
+from duckplus import SecretDefinition, SecretManager, connect
+
+with connect() as conn:
+    manager = SecretManager(conn)
+    definition = SecretDefinition(
+        name="GCS_BACKUP",
+        engine="gcs",
+        parameters={"project_id": "analytics-prod", "key_file": "/secrets/key.json"},
+    )
+
+    manager.create_secret(definition, replace=True)
+    manager.sync()  # Mirrors cached secrets into the DuckDB connection.
+```
+
+- `SecretDefinition.normalized()` guarantees safe identifier casing before the
+  secret ever reaches DuckDB.【F:src/duckplus/secrets.py†L1-L74】
+- `SecretManager` coordinates registry storage with optional extension loading
+  and exposes `create_secret`/`sync` helpers for deterministic mirroring.【F:src/duckplus/secrets.py†L138-L264】
