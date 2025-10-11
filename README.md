@@ -37,6 +37,18 @@ uv sync
 
 This will create and manage the virtual environment with development dependencies (pytest, mypy, and friends).
 
+## Continuous integration
+
+Every push to `main` and pull request targeting `main` runs the [CI workflow](.github/workflows/ci.yml). The job
+provisions Python 3.12 and 3.13 via `astral-sh/setup-uv`, installs project dependencies with `uv sync`, and then runs
+three gates:
+
+- `uv run pytest` for the test suite
+- `uv run mypy src/duckplus` for strict type checking
+- `uvx ty check src/duckplus` for the Rust-based static analysis helper
+
+All three steps must succeed for the workflow to pass, matching the local developer commands.
+
 ## Quickstart
 
 ```python
