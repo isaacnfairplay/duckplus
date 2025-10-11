@@ -12,6 +12,7 @@ from .core import (
     ExpressionPredicate,
     JoinProjection,
     JoinSpec,
+    PartitionSpec,
 )
 from .html import to_html
 from .io import (
@@ -47,6 +48,7 @@ __all__ = [
     "cli_main",
     "JoinProjection",
     "JoinSpec",
+    "PartitionSpec",
     "Materialized",
     "ParquetMaterializeStrategy",
     "read_csv",

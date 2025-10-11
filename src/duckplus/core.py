@@ -195,6 +195,46 @@ class AsofOrder:
     right: str
 
 
+@dataclass(frozen=True)
+class PartitionSpec(JoinSpec):
+    """Equality-only specification describing partition columns for joins."""
+
+    def __post_init__(self) -> None:
+        if self.predicates:
+            raise ValueError("PartitionSpec does not accept predicates; only equality keys are allowed.")
+        super().__post_init__()
+
+    @classmethod
+    def of_columns(cls, *columns: str) -> "PartitionSpec":
+        """Return a :class:`PartitionSpec` pairing identically named columns."""
+
+        normalized: list[tuple[str, str]] = []
+        for column in columns:
+            if not isinstance(column, str):
+                raise TypeError(
+                    "PartitionSpec.of_columns() expects string column names; "
+                    f"received {type(column).__name__}."
+                )
+            normalized.append((column, column))
+        if not normalized:
+            raise ValueError("PartitionSpec.of_columns() requires at least one column name.")
+        return cls(equal_keys=tuple(normalized))
+
+    @classmethod
+    def from_mapping(cls, mapping: Mapping[str, str]) -> "PartitionSpec":
+        """Return a :class:`PartitionSpec` from a mapping of left-to-right column names."""
+
+        if not isinstance(mapping, Mapping):
+            raise TypeError(
+                "PartitionSpec.from_mapping() expects a mapping of left-to-right column names; "
+                f"received {type(mapping).__name__}."
+            )
+        pairs = [(left, right) for left, right in mapping.items()]
+        if not pairs:
+            raise ValueError("PartitionSpec.from_mapping() requires at least one mapping entry.")
+        return cls(equal_keys=tuple(pairs))
+
+
 class AsofSpec(JoinSpec):
     """Structured ASOF join specification."""
 
@@ -505,6 +545,139 @@ class DuckRel:
             AsofSpec(equal_keys=base.pairs, predicates=(), order=order, direction=direction, tolerance=tolerance),
         )
         return self._execute_asof_join(other, resolved=resolved, projection=projection)
+
+    def inspect_partitions(
+        self,
+        other: DuckRel,
+        partition: PartitionSpec | Mapping[str, str] | Sequence[tuple[str, str]],
+    ) -> DuckRel:
+        """Return per-partition row counts for *self* and *other*."""
+
+        partition_spec = self._normalize_partition_spec(partition)
+        resolved = self._resolve_join_spec(other, partition_spec)
+        if not resolved.pairs:
+            raise ValueError(
+                "Partition inspection requires at least one shared or aliased column; "
+                f"partition spec={partition_spec.equal_keys!r}."
+            )
+
+        left_keys = [left for left, _ in resolved.pairs]
+
+        left_key_exprs = [_quote_identifier(column) for column in left_keys]
+        left_group_clause = ", ".join(left_key_exprs)
+        left_projection = ", ".join([*left_key_exprs, "COUNT(*) AS left_count"])
+        left_counts_relation = self._relation.set_alias("l").query(
+            "l", f"SELECT {left_projection} FROM l GROUP BY {left_group_clause}"
+        )
+        left_counts = type(self)(left_counts_relation)
+
+        right_select_parts: list[str] = []
+        right_group_parts: list[str] = []
+        for left_column, right_column in resolved.pairs:
+            expression = _quote_identifier(right_column)
+            right_group_parts.append(expression)
+            right_select_parts.append(f"{expression} AS {_quote_identifier(left_column)}")
+        right_projection = ", ".join([*right_select_parts, "COUNT(*) AS right_count"])
+        right_group_clause = ", ".join(right_group_parts)
+        right_counts_relation = other._relation.set_alias("r").query(
+            "r", f"SELECT {right_projection} FROM r GROUP BY {right_group_clause}"
+        )
+        right_counts = type(self)(right_counts_relation)
+
+        key_union_relation = left_counts.project_columns(*left_keys)._relation.union(
+            right_counts.project_columns(*left_keys)._relation
+        ).distinct()
+        keys = type(self)(key_union_relation)
+
+        summary = keys.natural_left(left_counts, allow_collisions=True)
+        summary = summary.natural_left(right_counts, allow_collisions=True)
+
+        def _coalesce(column: str) -> str:
+            identifier = _quote_identifier(column)
+            return f"COALESCE({identifier}, 0)"
+
+        left_expr = _coalesce("left_count")
+        right_expr = _coalesce("right_count")
+
+        projections: dict[str, str] = {key: _quote_identifier(key) for key in left_keys}
+        projections["left_count"] = left_expr
+        projections["right_count"] = right_expr
+        projections["pair_count"] = f"({left_expr}) * ({right_expr})"
+        projections["shared_partition"] = (
+            f"CASE WHEN ({left_expr}) > 0 AND ({right_expr}) > 0 THEN TRUE ELSE FALSE END"
+        )
+
+        return summary.project(projections)
+
+    def partitioned_join(
+        self,
+        other: DuckRel,
+        partition: PartitionSpec | Mapping[str, str] | Sequence[tuple[str, str]],
+        spec: JoinSpec,
+        /,
+        *,
+        how: Literal["inner", "left", "right", "outer"],
+        project: JoinProjection | None = None,
+    ) -> DuckRel:
+        """Join *other* using *spec* while constraining matches to partition columns."""
+
+        partition_spec = self._normalize_partition_spec(partition)
+        partition_resolved = self._resolve_join_spec(other, partition_spec)
+        join_resolved = self._resolve_join_spec(other, spec)
+        combined = self._combine_partition_and_join(partition_resolved, join_resolved)
+        return self._execute_join(other, how=how, resolved=combined, projection=project)
+
+    def partitioned_inner(
+        self,
+        other: DuckRel,
+        partition: PartitionSpec | Mapping[str, str] | Sequence[tuple[str, str]],
+        spec: JoinSpec,
+        /,
+        *,
+        project: JoinProjection | None = None,
+    ) -> DuckRel:
+        """Perform an inner join constrained by *partition* columns."""
+
+        return self.partitioned_join(other, partition, spec, how="inner", project=project)
+
+    def partitioned_left(
+        self,
+        other: DuckRel,
+        partition: PartitionSpec | Mapping[str, str] | Sequence[tuple[str, str]],
+        spec: JoinSpec,
+        /,
+        *,
+        project: JoinProjection | None = None,
+    ) -> DuckRel:
+        """Perform a left outer join constrained by *partition* columns."""
+
+        return self.partitioned_join(other, partition, spec, how="left", project=project)
+
+    def partitioned_right(
+        self,
+        other: DuckRel,
+        partition: PartitionSpec | Mapping[str, str] | Sequence[tuple[str, str]],
+        spec: JoinSpec,
+        /,
+        *,
+        project: JoinProjection | None = None,
+    ) -> DuckRel:
+        """Perform a right outer join constrained by *partition* columns."""
+
+        return self.partitioned_join(other, partition, spec, how="right", project=project)
+
+    def partitioned_full(
+        self,
+        other: DuckRel,
+        partition: PartitionSpec | Mapping[str, str] | Sequence[tuple[str, str]],
+        spec: JoinSpec,
+        /,
+        *,
+        project: JoinProjection | None = None,
+    ) -> DuckRel:
+        """Perform a full outer join constrained by *partition* columns."""
+
+        return self.partitioned_join(other, partition, spec, how="outer", project=project)
 
     def left_inner(
         self,
@@ -887,6 +1060,90 @@ class DuckRel:
         left_keys = frozenset(name.casefold() for name, _ in pairs)
         right_keys = frozenset(name.casefold() for _, name in pairs)
         return _ResolvedJoinSpec(pairs=pairs, left_keys=left_keys, right_keys=right_keys, predicates=[])
+
+    def _normalize_partition_spec(
+        self,
+        partition: PartitionSpec | Mapping[str, str] | Sequence[tuple[str, str]],
+    ) -> PartitionSpec:
+        """Normalize user-provided partition descriptions into a :class:`PartitionSpec`."""
+
+        if isinstance(partition, PartitionSpec):
+            return partition
+        if isinstance(partition, Mapping):
+            return PartitionSpec(equal_keys=tuple((left, right) for left, right in partition.items()))
+        if isinstance(partition, Sequence):
+            pairs: list[tuple[str, str]] = []
+            for entry in partition:
+                if isinstance(entry, Sequence) and not isinstance(entry, (str, bytes)):
+                    pair = tuple(entry)
+                    if len(pair) != 2:
+                        raise ValueError(
+                            "Partition sequences must contain pairs of column names; "
+                            f"received {len(pair)} values in {entry!r}."
+                        )
+                    left, right = pair
+                    if not isinstance(left, str) or not isinstance(right, str):
+                        raise TypeError(
+                            "Partition sequences must contain string column names; "
+                            f"received {left!r} -> {right!r}."
+                        )
+                    pairs.append((left, right))
+                else:
+                    raise TypeError(
+                        "Partition sequences must contain pairs of column names; "
+                        f"received unsupported entry {entry!r}."
+                    )
+            if not pairs:
+                raise ValueError("Partition specification requires at least one column pair.")
+            return PartitionSpec(equal_keys=tuple(pairs))
+        raise TypeError(
+            "Partition specification must be a PartitionSpec, mapping, or sequence of column pairs; "
+            f"received {type(partition).__name__}."
+        )
+
+    def _combine_partition_and_join(
+        self,
+        partition: _ResolvedJoinSpec,
+        join: _ResolvedJoinSpec,
+    ) -> _ResolvedJoinSpec:
+        """Merge partition equality pairs with the main join specification."""
+
+        pairs: list[tuple[str, str]] = list(partition.pairs)
+        left_lookup: dict[str, tuple[str, int]] = {}
+        right_lookup: dict[str, tuple[str, int]] = {}
+        for index, (left, right) in enumerate(pairs):
+            left_lookup[left.casefold()] = (right.casefold(), index)
+            right_lookup[right.casefold()] = (left.casefold(), index)
+
+        for left, right in join.pairs:
+            left_key = left.casefold()
+            right_key = right.casefold()
+            left_entry = left_lookup.get(left_key)
+            if left_entry is not None:
+                existing_right, existing_index = left_entry
+                if existing_right != right_key:
+                    raise ValueError(
+                        "Partition specification conflicts with join specification: "
+                        f"left column {left!r} pairs with both {pairs[existing_index][1]!r} and {right!r}."
+                    )
+                continue
+            right_entry = right_lookup.get(right_key)
+            if right_entry is not None:
+                existing_left, existing_index = right_entry
+                if existing_left != left_key:
+                    raise ValueError(
+                        "Partition specification conflicts with join specification: "
+                        f"right column {right!r} pairs with both {pairs[existing_index][0]!r} and {left!r}."
+                    )
+                continue
+            pairs.append((left, right))
+            index = len(pairs) - 1
+            left_lookup[left_key] = (right_key, index)
+            right_lookup[right_key] = (left_key, index)
+
+        left_keys = frozenset(name.casefold() for name, _ in pairs)
+        right_keys = frozenset(name.casefold() for _, name in pairs)
+        return _ResolvedJoinSpec(pairs=pairs, left_keys=left_keys, right_keys=right_keys, predicates=list(join.predicates))
 
     def _resolve_join_spec(self, other: DuckRel, spec: JoinSpec) -> _ResolvedJoinSpec:
         """Resolve a :class:`JoinSpec` against the current relation metadata."""

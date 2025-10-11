@@ -15,6 +15,7 @@ from duckplus.core import (
     ExpressionPredicate,
     JoinProjection,
     JoinSpec,
+    PartitionSpec,
 )
 from duckplus.materialize import ParquetMaterializeStrategy
 
@@ -166,6 +167,116 @@ def test_natural_join_with_alias(connection: duckdb.DuckDBPyConnection) -> None:
     joined = orders.natural_inner(customers, customer_ref="id")
     assert joined.columns == ["order_id", "customer_ref", "name"]
     assert table_rows(joined.materialize().require_table()) == [(1, 100, "Alice")]
+
+
+def test_inspect_partitions_counts(connection: duckdb.DuckDBPyConnection) -> None:
+    left = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                ('north', 'L1'),
+                ('north', 'L2'),
+                ('south', 'L3')
+            ) AS t(segment, payload)
+            """
+        )
+    )
+    right = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                ('north', 'R1'),
+                ('west', 'R2'),
+                ('west', 'R3')
+            ) AS t(segment, marker)
+            """
+        )
+    )
+
+    inspection = left.inspect_partitions(right, PartitionSpec.of_columns("segment")).order_by(
+        segment="asc"
+    )
+    assert inspection.columns == [
+        "segment",
+        "left_count",
+        "right_count",
+        "pair_count",
+        "shared_partition",
+    ]
+    rows = table_rows(inspection.materialize().require_table())
+    assert rows == [
+        ("north", 2, 1, 2, True),
+        ("south", 1, 0, 0, False),
+        ("west", 0, 2, 0, False),
+    ]
+
+
+def test_partitioned_inner_join_limits_matches(connection: duckdb.DuckDBPyConnection) -> None:
+    left = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                (1, 'A', 'left-a'),
+                (1, 'B', 'left-b')
+            ) AS t(id, segment, payload)
+            """
+        )
+    )
+    right = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                (1, 'A', 'right-a'),
+                (1, 'B', 'right-b')
+            ) AS t(id, segment, marker)
+            """
+        )
+    )
+
+    spec = JoinSpec(equal_keys=[("id", "id")])
+    joined = left.partitioned_inner(right, PartitionSpec.of_columns("segment"), spec).order_by(
+        segment="asc"
+    )
+    rows = table_rows(joined.materialize().require_table())
+    assert rows == [
+        (1, "A", "left-a", "right-a"),
+        (1, "B", "left-b", "right-b"),
+    ]
+
+
+def test_partitioned_join_conflict_raises(connection: duckdb.DuckDBPyConnection) -> None:
+    left = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                (1, 'north'),
+                (2, 'south')
+            ) AS t(id, region)
+            """
+        )
+    )
+    right = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                (1, 'north', 'east'),
+                (2, 'south', 'west')
+            ) AS t(id, partition_region, other_region)
+            """
+        )
+    )
+
+    partition = PartitionSpec.from_mapping({"region": "partition_region"})
+    spec = JoinSpec(equal_keys=[("region", "other_region")])
+
+    with pytest.raises(ValueError):
+        left.partitioned_inner(right, partition, spec)
 
 
 def test_join_missing_shared_keys_raises(connection: duckdb.DuckDBPyConnection) -> None:

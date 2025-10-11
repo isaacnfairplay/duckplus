@@ -81,19 +81,32 @@ specifications. Natural joins can accept keyword aliases when the right-hand
 column differs in name, while explicit joins use `JoinSpec` to describe the
 relationship and optional predicates.
 
+Need to understand how a potential join will behave before wiring it into a
+pipeline? `DuckRel.inspect_partitions()` reports how many rows fall into each
+partition so you can gauge whether a partitioned join will rein in explosive
+combinations.
+
 ```python
+from duckplus import DuckRel
 from duckplus.core import (
     AsofOrder,
     AsofSpec,
     ColumnPredicate,
     JoinProjection,
     JoinSpec,
+    PartitionSpec,
 )
 
 # Natural join on shared columns plus an alias:
 orders_rel = DuckRel(conn.raw.sql("SELECT 1 AS order_id, 100 AS customer_ref"))
 customers_rel = DuckRel(conn.raw.sql("SELECT 100 AS id, 'Alice' AS name"))
 orders_with_customer = orders_rel.natural_inner(customers_rel, customer_ref="id")
+
+# Review partition sizes before adopting a partitioned join.
+partition_review = orders_rel.inspect_partitions(
+    customers_rel, PartitionSpec.from_mapping({"customer_ref": "id"})
+)
+print(partition_review.materialize().require_table().to_pylist())
 
 # Explicit join with a predicate and suffix handling:
 orders_dates = DuckRel(
@@ -128,6 +141,11 @@ nearest = trades_rel.asof_join(
     ),
 )
 ```
+
+Partition-aware joins pair a `PartitionSpec` with the explicit join family so
+you can confine lookups to coarse keys (for example, partitioning by symbol
+before applying a range predicate on timestamps) without exposing the
+fine-grained join identifiers during inspection.
 
 `DuckTable.insert_antijoin` and `DuckTable.insert_by_continuous_id` keep appends idempotent by filtering existing
 rows before inserting.
