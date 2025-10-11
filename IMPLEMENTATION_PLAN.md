@@ -153,3 +153,27 @@ attribute validation, and error handling for invalid limits.
 
 ---
 *Last updated*: Stage 4 completed with CLI and HTML extras implemented and tested.
+
+## Next Actions
+
+With the staged build-out finished, the remaining work shifts to targeted
+enhancements that keep Duck+ aligned with the principles in `AGENTS.md`.
+
+1. **Stabilize the delivered surface**
+   - Continue running the regression suite (`uv run pytest`, `uv run mypy`,
+     `uvx ty`) when making changes to ensure the completed stages remain solid.
+   - Address any bugs or documentation gaps uncovered by adopters before adding
+     new features.
+
+2. **Evaluate future extras**
+   - Revisit the "Design Notes for Future Agent Work" in `AGENTS.md`.
+   - Prioritize scoped follow-ups such as the Join Inspector or deeper CLI/HTML
+     refinements once real-world usage highlights the need.
+
+3. **Plan the next milestone**
+   - If new capabilities are green-lit, start a fresh stage in this document to
+     outline scope, ordering, and testing expectations so subsequent agents have
+     clear guidance.
+
+Document progress here whenever the backlog evolves so the implementation plan
+continues to serve as the single source of truth for upcoming work.
