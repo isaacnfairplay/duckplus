@@ -11,6 +11,9 @@ analytics pipelines that need safety as much as speed.
   table operations such as appends and insert strategies.
 - **Connection management** – `duckplus.connect()` is a context manager that yields a light connection facade and
   loads optional DuckDB extensions (e.g., `secrets`) only when they are available.
+- **Secrets-ready** – `SecretManager` fronts a connection-independent registry and
+  synchronizes entries into DuckDB when the optional `secrets` extension is
+  installed, so pipelines can avoid embedding passwords in code or config files.
 - **Opinionated defaults** – joins project columns explicitly, drop duplicate right-side keys, and error on naming
   collisions unless you explicitly opt into suffixes mirroring DuckDB (`_1`, `_2`).
 - **Case-aware column handling** – columns preserve their original case while still supporting case-insensitive
@@ -135,6 +138,7 @@ rows before inserting.
 src/duckplus/
   __init__.py      # public exports (`connect`, `DuckRel`, `DuckTable`, materialize helpers)
   connect.py       # connection context manager and facade
+  secrets.py       # credential registry with DuckDB sync hooks
   core.py          # `DuckRel` immutable relational wrapper
   materialize.py   # materialization strategies for DuckRel
   table.py         # `DuckTable` mutation helpers
