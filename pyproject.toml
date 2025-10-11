@@ -19,11 +19,15 @@ html = []
 [project.scripts]
 duckplus = "duckplus.cli:main"
 
+[tool.setuptools]
+package-dir = { "" = "src" }
+packages = ["duckplus"]
+
 [tool.setuptools.package-data]
 duckplus = ["py.typed"]
 
 [build-system]
-requires = ["uv>=0.2", "setuptools>=69", "wheel"]
+requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.uv]
