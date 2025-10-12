@@ -624,10 +624,133 @@ def test_explicit_right_join_keeps_unmatched_rows(
     spec = JoinSpec(equal_keys=[("order_ref", "order_ref")])
     joined = left.left_right(right, spec).order_by(right_val="asc")
 
-    assert joined.columns == ["order_ref", "left_val", "right_val"]
+    assert joined.columns == ["order_ref", "left_val", "order_ref_2", "right_val"]
     assert table_rows(joined.materialize().require_table()) == [
-        (1, "left", "match"),
-        (None, None, "orphan"),
+        (1, "left", 1, "match"),
+        (None, None, 2, "orphan"),
+    ]
+
+
+def test_full_join_preserves_right_keys(
+    connection: duckdb.DuckDBPyConnection,
+) -> None:
+    left = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                (1, 'left'),
+                (3, 'only_left')
+            ) AS t(order_ref, left_val)
+            """
+        )
+    )
+    right = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                (1, 'match'),
+                (2, 'orphan')
+            ) AS t(order_ref, right_val)
+            """
+        )
+    )
+
+    spec = JoinSpec(equal_keys=[("order_ref", "order_ref")])
+    joined = left.outer_join(right, spec).order_by(order_ref="asc", order_ref_2="asc")
+
+    assert joined.columns == ["order_ref", "left_val", "order_ref_2", "right_val"]
+    assert table_rows(joined.materialize().require_table()) == [
+        (1, "left", 1, "match"),
+        (3, "only_left", None, None),
+        (None, None, 2, "orphan"),
+    ]
+
+
+def test_right_join_collision_suffix_defaults(
+    connection: duckdb.DuckDBPyConnection,
+) -> None:
+    left = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                (100, 'left_only'),
+                (200, 'matched_left')
+            ) AS t(customer_ref, status)
+            """
+        )
+    )
+    right = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                (200, 'matched_right', 'R-200'),
+                (300, 'right_only', 'R-300')
+            ) AS t(customer_ref, status, shipment_code)
+            """
+        )
+    )
+
+    spec = JoinSpec(equal_keys=[("customer_ref", "customer_ref")])
+    projection = JoinProjection(allow_collisions=True)
+    joined = (
+        left.left_right(right, spec, project=projection)
+        .order_by(customer_ref_2="asc")
+    )
+
+    assert joined.columns == [
+        "customer_ref",
+        "status_1",
+        "customer_ref_2",
+        "status_2",
+        "shipment_code",
+    ]
+    assert table_rows(joined.materialize().require_table()) == [
+        (200, "matched_left", 200, "matched_right", "R-200"),
+        (None, None, 300, "right_only", "R-300"),
+    ]
+
+
+def test_right_join_custom_suffixes_with_join_keys(
+    connection: duckdb.DuckDBPyConnection,
+) -> None:
+    left = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                (200, 'matched_left')
+            ) AS t(customer_ref, status)
+            """
+        )
+    )
+    right = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                (200, 'matched_right', 'R-200')
+            ) AS t(customer_ref, status, shipment_code)
+            """
+        )
+    )
+
+    spec = JoinSpec(equal_keys=[("customer_ref", "customer_ref")])
+    projection = JoinProjection(suffixes=("_left", "_right"))
+    joined = left.left_right(right, spec, project=projection)
+
+    assert joined.columns == [
+        "customer_ref_left",
+        "status_left",
+        "customer_ref_right",
+        "status_right",
+        "shipment_code",
+    ]
+    assert table_rows(joined.materialize().require_table()) == [
+        (200, "matched_left", 200, "matched_right", "R-200"),
     ]
 
 

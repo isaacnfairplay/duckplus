@@ -937,22 +937,38 @@ class DuckRel:
         *,
         resolved: _ResolvedJoinSpec,
         projection: JoinProjection | None,
+        include_right_keys: bool,
     ) -> tuple[list[str], list[str], list[str]]:
         """Compile projection expressions for join outputs."""
 
         config = projection or JoinProjection()
-        collisions = {
-            column.casefold()
-            for column in other._columns
-            if column.casefold() not in resolved.right_keys
-            and column.casefold() in self._lookup
-        }
 
-        if collisions and not (config.allow_collisions or config.suffixes is not None):
+        regular_collisions: set[str] = set()
+        join_key_collisions: set[str] = set()
+        for column in other._columns:
+            key = column.casefold()
+            if key not in self._lookup:
+                continue
+            if key in resolved.right_keys:
+                if include_right_keys:
+                    join_key_collisions.add(key)
+            else:
+                regular_collisions.add(key)
+
+        collisions_for_validation = regular_collisions
+        if collisions_for_validation and not (config.allow_collisions or config.suffixes is not None):
             duplicates = ", ".join(
-                sorted({column for column in other._columns if column.casefold() in collisions})
+                sorted(
+                    {
+                        column
+                        for column in other._columns
+                        if column.casefold() in collisions_for_validation
+                    }
+                )
             )
             raise ValueError(f"Join would produce duplicate columns: {duplicates}")
+
+        collisions = regular_collisions | join_key_collisions
 
         suffix_left = ""
         suffix_right = ""
@@ -965,8 +981,11 @@ class DuckRel:
         seen: set[str] = set()
 
         for column, type_name in zip(self._columns, self._types, strict=True):
+            key = column.casefold()
             output = column
-            if column.casefold() in collisions:
+            if key in regular_collisions:
+                output = f"{column}{suffix_left}"
+            elif key in join_key_collisions and include_right_keys and config.suffixes is not None:
                 output = f"{column}{suffix_left}"
             lower = output.casefold()
             if lower in seen:
@@ -980,10 +999,12 @@ class DuckRel:
             types.append(type_name)
 
         for column, type_name in zip(other._columns, other._types, strict=True):
-            if column.casefold() in resolved.right_keys:
+            key = column.casefold()
+            is_join_key = key in resolved.right_keys
+            if is_join_key and not include_right_keys:
                 continue
             output = column
-            if column.casefold() in collisions:
+            if key in collisions:
                 output = f"{column}{suffix_right}"
             lower = output.casefold()
             if lower in seen:
@@ -1207,7 +1228,10 @@ class DuckRel:
             return type(self)(relation, columns=self._columns, types=self._types)
 
         expressions, columns, types = self._compile_projection(
-            other, resolved=resolved, projection=projection
+            other,
+            resolved=resolved,
+            projection=projection,
+            include_right_keys=how in {"right", "outer"},
         )
         relation = joined.project(", ".join(expressions))
         return type(self)(relation, columns=columns, types=types)
@@ -1288,7 +1312,10 @@ class DuckRel:
         projection: JoinProjection | None,
     ) -> DuckRel:
         expressions, columns, types = self._compile_projection(
-            other, resolved=resolved.join, projection=projection
+            other,
+            resolved=resolved.join,
+            projection=projection,
+            include_right_keys=False,
         )
 
         clauses: list[str] = []
