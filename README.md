@@ -55,7 +55,7 @@ All three steps must succeed for the workflow to pass, matching the local develo
 ## Quickstart
 
 ```python
-from duckplus import DuckRel, DuckTable, connect
+from duckplus import DuckRel, connect
 
 with connect() as conn:
     base = DuckRel(
@@ -89,7 +89,7 @@ with connect() as conn:
 
     # Need to persist results? Promote the relation to a table wrapper and append safely.
     conn.raw.execute("CREATE TABLE scores(id INTEGER, name VARCHAR, score INTEGER)")
-    table_wrapper = DuckTable(conn, "scores")
+    table_wrapper = conn.table("scores")
     table_wrapper.insert_antijoin(top_scores, keys=["id"])
 ```
 
