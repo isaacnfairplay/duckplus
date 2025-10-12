@@ -18,6 +18,19 @@ def test_connect_executes_simple_query() -> None:
     assert result == (42,)
 
 
+def test_connection_table_helper_returns_ducktable() -> None:
+    with duckplus.connect() as conn:
+        conn.raw.execute("CREATE TABLE target(id INTEGER)")
+        table = conn.table("target")
+
+        assert table.name == "target"
+
+        table.append(duckplus.DuckRel(conn.raw.sql("SELECT 1 AS id")))
+        rows = conn.raw.execute("SELECT * FROM target").fetchall()
+
+    assert rows == [(1,)]
+
+
 def test_connect_applies_configuration(monkeypatch) -> None:
     captured_config: dict[str, object] = {}
 

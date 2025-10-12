@@ -13,8 +13,7 @@ from .core import DuckRel
 def _quote_identifier(identifier: str) -> str:
     """Return *identifier* quoted for SQL usage."""
 
-    escaped = identifier.replace('"', '""')
-    return f'"{escaped}"'
+    return util.quote_identifier(identifier)
 
 
 def _normalize_table_reference(name: str) -> str:

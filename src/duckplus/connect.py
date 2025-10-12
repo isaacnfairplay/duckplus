@@ -16,6 +16,7 @@ from .core import DuckRel
 if TYPE_CHECKING:
     from . import io as io_module
     from .odbc import MySQLStrategy, PostgresStrategy
+    from .table import DuckTable
 
 Pathish = str | PathLike[str]
 
@@ -149,6 +150,13 @@ class DuckConnection(AbstractContextManager["DuckConnection"]):
         from . import io as io_module
 
         return io_module.read_json(self, paths, **options)
+
+    def table(self, name: str) -> "DuckTable":
+        """Return a :class:`DuckTable` wrapper for *name* on this connection."""
+
+        from .table import DuckTable
+
+        return DuckTable(self, name)
 
 
 def connect(
