@@ -219,6 +219,12 @@ class DuckRel:
 
         return list(self._types)
 
+    def show(self) -> DuckRel:
+        """Render the relation using DuckDB's pretty printer and return ``self``."""
+
+        self._relation.show()
+        return self
+
     def project_columns(self, *columns: str, missing_ok: bool = False) -> DuckRel:
         """Return a relation containing only the requested *columns*."""
 

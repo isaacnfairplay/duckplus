@@ -61,6 +61,15 @@ def test_column_types_metadata(sample_rel: DuckRel) -> None:
     assert sample_rel.column_types == ["INTEGER", "VARCHAR", "INTEGER"]
 
 
+def test_show_passthrough_returns_relation(sample_rel: DuckRel, capsys: pytest.CaptureFixture[str]) -> None:
+    rel = sample_rel.show()
+
+    captured = capsys.readouterr()
+    assert "Name" in captured.out
+    assert "Alpha" in captured.out
+    assert rel is sample_rel
+
+
 def test_project_columns_case_insensitive(sample_rel: DuckRel) -> None:
     selected = sample_rel.project_columns("name", "ID")
     assert selected.columns == ["Name", "id"]
