@@ -7,6 +7,7 @@ from typing import Any, Literal, NamedTuple
 import duckdb
 
 from . import util
+from .filters import FilterExpression
 from ._core_specs import (
     AsofOrder,
     AsofSpec,
@@ -25,8 +26,7 @@ from .materialize import (
 def _quote_identifier(identifier: str) -> str:
     """Return *identifier* quoted for SQL usage."""
 
-    escaped = identifier.replace('"', '"' * 2)
-    return f'"{escaped}"'
+    return util.quote_identifier(identifier)
 
 
 def _qualify(alias: str, column: str) -> str:
@@ -98,35 +98,6 @@ class _ResolvedAsofSpec(NamedTuple):
     tolerance: str | None
 
 
-def _format_value(value: Any) -> str:
-    """Render *value* as a SQL literal."""
-
-    if value is None:
-        return "NULL"
-    if isinstance(value, bool):
-        return "TRUE" if value else "FALSE"
-    if isinstance(value, (int, float)):
-        return repr(value)
-    if isinstance(value, bytes):
-        return "X'" + value.hex() + "'"
-    if isinstance(value, str):
-        escaped = value.replace("'", "''")
-        return f"'{escaped}'"
-
-    from datetime import date, datetime, time, timedelta
-    from decimal import Decimal
-
-    if isinstance(value, (date, datetime, time)):
-        return f"'{value.isoformat()}'"
-    if isinstance(value, timedelta):
-        total_seconds = value.total_seconds()
-        return repr(total_seconds)
-    if isinstance(value, Decimal):
-        return format(value, "f")
-
-    raise TypeError(f"Unsupported filter parameter type: {type(value)!r}")
-
-
 def _inject_parameters(expression: str, parameters: Sequence[Any]) -> str:
     """Return *expression* with positional ``?`` placeholders replaced."""
 
@@ -149,7 +120,7 @@ def _inject_parameters(expression: str, parameters: Sequence[Any]) -> str:
     result: list[str] = []
     for index, segment in enumerate(parts[:-1]):
         result.append(segment)
-        value = _format_value(parameters[index])
+        value = util.format_sql_literal(parameters[index])
         result.append(value)
     result.append(parts[-1])
     return "".join(result)
@@ -265,27 +236,136 @@ class DuckRel:
         relation = self._relation.project(", ".join(compiled))
         return type(self)(relation, columns=aliases, types=_relation_types(relation))
 
-    @staticmethod
-    def _render_filter_expression(expression: str, args: Sequence[Any]) -> str:
+    def rename_columns(self, **mappings: str) -> DuckRel:
+        """Rename columns using DuckDB's ``RENAME`` star modifier."""
+
+        if not mappings:
+            raise ValueError("rename_columns() requires at least one column mapping.")
+
+        resolved: list[tuple[str, str]] = []
+        seen_sources: set[str] = set()
+        seen_targets: set[str] = set()
+        for new_name, original in mappings.items():
+            if not isinstance(original, str):
+                raise TypeError(
+                    "rename_columns() expects string column names; "
+                    f"received {type(original).__name__} for {new_name!r}."
+                )
+            resolved_name = util.resolve_columns([original], self._columns)[0]
+            source_key = resolved_name.casefold()
+            if source_key in seen_sources:
+                raise ValueError(
+                    "rename_columns() received duplicate source column names; "
+                    f"column {resolved_name!r} mapped multiple times."
+                )
+            seen_sources.add(source_key)
+
+            target_key = new_name.casefold()
+            if target_key in seen_targets:
+                raise ValueError(
+                    "rename_columns() received duplicate target column names; "
+                    f"column {new_name!r} mapped multiple times."
+                )
+            seen_targets.add(target_key)
+
+            resolved.append((resolved_name, new_name))
+
+        return self._apply_star_projection(rename_entries=resolved)
+
+    def transform_columns(self, **expressions: str) -> DuckRel:
+        """Replace columns using DuckDB's ``REPLACE`` star modifier."""
+
+        if not expressions:
+            raise ValueError("transform_columns() requires at least one column expression.")
+
+        resolved: list[tuple[str, str]] = []
+        seen: set[str] = set()
+        for target, expression in expressions.items():
+            if not isinstance(expression, str):
+                raise TypeError(
+                    "transform_columns() expects SQL expressions as strings; "
+                    f"received {type(expression).__name__} for {target!r}."
+                )
+            if not expression.strip():
+                raise ValueError(
+                    "transform_columns() expressions must not be empty; "
+                    f"column {target!r} received an empty expression."
+                )
+
+            resolved_name = util.resolve_columns([target], self._columns)[0]
+            key = resolved_name.casefold()
+            if key in seen:
+                raise ValueError(
+                    "transform_columns() received duplicate column names; "
+                    f"column {resolved_name!r} mapped multiple times."
+                )
+            seen.add(key)
+
+            quoted = _quote_identifier(resolved_name)
+            templated = expression.replace("{column}", quoted).replace("{col}", quoted)
+            resolved.append((resolved_name, templated))
+
+        return self._apply_star_projection(transform_entries=resolved)
+
+    def add_columns(self, **expressions: str) -> DuckRel:
+        """Add computed columns to the relation using ``*`` projection syntax."""
+
+        if not expressions:
+            raise ValueError("add_columns() requires at least one expression mapping.")
+
+        resolved: list[tuple[str, str]] = []
+        seen: set[str] = set()
+        for name, expression in expressions.items():
+            if not isinstance(expression, str):
+                raise TypeError(
+                    "add_columns() expects SQL expressions as strings; "
+                    f"received {type(expression).__name__} for {name!r}."
+                )
+            if not expression.strip():
+                raise ValueError(
+                    "add_columns() expressions must not be empty; "
+                    f"column {name!r} received an empty expression."
+                )
+            key = name.casefold()
+            if key in seen:
+                raise ValueError(
+                    "add_columns() received duplicate column names; "
+                    f"column {name!r} mapped multiple times."
+                )
+            seen.add(key)
+            resolved.append((name, expression))
+
+        return self._apply_star_projection(add_entries=resolved)
+
+    def _render_filter_expression(
+        self, expression: str | FilterExpression, args: Sequence[Any]
+    ) -> str:
         """Return *expression* with *args* coerced and injected."""
+
+        if isinstance(expression, FilterExpression):
+            if args:
+                raise TypeError("FilterExpression does not accept positional parameters.")
+            return expression.render(self._columns)
 
         if not isinstance(expression, str):
             raise TypeError(
-                "Filter expression must be a string; "
+                "Filter expression must be a string or FilterExpression; "
                 f"received {type(expression).__name__}."
             )
 
         parameters = [util.coerce_scalar(arg) for arg in args]
         return _inject_parameters(expression, parameters)
 
-    def filter(self, expression: str, /, *args: Any) -> DuckRel:
+    def filter(self, expression: str | FilterExpression, /, *args: Any) -> DuckRel:
         """Filter the relation using a SQL *expression* with optional parameters."""
 
         rendered = self._render_filter_expression(expression, args)
         relation = self._relation.filter(rendered)
         return type(self)(relation, columns=self._columns, types=self._types)
 
-    def split(self, expression: str, /, *args: Any) -> tuple[DuckRel, DuckRel]:
+    def split(
+        self, expression: str | FilterExpression, /, *args: Any
+    ) -> tuple[DuckRel, DuckRel]:
         """Split the relation into matching and non-matching partitions.
 
         Returns a ``(matching, remainder)`` tuple where the first relation
@@ -775,6 +855,70 @@ class DuckRel:
 
         relation = self._relation.project(", ".join(expressions))
         return type(self)(relation, columns=self._columns, types=updated_types)
+
+    def _apply_star_projection(
+        self,
+        *,
+        rename_entries: Sequence[tuple[str, str]] | None = None,
+        transform_entries: Sequence[tuple[str, str]] | None = None,
+        add_entries: Sequence[tuple[str, str]] | None = None,
+    ) -> DuckRel:
+        rename_entries = list(rename_entries or [])
+        transform_entries = list(transform_entries or [])
+        add_entries = list(add_entries or [])
+
+        if not (rename_entries or transform_entries or add_entries):
+            raise ValueError("Star projection requires at least one modification.")
+
+        final_columns = list(self._columns)
+        for original, new in rename_entries:
+            index = self._lookup[original.casefold()]
+            final_columns[index] = new
+
+        util.ensure_unique_names(final_columns)
+
+        final_aliases = {
+            column.casefold(): final_columns[index]
+            for index, column in enumerate(self._columns)
+        }
+
+        rename_sql: list[str] = []
+        if rename_entries:
+            rename_sql = [
+                f"{_quote_identifier(original)} AS {_quote_identifier(new)}"
+                for original, new in rename_entries
+            ]
+
+        replace_sql: list[str] = []
+        if transform_entries:
+            replace_sql = [
+                f"({expression}) AS {_quote_identifier(final_aliases[original.casefold()])}"
+                for original, expression in transform_entries
+            ]
+
+        seen = {name.casefold() for name in final_columns}
+        add_sql: list[str] = []
+        for name, expression in add_entries:
+            key = name.casefold()
+            if key in seen:
+                raise ValueError(
+                    "add_columns() would create duplicate column name; "
+                    f"column {name!r} already exists."
+                )
+            seen.add(key)
+            add_sql.append(f"({expression}) AS {_quote_identifier(name)}")
+
+        star_parts = ["*"]
+        if rename_sql:
+            star_parts.append(f"RENAME ({', '.join(rename_sql)})")
+        if replace_sql:
+            star_parts.append(f"REPLACE ({', '.join(replace_sql)})")
+        star_expr = " ".join(star_parts)
+
+        projection_parts = [star_expr, *add_sql]
+        projection_sql = ", ".join(part for part in projection_parts if part)
+        relation = self._relation.project(projection_sql)
+        return type(self)(relation)
 
     def _build_projection(
         self,
