@@ -12,10 +12,13 @@ from duckplus.core import (
     AsofSpec,
     ColumnPredicate,
     DuckRel,
+    FilterExpression,
     ExpressionPredicate,
     JoinProjection,
     JoinSpec,
     PartitionSpec,
+    col,
+    equals,
 )
 from duckplus.materialize import ParquetMaterializeStrategy
 
@@ -93,9 +96,104 @@ def test_project_allows_computed_columns(sample_rel: DuckRel) -> None:
     assert table_rows(projected.materialize().require_table())[0] == (1, "ALPHA", 10)
 
 
+def test_rename_columns_uses_star_modifier(sample_rel: DuckRel) -> None:
+    renamed = sample_rel.rename_columns(identifier="id", label="Name")
+
+    assert renamed.columns == ["identifier", "label", "score"]
+    assert table_rows(renamed.materialize().require_table())[0] == (1, "Alpha", 10)
+
+
+def test_transform_columns_with_template(sample_rel: DuckRel) -> None:
+    transformed = sample_rel.transform_columns(score="{col} * 2")
+
+    assert transformed.columns == ["id", "Name", "score"]
+    assert table_rows(transformed.materialize().require_table())[0] == (1, "Alpha", 20)
+
+
+def test_add_columns_appends_new_columns(sample_rel: DuckRel) -> None:
+    extended = sample_rel.add_columns(double_score='"score" * 2')
+
+    assert extended.columns == ["id", "Name", "score", "double_score"]
+    assert table_rows(extended.materialize().require_table())[0] == (1, "Alpha", 10, 20)
+
+
+def test_rename_columns_missing_source(sample_rel: DuckRel) -> None:
+    with pytest.raises(KeyError):
+        sample_rel.rename_columns(label="missing")
+
+
+def test_transform_columns_missing_target(sample_rel: DuckRel) -> None:
+    with pytest.raises(KeyError):
+        sample_rel.transform_columns(missing="{col} * 2")
+
+
+def test_add_columns_rejects_duplicate_name(sample_rel: DuckRel) -> None:
+    with pytest.raises(ValueError):
+        sample_rel.add_columns(Name="1")
+
+
 def test_filter_supports_parameters(sample_rel: DuckRel) -> None:
     filtered = sample_rel.filter('"id" = ? AND "Name" = ?', 2, "Beta")
     assert table_rows(filtered.materialize().require_table()) == [(2, "Beta", 5)]
+
+
+def test_filter_expression_with_column_builder(sample_rel: DuckRel) -> None:
+    condition = col("score") >= 8
+    filtered = sample_rel.filter(condition)
+
+    assert table_rows(filtered.materialize().require_table()) == [
+        (1, "Alpha", 10),
+        (3, "Gamma", 8),
+    ]
+
+
+def test_filter_expression_combination(sample_rel: DuckRel) -> None:
+    condition = (col("id") == 1) | (col("Name") == "Beta")
+    filtered = sample_rel.filter(condition)
+
+    assert table_rows(filtered.materialize().require_table()) == [
+        (1, "Alpha", 10),
+        (2, "Beta", 5),
+    ]
+
+
+def test_filter_expression_column_comparison(connection: duckdb.DuckDBPyConnection) -> None:
+    rel = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES (1, 1), (2, 3)) AS t(left_val, right_val)
+            """
+        )
+    )
+
+    filtered = rel.filter(col("left_val") == col("right_val"))
+    assert table_rows(filtered.materialize().require_table()) == [(1, 1)]
+
+
+def test_filter_expression_keyword_helpers(sample_rel: DuckRel) -> None:
+    condition = equals(id=2, Name="Beta")
+    filtered = sample_rel.filter(condition)
+
+    assert table_rows(filtered.materialize().require_table()) == [(2, "Beta", 5)]
+
+
+def test_filter_expression_missing_column(sample_rel: DuckRel) -> None:
+    with pytest.raises(KeyError):
+        sample_rel.filter(col("missing") == 1)
+
+
+def test_filter_expression_raw(sample_rel: DuckRel) -> None:
+    condition = FilterExpression.raw('"id" > 2')
+    filtered = sample_rel.filter(condition)
+
+    assert table_rows(filtered.materialize().require_table()) == [(3, "Gamma", 8)]
+
+
+def test_filter_expression_rejects_parameters(sample_rel: DuckRel) -> None:
+    condition = col("id") == 1
+    with pytest.raises(TypeError):
+        sample_rel.filter(condition, 1)
 
 
 def test_split_returns_matching_and_remainder(sample_rel: DuckRel) -> None:
@@ -129,6 +227,16 @@ def test_split_treats_nulls_as_non_matching(connection: duckdb.DuckDBPyConnectio
         (2, None),
         (3, -1),
     ]
+
+
+def test_split_accepts_filter_expression(sample_rel: DuckRel) -> None:
+    matches, remainder = sample_rel.split(col("score") > 5)
+
+    assert table_rows(matches.materialize().require_table()) == [
+        (1, "Alpha", 10),
+        (3, "Gamma", 8),
+    ]
+    assert table_rows(remainder.materialize().require_table()) == [(2, "Beta", 5)]
 
 
 @pytest.mark.parametrize(

@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from datetime import date, datetime, time, timedelta
+from decimal import Decimal
 from enum import Enum
 from os import PathLike, fspath
-from typing import Any, Literal, get_args
+from typing import Any, Literal, Sequence, get_args
 
 import re
 
@@ -134,6 +136,56 @@ def coerce_scalar(value: Any) -> Any:
         return value.item()
 
     return value
+
+
+def quote_identifier(identifier: str) -> str:
+    """Return *identifier* quoted for SQL usage."""
+
+    if not isinstance(identifier, str):
+        raise TypeError(
+            "Identifier to quote must be a string; "
+            f"received {type(identifier).__name__}."
+        )
+
+    escaped = identifier.replace('"', '"' * 2)
+    return f'"{escaped}"'
+
+
+def format_sql_literal(value: Any) -> str:
+    """Render *value* as a SQL literal."""
+
+    if value is None:
+        return "NULL"
+    if isinstance(value, bool):
+        return "TRUE" if value else "FALSE"
+    if isinstance(value, (int, float)):
+        return repr(value)
+    if isinstance(value, bytes):
+        return "X'" + value.hex() + "'"
+    if isinstance(value, str):
+        escaped = value.replace("'", "''")
+        return f"'{escaped}'"
+
+    if isinstance(value, (date, datetime, time)):
+        return f"'{value.isoformat()}'"
+    if isinstance(value, timedelta):
+        total_seconds = value.total_seconds()
+        return repr(total_seconds)
+    if isinstance(value, Decimal):
+        return format(value, "f")
+
+    raise TypeError(f"Unsupported filter parameter type: {type(value)!r}")
+
+
+def ensure_unique_names(names: Sequence[str]) -> None:
+    """Ensure *names* contains no duplicates ignoring case."""
+
+    seen: set[str] = set()
+    for name in names:
+        key = name.casefold()
+        if key in seen:
+            raise ValueError(f"Duplicate column name detected: {name!r}")
+        seen.add(key)
 DuckDBType = Literal[
     "BOOLEAN",
     "TINYINT",
