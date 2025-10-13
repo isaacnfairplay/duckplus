@@ -9,6 +9,9 @@ import tomllib
 from .cli import main as cli_main
 from .connect import DuckConnection, attach_nanodbc, connect, query_nanodbc
 from .core import (
+    AggregateArgument,
+    AggregateExpression,
+    AggregateOrder,
     AsofOrder,
     AsofSpec,
     FilterExpression,
@@ -84,6 +87,9 @@ __all__ = [
     "append_csv",
     "append_parquet",
     "append_ndjson",
+    "AggregateArgument",
+    "AggregateExpression",
+    "AggregateOrder",
     "AsofOrder",
     "AsofSpec",
     "FilterExpression",

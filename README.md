@@ -98,6 +98,47 @@ deduped = (
 DuckRel methods always return new relations and validate column names with
 case-aware lookups.
 
+### Aggregate with ``AggregateExpression``
+
+```python
+import duckdb
+from duckplus import AggregateExpression, DuckRel, col
+
+with duckdb.connect() as conn:
+    sales = DuckRel(
+        conn.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                ('north', 50, DATE '2024-01-03'),
+                ('north', 60, DATE '2024-01-02'),
+                ('south', 30, DATE '2024-01-01'),
+                ('east', 20, DATE '2024-01-04'),
+                ('west', 70, DATE '2024-01-05')
+            ) AS t(region, amount, sale_date)
+            """
+        )
+    )
+
+    rollup = (
+        sales.aggregate(
+            "region",
+            total_amount=AggregateExpression.sum("amount"),
+            non_north=AggregateExpression.sum("amount").with_filter(col("region") != "north"),
+            first_sale_amount=(
+                AggregateExpression.function("first", "amount").with_order_by(("sale_date", "asc"))
+            ),
+        )
+        .order_by(region="asc")
+    )
+
+    print(rollup.relation.fetchall())
+```
+
+This produces alphabetized totals, a filtered sum, and the first sale per region
+without hand-writing aggregate SQL. See ``docs/source/aggregate_demos.rst`` for a
+tested, larger set of aggregate examples.
+
 ### Promote to tables with `DuckTable`
 
 ```python
