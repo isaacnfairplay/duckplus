@@ -18,6 +18,36 @@ def test_connect_executes_simple_query() -> None:
     assert result == (42,)
 
 
+def test_connection_from_pandas_roundtrip() -> None:
+    pd = pytest.importorskip("pandas")
+
+    with duckplus.connect() as conn:
+        frame = pd.DataFrame({"id": [1, 2], "name": ["alpha", "beta"]})
+        rel = conn.from_pandas(frame)
+
+        assert rel.columns == ["id", "name"]
+        assert rel.column_types == ["BIGINT", "VARCHAR"]
+        assert rel.materialize().require_table().to_pylist() == [
+            {"id": 1, "name": "alpha"},
+            {"id": 2, "name": "beta"},
+        ]
+
+
+def test_connection_from_polars_roundtrip() -> None:
+    pl = pytest.importorskip("polars")
+
+    with duckplus.connect() as conn:
+        frame = pl.DataFrame({"value": [10, 20]})
+        rel = conn.from_polars(frame)
+
+        assert rel.columns == ["value"]
+        assert rel.column_types == ["BIGINT"]
+        assert rel.materialize().require_table().to_pylist() == [
+            {"value": 10},
+            {"value": 20},
+        ]
+
+
 def test_connection_table_helper_returns_ducktable() -> None:
     with duckplus.connect() as conn:
         conn.raw.execute("CREATE TABLE target(id INTEGER)")

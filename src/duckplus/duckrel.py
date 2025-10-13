@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from typing import Any, Literal, NamedTuple
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple
 
 import duckdb
 
@@ -21,6 +21,15 @@ from .materialize import (
     MaterializeStrategy,
     Materialized,
 )
+
+if TYPE_CHECKING:
+    from pandas import DataFrame as PandasDataFrame
+    from polars import DataFrame as PolarsDataFrame
+
+    from .connect import DuckConnection
+else:  # pragma: no cover - runtime aliases
+    PandasDataFrame = object
+    PolarsDataFrame = object
 
 
 def _quote_identifier(identifier: str) -> str:
@@ -126,6 +135,25 @@ def _inject_parameters(expression: str, parameters: Sequence[Any]) -> str:
     return "".join(result)
 
 
+def _resolve_duckdb_connection(
+    connection: duckdb.DuckDBPyConnection | "DuckConnection" | None,
+) -> duckdb.DuckDBPyConnection | None:
+    """Return a raw DuckDB connection from optional wrappers."""
+
+    if connection is None:
+        return None
+    if isinstance(connection, duckdb.DuckDBPyConnection):
+        return connection
+
+    from .connect import DuckConnection
+
+    if isinstance(connection, DuckConnection):
+        return connection.raw
+    raise TypeError(
+        "connection must be a duckdb.DuckDBPyConnection, DuckConnection, or None",
+    )
+
+
 class DuckRel:
     """Immutable wrapper around :class:`duckdb.DuckDBPyRelation`."""
 
@@ -189,6 +217,26 @@ class DuckRel:
         """Return the DuckDB type name for each projected column."""
 
         return list(self._types)
+
+    def df(self) -> PandasDataFrame:
+        """Return the relation as a pandas DataFrame."""
+
+        util.require_optional_dependency(
+            "pandas",
+            feature="DuckRel.df()",
+            extra="pandas",
+        )
+        return self._relation.df()
+
+    def pl(self) -> PolarsDataFrame:
+        """Return the relation as a Polars DataFrame."""
+
+        util.require_optional_dependency(
+            "polars",
+            feature="DuckRel.pl()",
+            extra="polars",
+        )
+        return self._relation.pl()
 
     def show(self) -> DuckRel:
         """Render the relation using DuckDB's pretty printer and return ``self``."""
@@ -1415,5 +1463,50 @@ ORDER BY __duckplus_row_id
 
         relation = self._relation.query("left_input", query)
         return type(self)(relation, columns=columns, types=types)
+
+    @classmethod
+    def from_pandas(
+        cls,
+        frame: PandasDataFrame,
+        *,
+        connection: duckdb.DuckDBPyConnection | "DuckConnection" | None = None,
+    ) -> DuckRel:
+        """Create a :class:`DuckRel` from a pandas DataFrame."""
+
+        util.require_optional_dependency(
+            "pandas",
+            feature="DuckRel.from_pandas()",
+            extra="pandas",
+        )
+        raw = _resolve_duckdb_connection(connection)
+        relation = (
+            duckdb.from_df(frame)
+            if raw is None
+            else raw.from_df(frame)
+        )
+        return cls(relation)
+
+    @classmethod
+    def from_polars(
+        cls,
+        frame: PolarsDataFrame,
+        *,
+        connection: duckdb.DuckDBPyConnection | "DuckConnection" | None = None,
+    ) -> DuckRel:
+        """Create a :class:`DuckRel` from a Polars DataFrame."""
+
+        util.require_optional_dependency(
+            "polars",
+            feature="DuckRel.from_polars()",
+            extra="polars",
+        )
+        raw = _resolve_duckdb_connection(connection)
+        arrow_table = frame.to_arrow()
+        relation = (
+            duckdb.from_arrow(arrow_table)
+            if raw is None
+            else raw.from_arrow(arrow_table)
+        )
+        return cls(relation)
 
 
