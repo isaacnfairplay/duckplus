@@ -11,7 +11,6 @@ from .connect import DuckConnection, attach_nanodbc, connect, query_nanodbc
 from .core import (
     AsofOrder,
     AsofSpec,
-    ColumnPredicate,
     FilterExpression,
     DuckRel,
     ExpressionPredicate,
@@ -87,7 +86,6 @@ __all__ = [
     "append_ndjson",
     "AsofOrder",
     "AsofSpec",
-    "ColumnPredicate",
     "FilterExpression",
     "CustomODBCStrategy",
     "DuckConnection",

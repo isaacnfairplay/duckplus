@@ -10,12 +10,12 @@ import pytest
 from duckplus import (
     ArrowMaterializeStrategy,
     AsofOrder,
-    ColumnPredicate,
     DuckConnection,
     DuckRel,
     ExpressionPredicate,
     JoinSpec,
     ParquetMaterializeStrategy,
+    column,
     connect,
 )
 
@@ -361,7 +361,7 @@ def test_multi_stage_event_budget_enrichment(connection: DuckConnection) -> None
         segments,
         JoinSpec(
             equal_keys=[("user_id", "user_id")],
-            predicates=[ColumnPredicate("occurred_at", ">=", "segment_start")],
+            predicates=[column("occurred_at") >= column("segment_start")],
         ),
     )
 
