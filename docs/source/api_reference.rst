@@ -85,7 +85,10 @@ Relational transformations (``duckplus.core``)
 ``duckplus.core`` implements immutable relational pipelines that defer execution
 until explicitly materialized. Each helper returns a new :class:`DuckRel`,
 keeping transformations composable and type-aware while mirroring DuckDB's SQL
-semantics.
+semantics. Filter helpers such as :func:`duckplus.core.column` produce
+structured expressions so you can compare two columns (for example,
+``column("order_date") >= column("customer_since")``) without dropping into raw
+SQL.
 
 DataFrame integrations follow DuckDB conventions. Use
 :meth:`duckplus.duckrel.DuckRel.df` and :meth:`duckplus.duckrel.DuckRel.pl` to
@@ -104,6 +107,7 @@ relations while honoring the same optional dependencies.
    AsofSpec
    JoinSpec
    FilterExpression
+   column
    col
 
 .. automodule:: duckplus.core

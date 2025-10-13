@@ -112,12 +112,22 @@ respect column names.
 ### Join with confidence
 
 ```python
-from duckplus import JoinProjection, JoinSpec
+from duckplus import JoinProjection, JoinSpec, column
 
 spec = JoinSpec(equal_keys=[("order_id", "id")])
 
 projection = JoinProjection(allow_collisions=False)
 joined = orders.natural_join(customers, project=projection)
+
+# Add additional join predicates with column comparisons when needed.
+currency_safe = orders.left_outer(
+    customers,
+    JoinSpec(
+        equal_keys=[("order_id", "id")],
+        predicates=[column("order_date") >= column("customer_since")],
+    ),
+    project=projection,
+)
 
 suffixes = JoinProjection(allow_collisions=True)
 safe = orders.left_outer(customers, spec, project=suffixes)
@@ -125,7 +135,8 @@ safe = orders.left_outer(customers, spec, project=suffixes)
 
 Join helpers project columns explicitly, drop duplicate right-side keys, and
 raise when collisions would occur. Opt into suffixes through
-`JoinProjection(allow_collisions=True)` when needed.
+`JoinProjection(allow_collisions=True)` when needed, and use `column()` to
+declare predicates that compare two columns without writing raw SQL.
 
 ---
 

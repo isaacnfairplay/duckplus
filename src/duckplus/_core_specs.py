@@ -6,21 +6,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Literal, cast
 
-
-@dataclass(frozen=True)
-class ColumnPredicate:
-    """Join predicate comparing two columns with an operator."""
-
-    left: str
-    operator: Literal["=", "!=", "<", "<=", ">", ">="]
-    right: str
-
-    def __post_init__(self) -> None:
-        if self.operator not in {"=", "!=", "<", "<=", ">", ">="}:
-            raise ValueError(
-                "Unsupported join predicate operator "
-                f"{self.operator!r}; expected one of '=, !=, <, <=, >, >='."
-            )
+from .filters import FilterExpression
 
 
 @dataclass(frozen=True)
@@ -37,7 +23,7 @@ class ExpressionPredicate:
             )
 
 
-JoinPredicate = ColumnPredicate | ExpressionPredicate
+JoinPredicate = FilterExpression | ExpressionPredicate
 
 
 @dataclass(frozen=True)
@@ -87,7 +73,7 @@ class JoinSpec:
 
         normalized_predicates: list[JoinPredicate] = []
         for predicate_obj in cast(Sequence[object], self.predicates):
-            if not isinstance(predicate_obj, (ColumnPredicate, ExpressionPredicate)):
+            if not isinstance(predicate_obj, (FilterExpression, ExpressionPredicate)):
                 raise TypeError(
                     "JoinSpec.predicates must contain JoinPredicate instances; "
                     f"received {type(predicate_obj).__name__}."
@@ -203,7 +189,6 @@ class JoinProjection:
 __all__ = [
     "AsofOrder",
     "AsofSpec",
-    "ColumnPredicate",
     "ExpressionPredicate",
     "JoinPredicate",
     "JoinProjection",

@@ -101,6 +101,18 @@ class FilterExpression:
         resolver = _ColumnResolver(available_columns, self._node.columns())
         return self._node.render(resolver.lookup)
 
+    def _columns(self) -> tuple[ColumnReference, ...]:
+        """Return the column references used within the expression."""
+
+        return self._node.columns()
+
+    def _render_with_resolver(
+        self, resolver: Callable[[ColumnReference], str]
+    ) -> str:
+        """Render the expression using *resolver* for column lookups."""
+
+        return self._node.render(resolver)
+
     def __and__(self, other: "FilterExpression") -> "FilterExpression":
         if not isinstance(other, FilterExpression):
             raise TypeError("Filters can only be combined with other FilterExpression instances.")
