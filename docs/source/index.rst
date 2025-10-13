@@ -9,7 +9,7 @@ explicit casing, and safe mutation helpers.
    :maxdepth: 2
    :caption: Reference
 
-   api_reference
+   api_reference.rst
 
 Getting started
 ---------------

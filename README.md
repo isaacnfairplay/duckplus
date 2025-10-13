@@ -158,7 +158,7 @@ html = to_html(rel, max_rows=10, null_display="∅", class_="preview")
 
 ## Learn more
 
-- Review the [API reference](docs/source/api_reference.md) for detailed method docs and
+- Review the [API reference](https://<site>/api_reference.html) for detailed method docs and
   typing information.
 - Explore unit tests under `tests/` to see edge cases and best practices.
 

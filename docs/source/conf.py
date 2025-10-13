@@ -57,8 +57,8 @@ napoleon_google_docstring = True
 napoleon_numpy_docstring = False
 
 intersphinx_mapping = {
-    "python": ("https://docs.python.org/3", {}),
-    "duckdb": ("https://duckdb.org/docs", {}),
+    "python": ("https://docs.python.org/3", None),
+    "duckdb": ("https://duckdb.org/docs", None),
 }
 
 templates_path = ["_templates"]
