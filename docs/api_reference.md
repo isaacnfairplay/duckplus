@@ -115,115 +115,71 @@ connections behave consistently across ecosystems.【F:src/duckplus/odbc.py†L1
 
 ## Relational transformations (`duckplus.core`)
 
-### Join and partition helpers
+`duckplus.core` re-exports the immutable relation wrapper and supporting helpers so callers can import everything needed for relational work from a single module while the implementations remain in focused files.【F:src/duckplus/core.py†L5-L47】
 
-- :class:`ColumnPredicate` compares two columns with one of ``= != < <= > >=``
-  and validates the operator.【F:src/duckplus/core.py†L63-L83】
-- :class:`ExpressionPredicate` wraps an arbitrary SQL predicate string and
-  ensures the expression is non-empty.【F:src/duckplus/core.py†L86-L111】
-- :class:`JoinSpec` bundles equality key pairs with optional join predicates.
-  Input sequences are validated for type, arity, and emptiness so callers cannot
-  produce malformed joins.【F:src/duckplus/core.py†L114-L190】
-- :class:`PartitionSpec` restricts to equality-only keys and offers
-  `of_columns()` and `from_mapping()` constructors for symmetric and aliased
-  partitioning definitions.【F:src/duckplus/core.py†L193-L238】
-- :class:`AsofOrder` captures the left/right ordering columns for ASOF joins, and
-  :class:`AsofSpec` extends `JoinSpec` with ordering, direction (backward,
-  forward, nearest), and optional tolerance requirements (``nearest`` mandates a
-  tolerance).【F:src/duckplus/core.py†L201-L237】
-- :class:`JoinProjection` configures how joins handle name collisions. By
-  default Duck+ forbids duplicate output names; enabling collisions optionally
-  applies suffixes (``("_1", "_2")`` by default).【F:src/duckplus/core.py†L240-L270】
+### Join, partition, and ASOF helpers
+
+- :class:`ColumnPredicate` compares two columns with one of ``= != < <= > >=`` and validates the operator choice.【F:src/duckplus/_core_specs.py†L10-L23】
+- :class:`ExpressionPredicate` wraps an arbitrary SQL predicate string and ensures it is provided as non-empty text.【F:src/duckplus/_core_specs.py†L27-L37】
+- :class:`JoinSpec` bundles equality key pairs with optional predicates, normalising inputs and rejecting malformed or empty specifications.【F:src/duckplus/_core_specs.py†L43-L103】
+- :class:`PartitionSpec` restricts join partitions to equality-only keys and offers `of_columns()`/`from_mapping()` constructors for symmetric or aliased definitions.【F:src/duckplus/_core_specs.py†L114-L151】
+- :class:`AsofOrder` captures left/right ordering columns for ASOF joins, and :class:`AsofSpec` extends :class:`JoinSpec` with ordering direction and optional tolerance validation (``nearest`` requires a tolerance).【F:src/duckplus/_core_specs.py†L106-L184】
+- :class:`JoinProjection` configures how joins handle name collisions, defaulting to erroring when duplicates would be produced unless suffixes are supplied.【F:src/duckplus/_core_specs.py†L187-L200】
+
+### Filter expression helpers
+
+- :class:`FilterExpression` renders validated SQL fragments and supports boolean composition, while :func:`FilterExpression.raw` lets callers opt into raw SQL snippets when needed.【F:src/duckplus/filters.py†L90-L136】
+- :func:`column` / :func:`col` create column references that support comparison operators and guarantee identifier validation.【F:src/duckplus/filters.py†L23-L88】
+- :func:`equals`, :func:`not_equals`, :func:`less_than`, :func:`less_than_or_equal`, :func:`greater_than`, and :func:`greater_than_or_equal` build structured comparisons from keyword arguments, combining conditions with ``AND`` automatically.【F:src/duckplus/filters.py†L138-L188】
 
 ### `DuckRel`
 
-`DuckRel` wraps a `duckdb.DuckDBPyRelation` and enforces immutability. Metadata
-about projected columns and types is tracked eagerly so column resolution is
-case-insensitive while preserving original casing. Attempting to reassign
-internal attributes raises, preserving referential transparency.【F:src/duckplus/core.py†L344-L418】
-
-Key capabilities include:
+`DuckRel` wraps a `duckdb.DuckDBPyRelation`, enforcing immutability while eagerly tracking projected columns and types so lookups remain case-insensitive without losing the original casing.【F:src/duckplus/duckrel.py†L129-L198】
 
 #### Column metadata
 
-- `columns`, `columns_lower`, and `columns_lower_set` provide the projected
-  names in their original or lowercased forms, enabling case-insensitive lookups
-  while keeping the canonical casing intact.【F:src/duckplus/core.py†L384-L409】
-- `column_types` mirrors DuckDB's type names for each projected column.【F:src/duckplus/core.py†L411-L415】
+- `columns`, `columns_lower`, and `columns_lower_set` return the projected names in canonical or case-folded form for reliable resolution.【F:src/duckplus/duckrel.py†L170-L185】
+- `column_types` mirrors DuckDB's type names for each projected column.【F:src/duckplus/duckrel.py†L187-L191】
 
-#### Projection and filtering
+#### Projection and column management
 
-- `project_columns(*names, missing_ok=False)` keeps a subset of columns. Missing
-  names raise unless ``missing_ok`` is `True`, in which case unresolved names are
-  ignored and the original relation is returned when nothing resolves.【F:src/duckplus/core.py†L417-L447】
-- `project({alias: expression, ...})` compiles explicit projection expressions
-  and returns a new `DuckRel` with inferred types from the resulting relation.
-  Expressions must be strings to avoid implicit SQL serialization.【F:src/duckplus/core.py†L449-L471】
-- `filter(expression, *parameters)` accepts a SQL predicate with positional ``?``
-  placeholders. Parameters are coerced into SQL literals, and argument counts are
-  validated against the number of placeholders.【F:src/duckplus/core.py†L473-L531】
+- `project_columns(*names, missing_ok=False)` keeps a subset of columns, with strict missing-column errors unless explicitly allowed.【F:src/duckplus/duckrel.py†L200-L217】
+- `drop(*names, missing_ok=False)` removes columns while guarding against dropping the entire projection.【F:src/duckplus/duckrel.py†L219-L244】
+- `project({alias: expression, ...})` compiles explicit projections and infers new types from the resulting relation.【F:src/duckplus/duckrel.py†L246-L264】
+- `rename_columns(**mappings)` applies DuckDB's ``RENAME`` star modifier with duplicate-source/target checks.【F:src/duckplus/duckrel.py†L266-L301】
+- `transform_columns(**expressions)` rewrites existing columns via ``REPLACE`` while templating ``{column}`` / ``{col}`` placeholders with the quoted identifier.【F:src/duckplus/duckrel.py†L302-L335】
+- `add_columns(**expressions)` appends computed columns and rejects duplicate output names.【F:src/duckplus/duckrel.py†L337-L365】
 
-#### Ordering, limits, and casting
+#### Filtering and splitting
 
-- `order_by(column='asc'|'desc', ...)` resolves column names case-insensitively
-  and validates directions before delegating to DuckDB's ordering API.【F:src/duckplus/core.py†L720-L776】
-- `limit(count)` enforces a non-negative integer and forwards to DuckDB's
-  ``LIMIT`` operator.【F:src/duckplus/core.py†L778-L807】
-- `cast_columns()` and `try_cast_columns()` accept mappings of column names to
-  DuckDB type names, applying `CAST` or `TRY_CAST` while validating requested
-  types against Duck+'s supported set.【F:src/duckplus/core.py†L809-L857】
+- `filter(expression, *parameters)` accepts SQL strings with ``?`` placeholders or structured :class:`FilterExpression` instances, coercing parameters and validating counts before delegating to DuckDB.【F:src/duckplus/duckrel.py†L367-L391】
+- `split(expression, *parameters)` returns matching and remainder relations, using the same rendering pipeline and negating the predicate for the remainder side.【F:src/duckplus/duckrel.py†L393-L415】
 
 #### Join families
 
-Duck+ provides both natural joins (matching shared column names) and explicit
-joins via `JoinSpec`.
+Duck+ provides both natural joins (matching shared column names) and explicit joins driven by :class:`JoinSpec`.
 
-- `natural_inner`, `natural_left`, `natural_right`, and `natural_full` join on
-  shared columns, optionally accepting keyword aliases when the right-hand name
-  differs. By default they enforce `strict=True`, raising if neither shared nor
-  aliased columns exist.【F:src/duckplus/core.py†L533-L690】【F:src/duckplus/core.py†L1009-L1057】
-- `semi_join` and `anti_join` reuse the natural join resolution to keep or drop
-  matches from the left relation, preserving explicit projection semantics.【F:src/duckplus/core.py†L698-L742】
-- `left_inner`, `left_outer`, `left_right`, `inner_join`, and `outer_join` accept
-  `JoinSpec` instances to drive explicit equality and predicate joins; the
-  optional `JoinProjection` controls collision handling.【F:src/duckplus/core.py†L640-L717】
-- `asof_join` consumes an `AsofSpec`, while `natural_asof` builds the spec from
-  shared keys plus ordering information. Both validate temporal column types and
-  support backward/forward/nearest semantics with optional tolerances.【F:src/duckplus/core.py†L547-L628】【F:src/duckplus/core.py†L572-L619】
-- Partition-aware joins compose a `PartitionSpec` with a `JoinSpec`. Helpers for
-  each join type (`partitioned_inner`, `partitioned_left`, `partitioned_right`,
-  `partitioned_full`) all delegate through `partitioned_join()` which enforces
-  equality-only partition keys.【F:src/duckplus/core.py†L592-L639】
-- `inspect_partitions()` summarizes per-partition row counts for two relations
-  and flags partitions present in both sides, aiding join planning prior to
-  committing to partitioned execution.【F:src/duckplus/core.py†L619-L688】
+- `natural_inner`, `natural_left`, `natural_right`, and `natural_full` join on shared or aliased columns, defaulting to `strict=True` so missing keys raise descriptive errors.【F:src/duckplus/duckrel.py†L417-L479】
+- `natural_asof` builds an :class:`AsofSpec` from shared keys plus ordering metadata before executing the ASOF join.【F:src/duckplus/duckrel.py†L481-L503】
+- `semi_join` and `anti_join` reuse the natural join resolution to include or exclude matching rows without projecting right-hand columns.【F:src/duckplus/duckrel.py†L715-L739】
+- `left_inner`, `left_outer`, `left_right`, `inner_join`, and `outer_join` accept explicit :class:`JoinSpec` instances, optionally guided by :class:`JoinProjection` to suffix collisions.【F:src/duckplus/duckrel.py†L637-L701】
+- `asof_join` consumes an explicit :class:`AsofSpec`, validating temporal types and tolerance requirements before delegating to DuckDB.【F:src/duckplus/duckrel.py†L702-L714】
+- Partition-aware joins pair a :class:`PartitionSpec` with a :class:`JoinSpec`; helpers (`partitioned_inner`, `partitioned_left`, `partitioned_right`, `partitioned_full`) flow through `partitioned_join()` which enforces equality-only partition keys.【F:src/duckplus/duckrel.py†L567-L635】
+- `inspect_partitions()` summarises per-partition row counts for two relations, marking partitions present on both sides to aid planning.【F:src/duckplus/duckrel.py†L504-L565】
+- Join projections always emit left columns first, append right columns afterwards, and raise deterministic errors if duplicates would surface without opting into suffixes.【F:src/duckplus/duckrel.py†L1005-L1045】
 
-Joins always project left columns first and drop duplicate right-side keys
-unless collision handling is explicitly enabled. Attempts to emit duplicate
-output names raise deterministic errors, mirroring Duck+'s strict defaults for
-column casing and projection.【F:src/duckplus/core.py†L1059-L1097】
+#### Ordering, limits, casting, and materialisation
 
-#### Materialization
-
-`materialize(strategy=None, into=None)` runs the relation through a
-`MaterializeStrategy`. The default `ArrowMaterializeStrategy` returns an in-memory
-Arrow table. Providing ``into`` expects the strategy to yield a new relation on
-that connection; strategies that produce neither a table nor a path raise to
-prevent silent no-ops. The helper wraps the resulting relation back into a
-`DuckRel` so downstream code can continue chaining transformations.【F:src/duckplus/core.py†L844-L904】
+- `order_by(column='asc'|'desc', ...)` resolves column names case-insensitively, validates directions, and forwards to DuckDB's ordering API.【F:src/duckplus/duckrel.py†L741-L764】
+- `limit(count)` enforces a non-negative integer before delegating to DuckDB's ``LIMIT`` operator.【F:src/duckplus/duckrel.py†L766-L777】
+- `cast_columns()` and `try_cast_columns()` validate requested DuckDB types and rewrite the projection with `CAST`/`TRY_CAST` expressions.【F:src/duckplus/duckrel.py†L779-L884】
+- `materialize(strategy=None, into=None)` executes a :class:`~duckplus.materialize.MaterializeStrategy`, wrapping any returned relation in a new `DuckRel` and raising if the strategy yields no artefact.【F:src/duckplus/duckrel.py†L800-L845】
 
 The accompanying strategies live in :mod:`duckplus.materialize`:
 
-- `ArrowMaterializeStrategy(retain_table=True)` converts the relation to an
-  Arrow table and optionally registers it on another connection.【F:src/duckplus/materialize.py†L21-L55】
-- `ParquetMaterializeStrategy(path=None, cleanup=False, suffix='.parquet')`
-  writes to a Parquet file (creating a temporary file when no path is supplied),
-  optionally cleans up temporary artefacts, and can import the file into another
-  connection.【F:src/duckplus/materialize.py†L58-L111】
-- `Materialized` bundles the resulting Arrow table, wrapped relation, and output
-  path, with `require_table()` / `require_relation()` helpers that raise when the
-  requested artefact is unavailable.【F:src/duckplus/materialize.py†L114-L150】
-
+- `ArrowMaterializeStrategy(retain_table=True)` materializes via Arrow tables, optionally retaining the in-memory table when registering on another connection.【F:src/duckplus/materialize.py†L40-L65】
+- `ParquetMaterializeStrategy(path=None, cleanup=False, suffix='.parquet')` writes through Parquet files, managing temporary paths and optional cleanup before reading back into DuckDB when requested.【F:src/duckplus/materialize.py†L67-L115】
+- `Materialized` bundles the resulting Arrow table, wrapped relation, and output path with `require_table()`/`require_relation()` guards.【F:src/duckplus/materialize.py†L118-L145】
 ## Table mutations (`duckplus.table`)
 
 `DuckTable` represents a mutable DuckDB table anchored to a `DuckConnection`.
