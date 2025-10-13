@@ -1,4 +1,4 @@
-"""Filter expression helpers for :class:`DuckRel`."""
+"""Filter expression helpers for :class:`duckplus.DuckRel`."""
 
 from __future__ import annotations
 

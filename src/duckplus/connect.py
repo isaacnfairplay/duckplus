@@ -152,7 +152,7 @@ class DuckConnection(AbstractContextManager["DuckConnection"]):
         return io_module.read_json(self, paths, **options)
 
     def table(self, name: str) -> "DuckTable":
-        """Return a :class:`DuckTable` wrapper for *name* on this connection."""
+        """Return a :class:`duckplus.DuckTable` wrapper for *name* on this connection."""
 
         from .table import DuckTable
 
@@ -165,7 +165,7 @@ def connect(
     read_only: bool = False,
     config: Mapping[str, str] | None = None,
 ) -> DuckConnection:
-    """Create a :class:`DuckConnection`.
+    """Create a :class:`duckplus.DuckConnection`.
 
     Parameters
     ----------
