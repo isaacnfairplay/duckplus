@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Literal, NamedTuple
 import duckdb
 
 from . import util
+from .aggregates import AggregateExpression
 from .filters import FilterExpression
 from ._core_specs import (
     AsofOrder,
@@ -226,7 +227,7 @@ class DuckRel:
     def row_count(self) -> int:
         """Return the total number of rows in the relation as an :class:`int`."""
 
-        result = self._relation.aggregate("count(*)").fetchone()
+        result = self.aggregate(__row_count=AggregateExpression.count()).relation.fetchone()
         return int(result[0]) if result and result[0] is not None else 0
 
     def df(self) -> PandasDataFrame:
@@ -448,6 +449,140 @@ class DuckRel:
         rendered = self._render_filter_expression(expression, args)
         relation = self._relation.filter(rendered)
         return type(self)(relation, columns=self._columns, types=self._types)
+
+    def aggregate(
+        self,
+        *group_columns: str,
+        aggregates: Mapping[str, str | AggregateExpression] | None = None,
+        having_expressions: Sequence[str | FilterExpression] | None = None,
+        **aggregate_columns: str | AggregateExpression,
+    ) -> DuckRel:
+        """Return a grouped aggregate relation.
+
+        Parameters
+        ----------
+        group_columns:
+            Column names used for ``GROUP BY`` processing. Names are resolved in a
+            case-insensitive manner while preserving their stored casing.
+        aggregates, aggregate_columns:
+            Mapping of output column names to aggregate SQL fragments or
+            :class:`AggregateExpression` helpers. Both the ``aggregates`` mapping
+            and keyword arguments contribute to the final projection order.
+        having_expressions:
+            Optional SQL predicates evaluated as ``HAVING`` filters after
+            aggregation. Expressions are combined using ``AND`` semantics.
+        """
+
+        if aggregates is not None and not isinstance(aggregates, Mapping):
+            raise TypeError(
+                "aggregate() expects a mapping for the 'aggregates' argument; "
+                f"received {type(aggregates).__name__}."
+            )
+
+        combined: list[tuple[str, str | AggregateExpression]] = []
+        if aggregates:
+            combined.extend(aggregates.items())
+        if aggregate_columns:
+            combined.extend(aggregate_columns.items())
+
+        if not combined:
+            raise ValueError("aggregate() requires at least one aggregate expression.")
+
+        resolved_groups: list[str] = []
+        if group_columns:
+            resolved_groups = util.resolve_columns(group_columns, self._columns)
+            seen_groups: set[str] = set()
+            deduped: list[str] = []
+            for column in resolved_groups:
+                key = column.casefold()
+                if key in seen_groups:
+                    raise ValueError(
+                        "aggregate() received duplicate group-by column names; "
+                        f"column {column!r} specified multiple times."
+                    )
+                seen_groups.add(key)
+                deduped.append(column)
+            resolved_groups = deduped
+
+        group_expressions = [_quote_identifier(column) for column in resolved_groups]
+
+        final_columns = list(resolved_groups)
+        selection_parts = list(group_expressions)
+        seen_aliases = {name.casefold() for name in resolved_groups}
+
+        for alias, expression in combined:
+            if not isinstance(alias, str):
+                raise TypeError(
+                    "aggregate() alias names must be strings; "
+                    f"received {type(alias).__name__}."
+                )
+            if not alias:
+                raise ValueError("aggregate() alias names must not be empty.")
+
+            key = alias.casefold()
+            if key in seen_aliases:
+                raise ValueError(
+                    "aggregate() would produce duplicate column names; "
+                    f"alias {alias!r} collides with another column."
+                )
+
+            if isinstance(expression, AggregateExpression):
+                rendered = expression.render(self._columns)
+            else:
+                if not isinstance(expression, str):
+                    raise TypeError(
+                        "aggregate() expressions must be strings or AggregateExpression; "
+                        f"alias {alias!r} mapped to {type(expression).__name__}."
+                    )
+                if not expression.strip():
+                    raise ValueError(
+                        "aggregate() expressions must not be empty; "
+                        f"alias {alias!r} received an empty expression."
+                    )
+                rendered = expression
+
+            selection_parts.append(_alias(rendered, alias))
+            final_columns.append(alias)
+            seen_aliases.add(key)
+
+        util.ensure_unique_names(final_columns)
+
+        having_clauses: list[str] = []
+        if having_expressions is not None:
+            if not isinstance(having_expressions, Sequence):
+                raise TypeError(
+                    "having_expressions must be a sequence of strings or FilterExpression instances; "
+                    f"received {type(having_expressions).__name__}."
+                )
+            for clause in having_expressions:
+                if isinstance(clause, FilterExpression):
+                    rendered_clause = clause.render(self._columns)
+                elif isinstance(clause, str):
+                    if not clause.strip():
+                        raise ValueError("having_expressions entries must not be empty.")
+                    rendered_clause = clause
+                else:
+                    raise TypeError(
+                        "having_expressions must contain strings or FilterExpression instances; "
+                        f"received {type(clause).__name__}."
+                    )
+                having_clauses.append(rendered_clause)
+
+        select_sql = ", ".join(selection_parts)
+        source_alias = "__this__"
+        query_sql = f"SELECT {select_sql} FROM {source_alias}"
+
+        if group_expressions:
+            group_clause = ", ".join(group_expressions)
+            query_sql = f"{query_sql} GROUP BY {group_clause}"
+
+        if having_clauses:
+            having_sql = " AND ".join(having_clauses)
+            query_sql = f"{query_sql} HAVING {having_sql}"
+
+        relation = self._relation.query(source_alias, query_sql)
+        types = _relation_types(relation)
+        return type(self)(relation, columns=final_columns, types=types)
 
     def split(
         self, expression: str | FilterExpression, /, *args: Any

@@ -11,6 +11,12 @@ explicit casing, and safe mutation helpers.
 
    api_reference.rst
 
+.. toctree::
+   :maxdepth: 1
+   :caption: Guides
+
+   aggregate_demos.rst
+
 Getting started
 ---------------
 

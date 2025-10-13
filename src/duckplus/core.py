@@ -12,6 +12,7 @@ from ._core_specs import (
     JoinSpec,
     PartitionSpec,
 )
+from .aggregates import AggregateArgument, AggregateExpression, AggregateOrder
 from .filters import (
     FilterExpression,
     col,
@@ -29,6 +30,9 @@ __all__ = [
     "AsofOrder",
     "AsofSpec",
     "ColumnPredicate",
+    "AggregateArgument",
+    "AggregateExpression",
+    "AggregateOrder",
     "FilterExpression",
     "DuckRel",
     "ExpressionPredicate",

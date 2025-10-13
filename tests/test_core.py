@@ -8,6 +8,7 @@ from datetime import date, datetime
 from pathlib import Path
 
 from duckplus.core import (
+    AggregateExpression,
     AsofOrder,
     AsofSpec,
     ColumnPredicate,
@@ -53,6 +54,23 @@ def sample_rel(connection: duckdb.DuckDBPyConnection) -> DuckRel:
         """
     )
     return DuckRel(base)
+
+
+@pytest.fixture()
+def sales_rel(connection: duckdb.DuckDBPyConnection) -> DuckRel:
+    relation = connection.sql(
+        """
+        SELECT *
+        FROM (VALUES
+            ('north', 50, DATE '2024-01-03'),
+            ('north', 60, DATE '2024-01-02'),
+            ('south', 30, DATE '2024-01-01'),
+            ('east', 20, DATE '2024-01-04'),
+            ('west', 70, DATE '2024-01-05')
+        ) AS t(region, amount, sale_date)
+        """
+    )
+    return DuckRel(relation)
 
 
 def test_columns_metadata_preserves_case(sample_rel: DuckRel) -> None:
@@ -284,6 +302,177 @@ def test_split_accepts_filter_expression(sample_rel: DuckRel) -> None:
         (3, "Gamma", 8),
     ]
     assert table_rows(remainder.materialize().require_table()) == [(2, "Beta", 5)]
+
+
+def test_aggregate_with_grouping(connection: duckdb.DuckDBPyConnection) -> None:
+    rel = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                ('A', 10),
+                ('A', 15),
+                ('B', 7)
+            ) AS t(category, amount)
+            """
+        )
+    )
+
+    aggregated = rel.aggregate(
+        "category",
+        aggregates={"total_amount": AggregateExpression.sum("amount")},
+        order_count=AggregateExpression.count(),
+    )
+
+    table = aggregated.materialize().require_table()
+    assert table.schema.names == ["category", "total_amount", "order_count"]
+    assert sorted(table_rows(table)) == [
+        ("A", 25, 2),
+        ("B", 7, 1),
+    ]
+
+
+def test_aggregate_having_filter(connection: duckdb.DuckDBPyConnection) -> None:
+    rel = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                ('A', 10),
+                ('A', 15),
+                ('B', 7)
+            ) AS t(category, amount)
+            """
+        )
+    )
+
+    filtered = rel.aggregate(
+        "category",
+        total=AggregateExpression.sum("amount"),
+        having_expressions=['SUM("amount") > 10'],
+    )
+
+    assert table_rows(filtered.materialize().require_table()) == [("A", 25)]
+
+
+def test_aggregate_rejects_alias_collision(connection: duckdb.DuckDBPyConnection) -> None:
+    rel = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                ('A', 10),
+                ('B', 7)
+            ) AS t(category, amount)
+            """
+        )
+    )
+
+    with pytest.raises(ValueError):
+        rel.aggregate("category", category=AggregateExpression.sum("amount"))
+
+
+def test_aggregate_supports_filter_and_order(connection: duckdb.DuckDBPyConnection) -> None:
+    rel = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                ('north', 10),
+                ('south', 15),
+                ('east', 12),
+                ('north', 5)
+            ) AS t(region, amount)
+            """
+        )
+    )
+
+    aggregated = rel.aggregate(
+        total=AggregateExpression.sum("amount", filter=col("region") != "north"),
+        unique_regions=AggregateExpression.count("region", distinct=True),
+        ordered_regions=AggregateExpression.function(
+            "STRING_AGG",
+            AggregateExpression.column("region"),
+            AggregateExpression.literal(", "),
+            order_by=[("amount", "desc")],
+        ),
+    )
+
+    table = aggregated.materialize().require_table()
+    assert table.schema.names == ["total", "unique_regions", "ordered_regions"]
+    assert table_rows(table) == [(27, 3, "south, east, north, north")]
+
+
+def test_aggregate_sum_amount(sales_rel: DuckRel) -> None:
+    aggregated = sales_rel.aggregate(total_amount=AggregateExpression.sum("amount"))
+
+    assert table_rows(aggregated.materialize().require_table()) == [(230,)]
+
+
+def test_aggregate_group_by_region(sales_rel: DuckRel) -> None:
+    grouped = sales_rel.aggregate("region", total_amount=AggregateExpression.sum("amount"))
+
+    assert sorted(table_rows(grouped.materialize().require_table())) == [
+        ("east", 20),
+        ("north", 110),
+        ("south", 30),
+        ("west", 70),
+    ]
+
+
+def test_aggregate_having_sum_greater_than_100(sales_rel: DuckRel) -> None:
+    filtered = sales_rel.aggregate(
+        "region",
+        total_amount=AggregateExpression.sum("amount"),
+        having_expressions=['SUM("amount") > 100'],
+    )
+
+    assert table_rows(filtered.materialize().require_table()) == [("north", 110)]
+
+
+def test_aggregate_distinct_region_count(sales_rel: DuckRel) -> None:
+    result = sales_rel.aggregate(
+        unique_regions=AggregateExpression.count("region", distinct=True)
+    )
+
+    assert table_rows(result.materialize().require_table()) == [(4,)]
+
+
+def test_aggregate_filtered_sum(sales_rel: DuckRel) -> None:
+    aggregates = sales_rel.aggregate(
+        total_amount=AggregateExpression.sum("amount"),
+        non_north_total=AggregateExpression.sum(
+            "amount", filter=col("region") != "north"
+        ),
+    )
+
+    assert table_rows(aggregates.materialize().require_table()) == [(230, 120)]
+
+
+def test_aggregate_list_ordered_regions(sales_rel: DuckRel) -> None:
+    result = sales_rel.aggregate(
+        ordered_regions=AggregateExpression.function(
+            "LIST",
+            AggregateExpression.column("region"),
+            order_by=[("amount", "desc")],
+        )
+    )
+
+    assert table_rows(result.materialize().require_table()) == [
+        (["west", "north", "north", "south", "east"],)
+    ]
+
+
+def test_aggregate_first_amount_ordered_by_date(sales_rel: DuckRel) -> None:
+    result = sales_rel.aggregate(
+        first_sale_amount=AggregateExpression.function(
+            "FIRST",
+            AggregateExpression.column("amount"),
+            order_by=[("sale_date", "asc")],
+        )
+    )
+
+    assert table_rows(result.materialize().require_table()) == [(30,)]
 
 
 @pytest.mark.parametrize(

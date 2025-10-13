@@ -85,7 +85,9 @@ Relational transformations (``duckplus.core``)
 ``duckplus.core`` implements immutable relational pipelines that defer execution
 until explicitly materialized. Each helper returns a new :class:`DuckRel`,
 keeping transformations composable and type-aware while mirroring DuckDB's SQL
-semantics.
+semantics. Aggregations lean on :class:`duckplus.AggregateExpression` and
+:meth:`duckplus.DuckRel.aggregate`; see :doc:`aggregate_demos` for a tour of the
+available patterns.
 
 DataFrame integrations follow DuckDB conventions. Use
 :meth:`duckplus.duckrel.DuckRel.df` and :meth:`duckplus.duckrel.DuckRel.pl` to
