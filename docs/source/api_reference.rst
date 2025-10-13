@@ -15,6 +15,7 @@ autodoc tables to inspect the full callable signatures.
 .. contents:: Quick navigation
    :local:
    :depth: 2
+   :class: this-wall-of-text-is-still-useful-here
 
 .. currentmodule:: duckplus
 
