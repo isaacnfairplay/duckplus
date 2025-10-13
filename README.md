@@ -82,6 +82,12 @@ with connect() as conn:
     table = top_scores.materialize().require_table()
     print(table.to_pylist())
 
+    # Drop columns you no longer need. Missing columns raise by default but can
+    # be ignored with ``missing_ok=True``.
+    anonymized = top_scores.drop("score")
+    print(anonymized.columns)
+    top_scores.drop("missing", missing_ok=True)
+
     # Need both halves of a filter? `split()` partitions rows without mutating `base`.
     passing, failing = base.split('"score" >= ?', 8)
     print(passing.materialize().require_table().to_pylist())
