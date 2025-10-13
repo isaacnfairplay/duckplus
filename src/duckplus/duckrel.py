@@ -216,6 +216,33 @@ class DuckRel:
         types = [self._types[self._lookup[name.casefold()]] for name in resolved]
         return type(self)(relation, columns=resolved, types=types)
 
+    def drop(self, *columns: str, missing_ok: bool = False) -> DuckRel:
+        """Return a relation excluding the specified *columns*."""
+
+        if not columns:
+            raise ValueError("drop() requires at least one column name.")
+
+        resolved = util.resolve_columns(columns, self._columns, missing_ok=missing_ok)
+        if not resolved:
+            if missing_ok:
+                return self
+            requested = ", ".join(repr(column) for column in columns)
+            raise KeyError(
+                "None of the requested columns could be resolved from the relation; "
+                f"requested {requested}."
+            )
+
+        drop_keys = {name.casefold() for name in resolved}
+        remaining = [column for column in self._columns if column.casefold() not in drop_keys]
+
+        if not remaining:
+            raise ValueError("drop() would remove all columns from the relation.")
+
+        projection = _format_projection(remaining)
+        relation = self._relation.project(", ".join(projection))
+        types = [self._types[self._lookup[name.casefold()]] for name in remaining]
+        return type(self)(relation, columns=remaining, types=types)
+
     def project(self, expressions: Mapping[str, str]) -> DuckRel:
         """Project explicit *expressions* keyed by output column name."""
 

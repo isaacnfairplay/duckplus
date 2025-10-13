@@ -89,6 +89,39 @@ def test_project_columns_missing_ok_returns_original(sample_rel: DuckRel) -> Non
     assert rel is sample_rel
 
 
+def test_drop_columns_excludes_requested(sample_rel: DuckRel) -> None:
+    reduced = sample_rel.drop("score")
+
+    assert reduced.columns == ["id", "Name"]
+    assert table_rows(reduced.materialize().require_table()) == [
+        (1, "Alpha"),
+        (2, "Beta"),
+        (3, "Gamma"),
+    ]
+
+
+def test_drop_columns_missing_raises(sample_rel: DuckRel) -> None:
+    with pytest.raises(KeyError):
+        sample_rel.drop("missing")
+
+
+def test_drop_columns_missing_ok(sample_rel: DuckRel) -> None:
+    reduced = sample_rel.drop("id", "missing", missing_ok=True)
+
+    assert reduced.columns == ["Name", "score"]
+    assert table_rows(reduced.materialize().require_table()) == [
+        ("Alpha", 10),
+        ("Beta", 5),
+        ("Gamma", 8),
+    ]
+
+
+def test_drop_columns_missing_ok_returns_original(sample_rel: DuckRel) -> None:
+    rel = sample_rel.drop("missing", missing_ok=True)
+
+    assert rel is sample_rel
+
+
 def test_project_allows_computed_columns(sample_rel: DuckRel) -> None:
     projected = sample_rel.project({"id": '"id"', "label": 'upper("Name")', "score": '"score"'})
     assert projected.columns == ["id", "label", "score"]
