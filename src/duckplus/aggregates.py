@@ -7,7 +7,8 @@ from dataclasses import dataclass
 from typing import Any, Literal, cast
 
 from . import util
-from .filters import ColumnReference, FilterExpression
+from .filters import AnyColumnExpression, ColumnExpression, FilterExpression
+from .ducktypes import BigInt, DuckType, Double, Numeric, Unknown
 
 __all__ = [
     "AggregateArgument",
@@ -19,35 +20,44 @@ __all__ = [
 class AggregateArgument:
     """Represent an argument used within an aggregate function call."""
 
-    __slots__ = ("_kind", "_value")
+    __slots__ = ("_kind", "_value", "_duck_type")
     _kind: Literal["column", "literal", "raw"]
     _value: Any
 
-    def __init__(self, kind: Literal["column", "literal", "raw"], value: Any) -> None:
+    def __init__(
+        self,
+        kind: Literal["column", "literal", "raw"],
+        value: Any,
+        *,
+        duck_type: type[DuckType] | None = None,
+    ) -> None:
         self._kind = kind
         self._value = value
+        self._duck_type: type[DuckType] = duck_type or Unknown
 
     @classmethod
-    def column(cls, reference: str | ColumnReference) -> "AggregateArgument":
+    def column(
+        cls, reference: str | AnyColumnExpression
+    ) -> "AggregateArgument":
         """Return an argument referencing a projected column."""
 
-        if isinstance(reference, ColumnReference):
-            reference = reference.name
+        if isinstance(reference, ColumnExpression):
+            return cls("column", reference, duck_type=reference.duck_type)
         if not isinstance(reference, str):
             raise TypeError(
-                "Aggregate column reference must be provided as a string; "
+                "Aggregate column reference must be provided as a string or ColumnExpression; "
                 f"received {type(reference).__name__}."
             )
         if not reference:
             raise ValueError("Aggregate column reference must not be empty.")
-        return cls("column", reference)
+        return cls("column", reference, duck_type=Unknown)
 
     @classmethod
     def literal(cls, value: Any) -> "AggregateArgument":
         """Return an argument using a SQL literal representation of *value*."""
 
         coerced = util.coerce_scalar(value)
-        return cls("literal", coerced)
+        return cls("literal", coerced, duck_type=Unknown)
 
     @classmethod
     def raw(cls, expression: str) -> "AggregateArgument":
@@ -60,13 +70,22 @@ class AggregateArgument:
             )
         if not expression.strip():
             raise ValueError("Raw aggregate argument must not be empty.")
-        return cls("raw", expression)
+        return cls("raw", expression, duck_type=Unknown)
+
+    @property
+    def duck_type(self) -> type[DuckType]:
+        """Return the declared DuckDB logical type for the argument."""
+
+        return self._duck_type
 
     def render(self, available_columns: Sequence[str]) -> str:
         """Return the SQL fragment for the argument validating column usage."""
 
         if self._kind == "column":
-            resolved = util.resolve_columns([self._value], available_columns)[0]
+            value = self._value
+            if isinstance(value, ColumnExpression):
+                return value.render_for_aggregate(available_columns)
+            resolved = util.resolve_columns([value], available_columns)[0]
             return util.quote_identifier(resolved)
         if self._kind == "literal":
             return util.format_sql_literal(self._value)
@@ -76,7 +95,10 @@ class AggregateArgument:
         """Return column names referenced by the argument."""
 
         if self._kind == "column":
-            return (self._value,)
+            value = self._value
+            if isinstance(value, ColumnExpression):
+                return (value.name,)
+            return (value,)
         return ()
 
 
@@ -99,21 +121,28 @@ class AggregateOrder:
 
     @classmethod
     def by_column(
-        cls, column: str | ColumnReference, direction: Literal["asc", "desc"] = "asc"
+        cls, column: str | AnyColumnExpression, direction: Literal["asc", "desc"] = "asc"
     ) -> "AggregateOrder":
         """Return an order specification referencing a column."""
 
         normalized_direction = _normalize_direction(direction)
-        return cls(AggregateArgument.column(column), normalized_direction)
+        argument = AggregateArgument.column(column)
+        _ensure_category(argument, "comparable", function="ORDER BY")
+        return cls(argument, normalized_direction)
 
     @classmethod
     def by_expression(
-        cls, expression: str | AggregateArgument, direction: Literal["asc", "desc"] = "asc"
+        cls,
+        expression: str | AggregateArgument | AnyColumnExpression,
+        direction: Literal["asc", "desc"] = "asc",
     ) -> "AggregateOrder":
         """Return an order specification using a raw SQL expression."""
 
         if isinstance(expression, AggregateArgument):
             argument = expression
+        elif isinstance(expression, ColumnExpression):
+            argument = AggregateArgument.column(expression)
+            _ensure_category(argument, "comparable", function="ORDER BY")
         else:
             argument = AggregateArgument.raw(expression)
         normalized_direction = _normalize_direction(direction)
@@ -129,7 +158,15 @@ class AggregateOrder:
 class AggregateExpression:
     """Structured aggregate expression referencing relation columns."""
 
-    __slots__ = ("_function", "_arguments", "_distinct", "_filter", "_order_by", "_star")
+    __slots__ = (
+        "_function",
+        "_arguments",
+        "_distinct",
+        "_filter",
+        "_order_by",
+        "_star",
+        "_result_type",
+    )
 
     def __init__(
         self,
@@ -140,6 +177,7 @@ class AggregateExpression:
         filter: str | FilterExpression | None = None,
         order_by: Sequence[AggregateOrder] | None = None,
         _star: bool = False,
+        _result_type: type[DuckType] | None = None,
     ) -> None:
         if not isinstance(function, str) or not function.strip():
             raise ValueError("Aggregate function name must be a non-empty string.")
@@ -201,16 +239,17 @@ class AggregateExpression:
         self._filter = filter
         self._order_by = normalized_orders
         self._star = bool(_star)
+        self._result_type: type[DuckType] = _result_type or Unknown
 
     @classmethod
     def function(
         cls,
         name: str,
-        *arguments: AggregateArgument | str | ColumnReference,
+        *arguments: AggregateArgument | str | AnyColumnExpression,
         distinct: bool = False,
         filter: str | FilterExpression | None = None,
         order_by: Sequence[
-            AggregateOrder | str | ColumnReference | Sequence[object]
+            AggregateOrder | str | AnyColumnExpression | Sequence[object]
         ] | None = None,
     ) -> "AggregateExpression":
         """Return a generic aggregate expression for *name*."""
@@ -228,7 +267,7 @@ class AggregateExpression:
     @classmethod
     def count(
         cls,
-        column: AggregateArgument | str | ColumnReference | None = None,
+        column: AggregateArgument | str | AnyColumnExpression | None = None,
         *,
         distinct: bool = False,
         filter: str | FilterExpression | None = None,
@@ -236,14 +275,27 @@ class AggregateExpression:
         """Return a ``COUNT`` aggregate expression."""
 
         if column is None:
-            return cls("COUNT", (), distinct=distinct, filter=filter, _star=True)
+            return cls(
+                "COUNT",
+                (),
+                distinct=distinct,
+                filter=filter,
+                _star=True,
+                _result_type=_COUNT_RESULT_TYPE,
+            )
         argument = _normalize_argument(column)
-        return cls("COUNT", (argument,), distinct=distinct, filter=filter)
+        return cls(
+            "COUNT",
+            (argument,),
+            distinct=distinct,
+            filter=filter,
+            _result_type=_COUNT_RESULT_TYPE,
+        )
 
     @classmethod
     def sum(
         cls,
-        column: AggregateArgument | str | ColumnReference,
+        column: AggregateArgument | str | AnyColumnExpression,
         *,
         distinct: bool = False,
         filter: str | FilterExpression | None = None,
@@ -251,12 +303,20 @@ class AggregateExpression:
         """Return a ``SUM`` aggregate expression."""
 
         argument = _normalize_argument(column)
-        return cls("SUM", (argument,), distinct=distinct, filter=filter)
+        _ensure_category(argument, "numeric", function="SUM")
+        result_type = _derive_numeric_result(argument)
+        return cls(
+            "SUM",
+            (argument,),
+            distinct=distinct,
+            filter=filter,
+            _result_type=result_type,
+        )
 
     @classmethod
     def avg(
         cls,
-        column: AggregateArgument | str | ColumnReference,
+        column: AggregateArgument | str | AnyColumnExpression,
         *,
         distinct: bool = False,
         filter: str | FilterExpression | None = None,
@@ -264,34 +324,43 @@ class AggregateExpression:
         """Return an ``AVG`` aggregate expression."""
 
         argument = _normalize_argument(column)
-        return cls("AVG", (argument,), distinct=distinct, filter=filter)
+        _ensure_category(argument, "numeric", function="AVG")
+        return cls(
+            "AVG",
+            (argument,),
+            distinct=distinct,
+            filter=filter,
+            _result_type=_AVG_RESULT_TYPE,
+        )
 
     @classmethod
     def min(
         cls,
-        column: AggregateArgument | str | ColumnReference,
+        column: AggregateArgument | str | AnyColumnExpression,
         *,
         filter: str | FilterExpression | None = None,
     ) -> "AggregateExpression":
         """Return a ``MIN`` aggregate expression."""
 
         argument = _normalize_argument(column)
-        return cls("MIN", (argument,), filter=filter)
+        _ensure_category(argument, "comparable", function="MIN")
+        return cls("MIN", (argument,), filter=filter, _result_type=argument.duck_type)
 
     @classmethod
     def max(
         cls,
-        column: AggregateArgument | str | ColumnReference,
+        column: AggregateArgument | str | AnyColumnExpression,
         *,
         filter: str | FilterExpression | None = None,
     ) -> "AggregateExpression":
         """Return a ``MAX`` aggregate expression."""
 
         argument = _normalize_argument(column)
-        return cls("MAX", (argument,), filter=filter)
+        _ensure_category(argument, "comparable", function="MAX")
+        return cls("MAX", (argument,), filter=filter, _result_type=argument.duck_type)
 
     @staticmethod
-    def column(reference: str | ColumnReference) -> AggregateArgument:
+    def column(reference: str | AnyColumnExpression) -> AggregateArgument:
         """Return an :class:`AggregateArgument` referencing *reference*."""
 
         return AggregateArgument.column(reference)
@@ -318,9 +387,12 @@ class AggregateExpression:
             filter=filter,
             order_by=self._order_by,
             _star=self._star,
+            _result_type=self._result_type,
         )
 
-    def with_order_by(self, *orders: AggregateOrder | str | ColumnReference | Sequence[object]) -> "AggregateExpression":
+    def with_order_by(
+        self, *orders: AggregateOrder | str | AnyColumnExpression | Sequence[object]
+    ) -> "AggregateExpression":
         """Return a copy of the aggregate expression with ``ORDER BY`` clauses."""
 
         normalized = _normalize_orders(orders)
@@ -331,6 +403,7 @@ class AggregateExpression:
             filter=self._filter,
             order_by=normalized,
             _star=self._star,
+            _result_type=self._result_type,
         )
 
     def distinct(self) -> "AggregateExpression":
@@ -343,6 +416,7 @@ class AggregateExpression:
             filter=self._filter,
             order_by=self._order_by,
             _star=self._star,
+            _result_type=self._result_type,
         )
 
     def render(self, available_columns: Sequence[str]) -> str:
@@ -374,11 +448,23 @@ class AggregateExpression:
             filter_sql = self._filter
         return f"{invocation} FILTER (WHERE {filter_sql})"
 
+    @property
+    def duck_type(self) -> type[DuckType]:
+        """Return the inferred DuckDB logical type for the aggregate result."""
 
-def _normalize_argument(argument: AggregateArgument | str | ColumnReference) -> AggregateArgument:
+        return self._result_type
+
+    @property
+    def python_annotation(self) -> Any:
+        """Return the Python annotation associated with the aggregate result."""
+
+        return self._result_type.python_annotation
+
+
+def _normalize_argument(argument: AggregateArgument | str | AnyColumnExpression) -> AggregateArgument:
     if isinstance(argument, AggregateArgument):
         return argument
-    if isinstance(argument, ColumnReference):
+    if isinstance(argument, ColumnExpression):
         return AggregateArgument.column(argument)
     if isinstance(argument, str):
         return AggregateArgument.column(argument)
@@ -389,7 +475,7 @@ def _normalize_argument(argument: AggregateArgument | str | ColumnReference) -> 
 
 
 def _normalize_orders(
-    orders: Sequence[AggregateOrder | str | ColumnReference | Sequence[object]] | None,
+    orders: Sequence[AggregateOrder | str | AnyColumnExpression | Sequence[object]] | None,
 ) -> tuple[AggregateOrder, ...]:
     if orders is None:
         return ()
@@ -400,7 +486,7 @@ def _normalize_orders(
             normalized.append(order_obj)
             continue
 
-        if isinstance(order_obj, (str, ColumnReference)):
+        if isinstance(order_obj, (str, ColumnExpression)):
             normalized.append(AggregateOrder.by_column(order_obj))
             continue
 
@@ -420,8 +506,9 @@ def _normalize_orders(
 
             if isinstance(expression_obj, AggregateArgument):
                 argument = expression_obj
-            elif isinstance(expression_obj, ColumnReference):
+            elif isinstance(expression_obj, ColumnExpression):
                 argument = AggregateArgument.column(expression_obj)
+                _ensure_category(argument, "comparable", function="ORDER BY")
             elif isinstance(expression_obj, str):
                 argument = AggregateArgument.column(expression_obj)
             else:
@@ -440,7 +527,7 @@ def _normalize_orders(
             continue
 
         raise TypeError(
-            "ORDER BY entries must be AggregateOrder instances, column names, or tuples; "
+            "ORDER BY entries must be AggregateOrder instances, column names, ColumnExpression instances, or tuples; "
             f"received {type(order_obj).__name__}."
         )
 
@@ -461,3 +548,42 @@ def _normalize_direction(value: str) -> Literal["ASC", "DESC"]:
             f"received {value!r}."
         )
     return cast(Literal["ASC", "DESC"], normalized)
+
+
+_COUNT_RESULT_TYPE: type[DuckType] = BigInt
+_AVG_RESULT_TYPE: type[DuckType] = Double
+
+
+def _argument_label(argument: AggregateArgument) -> str:
+    if argument._kind == "column":
+        value = argument._value
+        if isinstance(value, ColumnExpression):
+            return value.name
+        return str(value)
+    if argument._kind == "literal":
+        return "literal"
+    return "expression"
+
+
+def _ensure_category(
+    argument: AggregateArgument, category: str, *, function: str
+) -> None:
+    duck_type = argument.duck_type
+    if duck_type is Unknown:
+        return
+    if duck_type.supports(category):
+        return
+    label = _argument_label(argument)
+    raise TypeError(
+        f"{function} aggregate requires {category} arguments but {label!r} is typed as "
+        f"{duck_type.describe()}."
+    )
+
+
+def _derive_numeric_result(argument: AggregateArgument) -> type[DuckType]:
+    duck_type = argument.duck_type
+    if duck_type is Unknown:
+        return Numeric
+    if issubclass(duck_type, Numeric):
+        return duck_type
+    return Numeric

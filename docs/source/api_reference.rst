@@ -83,11 +83,27 @@ until explicitly materialized. Each helper returns a new :class:`DuckRel`,
 keeping transformations composable and type-aware while mirroring DuckDB's SQL
 semantics. Aggregations lean on :class:`duckplus.AggregateExpression` and
 :meth:`duckplus.DuckRel.aggregate`; see :doc:`aggregate_demos` for a tour of the
-available patterns.
-semantics. Filter helpers such as :func:`duckplus.core.column` produce
-structured expressions so you can compare two columns (for example,
-``column("order_date") >= column("customer_since")``) without dropping into raw
-SQL.
+available patterns. Column helpers such as :func:`duckplus.core.col` and
+:func:`duckplus.core.column` return :class:`duckplus.ColumnExpression`
+instances, allowing filters, projections, aggregates, and ordering clauses to
+share the same validated column references without hand-written SQL. Provide the
+optional ``duck_type=duckplus.ducktypes.*`` keyword to opt into type-aware
+validation; Duck+ will surface meaningful errors when aggregates or ordering
+operations are incompatible with the declared column types.
+
+Typed expressions also update :attr:`duckplus.duckrel.DuckRel.column_type_markers`
+and :attr:`duckplus.duckrel.DuckRel.column_python_annotations`, which report the
+declared DuckDB logical type and the projected Python annotation for each column.
+Columns start with :class:`duckplus.ducktypes.Unknown` markers and become more
+specific as you annotate projections, casts, transforms, and aggregates. Use the
+metadata to verify pipelines ahead of time or to feed static analyzers with the
+declared types. Once markers are in place, :meth:`duckplus.duckrel.DuckRel.fetch_typed`
+returns Python tuples for *every* projected column, letting static type checkers
+track the shape of query results. The Python hints are derived from the DuckDB
+markers, keeping a single source of truth for both SQL validation and type
+checking. To narrow the output, project first and then call
+:meth:`~duckplus.duckrel.DuckRel.fetch_typed`; untyped columns fall back to
+``Any``.
 
 DataFrame integrations follow DuckDB conventions. Use
 :meth:`duckplus.duckrel.DuckRel.df` and :meth:`duckplus.duckrel.DuckRel.pl` to
@@ -109,6 +125,7 @@ relations while honoring the same optional dependencies.
    JoinProjection
    JoinSpec
    PartitionSpec
+   ColumnExpression
    FilterExpression
    column
    col
@@ -118,6 +135,7 @@ relations while honoring the same optional dependencies.
    less_than_or_equal
    greater_than
    greater_than_or_equal
+   ducktypes
 
 .. automodule:: duckplus.core
    :members:
