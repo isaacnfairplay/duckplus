@@ -5,20 +5,27 @@ immutable relational helpers and explicit mutation primitives. This reference
 summarizes the public API exported from `duckplus.__all__` and explains how the
 pieces fit together.
 
-- Connections live in :mod:`duckplus.connect` and surface context-managed
-  access to a raw `duckdb.DuckDBPyConnection`.
-- Immutable relational work happens through :class:`duckplus.core.DuckRel` and
-  its supporting join specifications.
-- Mutable table helpers sit behind :class:`duckplus.table.DuckTable`.
-- File readers/writers live in :mod:`duckplus.io` and consistently favour
-  :class:`pathlib.Path` objects or other :func:`os.fspath`-compatible inputs.
-- Materialization strategies in :mod:`duckplus.materialize` define how
-  relations spill to Arrow, DuckDB, or disk.
-- :mod:`duckplus.secrets` provides a registry plus a connection-aware manager
-  that mirrors definitions into DuckDB when the optional ``secrets`` extension
-  is present.
-- Presentation extras live in :mod:`duckplus.html` and the CLI entrypoint in
-  :mod:`duckplus.cli`.
+## Quick navigation
+
+- [Connection management](#connection-management-duckplusconnect)
+  - [`DuckConnection`](#duckconnection)
+  - [`connect()`](#connect)
+  - [`load_extensions()`](#load_extensions)
+  - [`attach_nanodbc()`](#attach_nanodbc)
+  - [`query_nanodbc()`](#query_nanodbc)
+- [ODBC strategies](#odbc-strategies-duckplusodbc)
+  - [SQL Server](#sqlserverstrategy)
+  - [PostgreSQL](#postgresstrategy)
+  - [MySQL](#mysqlstrategy)
+  - [IBM i Access](#ibmiaccessstrategy)
+  - [Excel](#excelstrategy)
+  - [Access](#accessstrategy)
+  - [DuckDB DSN](#duckdbdsnstrategy)
+  - [Custom ODBC](#customodbcstrategy)
+- [Relational transformations](#relational-transformations-duckpluscore)
+  - [Join, partition, and ASOF helpers](#join-partition-and-asof-helpers)
+  - [Filter expression helpers](#filter-expression-helpers)
+  - [`DuckRel`](#duckrel)
 
 ## Connection management (`duckplus.connect`)
 
@@ -68,50 +75,84 @@ concert with :class:`duckplus.secrets.SecretManager`. Each strategy produces a
 `SecretDefinition` via :meth:`definition` or persists credentials directly with
 the manager through :meth:`register`. When the secret exists in the registry the
 strategy can reconstruct the full ODBC connection string with
-:meth:`connection_string`, allowing helpers such as
-``attach_nanodbc`` to consume the resolved value. Driver-oriented helpers share
-an internal base that anchors the ``DRIVER`` fragment and key ordering so
-connections behave consistently across ecosystems.【F:src/duckplus/odbc.py†L1-L493】
+:meth:`connection_string`, allowing helpers such as ``attach_nanodbc`` to consume
+the resolved value. Driver-oriented helpers share an internal base that anchors
+the ``DRIVER`` fragment and key ordering so connections behave consistently
+across ecosystems.【F:src/duckplus/odbc.py†L1-L493】
 
-- :class:`SQLServerStrategy(secret_name, version=17|18, encrypt=None,
-  trust_server_certificate=None, options=None)` models the Microsoft SQL Server
-  drivers. It requires ``SERVER``, ``DATABASE``, ``UID``, and ``PWD`` parameters
-  and accepts optional ``PORT``, ``APP``, or ``WSID`` overrides. Version 18
-  defaults ``ENCRYPT`` to ``yes`` and callers can opt into or out of encryption
-  or trusted certificates via the constructor flags.【F:src/duckplus/odbc.py†L281-L319】
-- :class:`PostgresStrategy(secret_name, driver=None, sslmode=None,
-  options=None)` targets the PostgreSQL Unicode drivers with sensible defaults
-  for ``SERVER``, ``DATABASE``, ``UID``, and ``PWD`` secrets. Optional parameters
-  capture ``PORT``, ``SSLMODE``, ``APPLICATIONNAME``, or ``CLIENTENCODING`` while
-  the constructor can fix an ``SSLMODE`` default for consistent security
-  posture.【F:src/duckplus/odbc.py†L322-L347】
-- :class:`MySQLStrategy(secret_name, version='8.0', ansi=False,
-  ssl_mode=None, charset=None, options=None)` composes driver strings for MySQL
-  Unicode or ANSI drivers. It expects ``SERVER``, ``DATABASE``, ``UID``, and
-  ``PWD`` secrets, allows ``PORT`` or bitwise ``OPTION`` flags, and can bake in
-  ``SSLMODE`` or ``CHARSET`` defaults so every connection string stays
-  synchronized.【F:src/duckplus/odbc.py†L350-L383】
-- :class:`IBMiAccessStrategy(secret_name, library_list=None, naming=None,
-  options=None)` targets the IBM i Access driver used with AS/400 systems. It
-  expects ``SYSTEM``, ``UID``, and ``PWD`` secrets while supporting optional
-  catalog controls like ``DATABASE``, ``DBQ``, and ``LIBL``. Convenience
-  arguments populate the library list and naming convention without leaking the
-  values into version control.【F:src/duckplus/odbc.py†L242-L278】
-- :class:`ExcelStrategy(secret_name, read_only=None, options=None)` composes
-  connection strings for the Windows Excel driver. The strategy requires ``DBQ``
-  (the workbook path) and can toggle ``READONLY``, ``HDR``, or ``IMEX`` flags via
-  secrets or constructor options.【F:src/duckplus/odbc.py†L386-L416】
-- :class:`AccessStrategy(secret_name, read_only=None, options=None)` mirrors the
-  Microsoft Access ODBC driver, requiring ``DBQ`` and accepting ``PWD`` or
-  ``READONLY`` overrides for secured databases.【F:src/duckplus/odbc.py†L419-L449】
-- :class:`DuckDBDsnStrategy(secret_name, dsn='DuckDB', options=None)` frontloads
-  the DSN fragment for DuckDB's ODBC driver while letting callers store
-  ``DATABASE`` or ``READONLY`` settings as secrets.【F:src/duckplus/odbc.py†L452-L471】
-- :class:`CustomODBCStrategy(secret_name, driver, required_keys=(),
-  optional_keys=(), default_options=None, options=None)` serves as an escape
-  hatch for drivers not covered by the built-ins, forwarding required and
-  optional key expectations directly to the base implementation while allowing
-  deterministic defaults for additional parameters.【F:src/duckplus/odbc.py†L474-L493】
+<details id="sqlserverstrategy">
+<summary><code>SQLServerStrategy</code> — Microsoft SQL Server drivers</summary>
+
+Models SQL Server ODBC definitions. Requires ``SERVER``, ``DATABASE``, ``UID``,
+and ``PWD`` parameters and optionally accepts ``PORT``, ``APP``, or ``WSID``
+overrides. Version 18 defaults ``ENCRYPT`` to ``yes`` and callers can opt into
+or out of encryption or trusted certificates via constructor flags.【F:src/duckplus/odbc.py†L281-L319】
+
+</details>
+
+<details id="postgresstrategy">
+<summary><code>PostgresStrategy</code> — PostgreSQL Unicode drivers</summary>
+
+Targets PostgreSQL Unicode drivers with sensible defaults for ``SERVER``,
+``DATABASE``, ``UID``, and ``PWD`` secrets. Optional parameters capture
+``PORT``, ``SSLMODE``, ``APPLICATIONNAME``, or ``CLIENTENCODING`` while the
+constructor can fix an ``SSLMODE`` default for consistent security posture.【F:src/duckplus/odbc.py†L322-L347】
+
+</details>
+
+<details id="mysqlstrategy">
+<summary><code>MySQLStrategy</code> — MySQL Unicode or ANSI drivers</summary>
+
+Composes driver strings for MySQL Unicode or ANSI drivers. Expects ``SERVER``,
+``DATABASE``, ``UID``, and ``PWD`` secrets, allows ``PORT`` or bitwise ``OPTION``
+flags, and can bake in ``SSLMODE`` or ``CHARSET`` defaults so every connection
+string stays synchronized.【F:src/duckplus/odbc.py†L350-L383】
+
+</details>
+
+<details id="ibmiaccessstrategy">
+<summary><code>IBMiAccessStrategy</code> — IBM i Access / AS400</summary>
+
+Targets the IBM i Access driver used with AS/400 systems. Expects ``SYSTEM``,
+``UID``, and ``PWD`` secrets while supporting optional catalog controls like
+``DATABASE``, ``DBQ``, and ``LIBL``. Convenience arguments populate the library
+list and naming convention without leaking the values into version control.【F:src/duckplus/odbc.py†L242-L278】
+
+</details>
+
+<details id="excelstrategy">
+<summary><code>ExcelStrategy</code> — Windows Excel driver</summary>
+
+Composes connection strings for the Windows Excel driver. Requires ``DBQ`` (the
+workbook path) and can toggle ``READONLY``, ``HDR``, or ``IMEX`` flags via
+secrets or constructor options.【F:src/duckplus/odbc.py†L386-L416】
+
+</details>
+
+<details id="accessstrategy">
+<summary><code>AccessStrategy</code> — Microsoft Access driver</summary>
+
+Mirrors the Microsoft Access ODBC driver. Requires ``DBQ`` and accepts ``PWD``
+or ``READONLY`` overrides for secured databases.【F:src/duckplus/odbc.py†L419-L449】
+
+</details>
+
+<details id="duckdbdsnstrategy">
+<summary><code>DuckDBDsnStrategy</code> — DuckDB ODBC DSN helper</summary>
+
+Frontloads the DSN fragment for DuckDB's ODBC driver while letting callers store
+``DATABASE`` or ``READONLY`` settings as secrets.【F:src/duckplus/odbc.py†L452-L471】
+
+</details>
+
+<details id="customodbcstrategy">
+<summary><code>CustomODBCStrategy</code> — extend to other drivers</summary>
+
+Serves as an escape hatch for drivers not covered by the built-ins, forwarding
+required and optional key expectations directly to the base implementation while
+allowing deterministic defaults for additional parameters.【F:src/duckplus/odbc.py†L474-L493】
+
+</details>
 
 ## Relational transformations (`duckplus.core`)
 
