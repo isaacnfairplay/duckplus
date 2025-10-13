@@ -743,7 +743,7 @@ def read_parquet(
     /,
     **options: Unpack[ParquetReadOptions],
 ) -> DuckRel:
-    """Read Parquet files into a :class:`DuckRel`.
+    """Read Parquet files into a :class:`duckplus.DuckRel`.
 
     Parameters
     ----------
@@ -752,7 +752,7 @@ def read_parquet(
     paths:
         A :class:`~pathlib.Path`, ``os.DirEntry`` or any ``__fspath__`` value, or a
         non-empty sequence of such paths.
-    **options:
+    ``**options``:
         Keyword arguments forwarded to :meth:`duckdb.DuckDBPyConnection.read_parquet`
         after type validation.
 
@@ -770,9 +770,9 @@ def read_parquet(
         Align schemas by column name when files differ.
     can_have_nan: bool
         Permit ``NaN`` values inside statistics.
-    compression: :class:`Literal`["auto", "none", "uncompressed", "snappy", "gzip", "zstd", "lz4", "brotli"]
+    compression: ``Literal["auto", "none", "uncompressed", "snappy", "gzip", "zstd", "lz4", "brotli"]``
         Override the compression codec DuckDB expects in the source file.
-    parquet_version: :class:`Literal`["PARQUET_1_0", "PARQUET_2_0"]
+    parquet_version: ``Literal["PARQUET_1_0", "PARQUET_2_0"]``
         Force DuckDB to interpret the files as the specified Parquet version.
     debug_use_openssl: bool
         Prefer OpenSSL over the builtin crypto routines.
@@ -810,7 +810,7 @@ def read_csv(
     header: bool = True,
     **options: Unpack[CSVReadOptions],
 ) -> DuckRel:
-    """Read CSV files into a :class:`DuckRel`.
+    """Read CSV files into a :class:`duckplus.DuckRel`.
 
     Parameters
     ----------
@@ -824,7 +824,7 @@ def read_csv(
     header:
         Either ``True``/``False`` to indicate whether the file includes a header
         row or an integer index for the header line.
-    **options:
+    ``**options``:
         Additional keyword arguments validated against DuckDB's CSV reader.
 
     Supported options
@@ -847,7 +847,7 @@ def read_csv(
         Format string for DATE columns.
     timestampformat: str
         Format string for TIMESTAMP columns.
-    decimal_separator: :class:`Literal`[",", "."]
+    decimal_separator: ``Literal[",", "."]``
         Decimal separator when parsing numeric values.
     columns: Mapping[str, :data:`duckplus.util.DuckDBType`]
         Explicit column type mapping.
@@ -873,7 +873,7 @@ def read_csv(
         Override Hive partition column types.
     files_to_sniff: int
         Limit the number of files inspected for schema inference.
-    compression: :class:`Literal`["auto", "none", "gzip", "zstd", "bz2", "lz4", "xz", "snappy"]
+    compression: ``Literal["auto", "none", "gzip", "zstd", "bz2", "lz4", "xz", "snappy"]``
         Compression codec to expect from the source files.
     thousands: str
         Thousands separator for numeric parsing.
@@ -915,7 +915,7 @@ def read_json(
     /,
     **options: Unpack[JSONReadOptions],
 ) -> DuckRel:
-    """Read JSON or NDJSON files into a :class:`DuckRel`.
+    """Read JSON or NDJSON files into a :class:`duckplus.DuckRel`.
 
     Parameters
     ----------
@@ -924,7 +924,7 @@ def read_json(
     paths:
         A :class:`~pathlib.Path`, ``os.DirEntry`` or any ``__fspath__`` value, or a
         non-empty sequence of such paths.
-    **options:
+    ``**options``:
         Keyword arguments forwarded to DuckDB's JSON reader.
 
     Supported options
@@ -935,16 +935,16 @@ def read_json(
         Number of bytes sampled for schema detection.
     maximum_depth: int
         Depth limit for nested objects.
-    records: :class:`Literal`["auto", "array", "records"]
+    records: ``Literal["auto", "array", "records"]``
         Interpret the input as a JSON array, individual records, or let DuckDB
         auto-detect.
-    format: :class:`Literal`["auto", "newline_delimited", "unstructured"]
+    format: ``Literal["auto", "newline_delimited", "unstructured"]``
         Choose between JSON, NDJSON, or unstructured log parsing.
     dateformat: str
         Format string for DATE coercion.
     timestampformat: str
         Format string for TIMESTAMP coercion.
-    compression: :class:`Literal`["auto", "none", "gzip", "zstd", "bz2", "lz4", "xz", "snappy"]
+    compression: ``Literal["auto", "none", "gzip", "zstd", "bz2", "lz4", "xz", "snappy"]``
         Compression codec to expect when reading files.
     maximum_object_size: int
         Upper bound on parsed JSON object size.
@@ -1026,7 +1026,7 @@ def write_parquet(
     compression: ParquetCompression = "zstd",
     **options: Unpack[ParquetWriteOptions],
 ) -> None:
-    """Write a :class:`DuckRel` to a Parquet file.
+    """Write a :class:`duckplus.DuckRel` to a Parquet file.
 
     Parameters
     ----------
@@ -1036,7 +1036,7 @@ def write_parquet(
         Target file location, converted to :class:`~pathlib.Path`.
     compression:
         Compression codec supplied to DuckDB. Defaults to ``"zstd"``.
-    **options:
+    ``**options``:
         Additional DuckDB writer options documented below.
 
     Supported options
@@ -1098,7 +1098,7 @@ def write_csv(
     header: bool = True,
     **options: Unpack[CSVWriteOptions],
 ) -> None:
-    """Write a :class:`DuckRel` to a CSV file.
+    """Write a :class:`duckplus.DuckRel` to a CSV file.
 
     Parameters
     ----------
@@ -1111,7 +1111,7 @@ def write_csv(
     header:
         Whether DuckDB should emit a header row or the zero-based index of the
         header line.
-    **options:
+    ``**options``:
         Additional DuckDB writer options documented below.
 
     Supported options
@@ -1128,9 +1128,9 @@ def write_csv(
         Format string for DATE values.
     timestamp_format: str | None
         Format string for TIMESTAMP values.
-    quoting: :class:`Literal`["all", "minimal", "nonnumeric", "none"]
+    quoting: ``Literal["all", "minimal", "nonnumeric", "none"]``
         Control DuckDB's quoting policy.
-    compression: :class:`Literal`["auto", "none", "gzip", "zstd", "bz2", "lz4", "xz", "snappy"]
+    compression: ``Literal["auto", "none", "gzip", "zstd", "bz2", "lz4", "xz", "snappy"]``
         Compression codec applied to the output file.
     per_thread_output: bool
         Allow DuckDB to emit one file per writer thread.
@@ -1186,7 +1186,7 @@ def append_csv(
         Destination mutable table wrapper.
     path:
         CSV file to read. Accepts the same path types as :func:`read_csv`.
-    encoding, header, **options:
+    ``encoding``, ``header``, ``**options``:
         Forwarded to :func:`read_csv`; see its documentation for the complete
         option reference.
 
@@ -1224,7 +1224,7 @@ def append_parquet(
         Destination mutable table wrapper.
     paths:
         File or directory inputs accepted by :func:`read_parquet`.
-    **options:
+    ``**options``:
         Forwarded to :func:`read_parquet`; see its documentation for supported
         arguments.
 
@@ -1256,7 +1256,7 @@ def append_ndjson(
         Destination mutable table wrapper.
     path:
         NDJSON file to read. Accepts the same path types as :func:`read_json`.
-    **options:
+    ``**options``:
         Forwarded to :func:`read_json`. ``format`` defaults to
         ``"newline_delimited"`` when omitted.
 

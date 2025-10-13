@@ -805,7 +805,7 @@ class DuckRel:
         """Materialize the relation using *strategy* and optional target *into*.
 
         When *into* is provided the materialized data is registered on the
-        supplied connection and wrapped in a new :class:`DuckRel` instance.
+        supplied connection and wrapped in a new :class:`duckplus.DuckRel` instance.
         The default strategy materializes via Arrow tables and retains the
         in-memory table.
         """

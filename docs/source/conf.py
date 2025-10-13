@@ -44,11 +44,12 @@ extensions = [
     "myst_parser",
 ]
 
-autosummary_generate = True
+autosummary_generate = False
 autodoc_default_options = {
     "member-order": "bysource",
     "members": True,
     "undoc-members": False,
+    "special-members": "__call__",
     "show-inheritance": True,
 }
 autodoc_typehints = "description"
@@ -56,10 +57,9 @@ autodoc_typehints = "description"
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
 
-intersphinx_mapping = {
-    "python": ("https://docs.python.org/3", None),
-    "duckdb": ("https://duckdb.org/docs", None),
-}
+suppress_warnings = ["intersphinx"]
+
+intersphinx_mapping: dict[str, tuple[str, str | None]] = {}
 
 templates_path = ["_templates"]
 exclude_patterns: list[str] = ["_build"]

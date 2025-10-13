@@ -134,7 +134,7 @@ class Materialized:
         return self.table
 
     def require_relation(self) -> DuckRel:
-        """Return the materialized :class:`DuckRel` or raise if unavailable."""
+        """Return the materialized :class:`duckplus.DuckRel` or raise if unavailable."""
 
         if self.relation is None:
             raise ValueError(
