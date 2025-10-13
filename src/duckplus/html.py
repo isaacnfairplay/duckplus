@@ -88,8 +88,7 @@ def to_html(
     header_html = f"<thead><tr>{escaped_headers}</tr></thead>"
 
     relation = rel.relation
-    total_count_row = relation.aggregate("COUNT(*)").fetchone()
-    total_count = int(total_count_row[0]) if total_count_row is not None else 0
+    total_count = rel.row_count()
 
     body_rows_html = ""
     if max_rows > 0 and total_count > 0:

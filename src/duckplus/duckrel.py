@@ -155,7 +155,12 @@ def _resolve_duckdb_connection(
 
 
 class DuckRel:
-    """Immutable wrapper around :class:`duckdb.DuckDBPyRelation`."""
+    """Immutable wrapper around :class:`duckdb.DuckDBPyRelation` with typed helpers.
+
+    Besides exposing the underlying relation via :attr:`relation`, DuckRel provides
+    convenience utilities for common metadata queries such as
+    :meth:`row_count` to efficiently compute the number of rows.
+    """
 
     __slots__ = ("_relation", "_columns", "_lookup", "_types")
     _relation: duckdb.DuckDBPyRelation
@@ -217,6 +222,12 @@ class DuckRel:
         """Return the DuckDB type name for each projected column."""
 
         return list(self._types)
+
+    def row_count(self) -> int:
+        """Return the total number of rows in the relation as an :class:`int`."""
+
+        result = self._relation.aggregate("count(*)").fetchone()
+        return int(result[0]) if result and result[0] is not None else 0
 
     def df(self) -> PandasDataFrame:
         """Return the relation as a pandas DataFrame."""
