@@ -86,6 +86,14 @@ until explicitly materialized. Each helper returns a new :class:`DuckRel`,
 keeping transformations composable and type-aware while mirroring DuckDB's SQL
 semantics.
 
+DataFrame integrations follow DuckDB conventions. Use
+:meth:`duckplus.duckrel.DuckRel.df` and :meth:`duckplus.duckrel.DuckRel.pl` to
+materialize relations as pandas or Polars DataFrames once the corresponding
+``duckplus[pandas]`` or ``duckplus[polars]`` extra is installed. The class
+methods :meth:`duckplus.duckrel.DuckRel.from_pandas` and
+:meth:`duckplus.duckrel.DuckRel.from_polars` convert DataFrames back into
+relations while honoring the same optional dependencies.
+
 .. currentmodule:: duckplus.core
 
 .. autosummary::

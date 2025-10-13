@@ -17,6 +17,11 @@ if TYPE_CHECKING:
     from . import io as io_module
     from .odbc import MySQLStrategy, PostgresStrategy
     from .table import DuckTable
+    from pandas import DataFrame as PandasDataFrame
+    from polars import DataFrame as PolarsDataFrame
+else:  # pragma: no cover - runtime aliases
+    PandasDataFrame = object
+    PolarsDataFrame = object
 
 Pathish = str | PathLike[str]
 
@@ -150,6 +155,16 @@ class DuckConnection(AbstractContextManager["DuckConnection"]):
         from . import io as io_module
 
         return io_module.read_json(self, paths, **options)
+
+    def from_pandas(self, frame: PandasDataFrame) -> DuckRel:
+        """Return a relation constructed from a pandas DataFrame."""
+
+        return DuckRel.from_pandas(frame, connection=self)
+
+    def from_polars(self, frame: PolarsDataFrame) -> DuckRel:
+        """Return a relation constructed from a Polars DataFrame."""
+
+        return DuckRel.from_polars(frame, connection=self)
 
     def table(self, name: str) -> "DuckTable":
         """Return a :class:`duckplus.DuckTable` wrapper for *name* on this connection."""

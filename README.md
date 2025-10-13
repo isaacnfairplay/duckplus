@@ -131,6 +131,29 @@ raise when collisions would occur. Opt into suffixes through
 
 ## Extras worth knowing
 
+### DataFrame interop
+
+Install optional extras when you want pandas or Polars integration:
+
+```bash
+uv pip install "duckplus[pandas]"      # pandas DataFrame support
+uv pip install "duckplus[polars]"      # Polars DataFrame support
+```
+
+Once installed, relations expose familiar helpers:
+
+```python
+df = rel.df()            # pandas.DataFrame
+pl_frame = rel.pl()      # polars.DataFrame
+
+from duckplus import DuckRel
+rel_from_df = DuckRel.from_pandas(df)
+rel_from_pl = DuckRel.from_polars(pl_frame)
+```
+
+Attempting to call these helpers without the matching extra raises a clear
+``ModuleNotFoundError`` explaining how to install the dependency.
+
 ### Command line interface
 
 ```bash

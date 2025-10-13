@@ -20,6 +20,7 @@ from duckplus.core import (
     col,
     equals,
 )
+import duckplus.util as util_module
 from duckplus.materialize import ParquetMaterializeStrategy
 
 
@@ -939,3 +940,85 @@ def test_materialize_parquet_strategy(sample_rel: DuckRel, tmp_path: Path) -> No
         assert table_rows(relation.materialize().require_table()) == table_rows(table)
     finally:
         other.close()
+
+
+def test_duckrel_df_requires_optional_dependency(
+    monkeypatch: pytest.MonkeyPatch, sample_rel: DuckRel
+) -> None:
+    original = util_module.import_module
+
+    def fail_import(name: str, package: str | None = None) -> object:
+        if name == "pandas":
+            raise ModuleNotFoundError("No module named 'pandas'")
+        return original(name, package)
+
+    monkeypatch.setattr(util_module, "import_module", fail_import)
+
+    with pytest.raises(ModuleNotFoundError, match=r"duckplus\[pandas\]"):
+        sample_rel.df()
+
+
+def test_duckrel_df_returns_dataframe(sample_rel: DuckRel) -> None:
+    pd = pytest.importorskip("pandas")
+
+    frame = sample_rel.df()
+
+    assert isinstance(frame, pd.DataFrame)
+    assert list(frame.columns) == ["id", "Name", "score"]
+    assert frame.loc[0, "id"] == 1
+
+
+def test_duckrel_pl_requires_optional_dependency(
+    monkeypatch: pytest.MonkeyPatch, sample_rel: DuckRel
+) -> None:
+    original = util_module.import_module
+
+    def fail_import(name: str, package: str | None = None) -> object:
+        if name == "polars":
+            raise ModuleNotFoundError("No module named 'polars'")
+        return original(name, package)
+
+    monkeypatch.setattr(util_module, "import_module", fail_import)
+
+    with pytest.raises(ModuleNotFoundError, match=r"duckplus\[polars\]"):
+        sample_rel.pl()
+
+
+def test_duckrel_pl_returns_dataframe(sample_rel: DuckRel) -> None:
+    pl = pytest.importorskip("polars")
+
+    frame = sample_rel.pl()
+
+    assert isinstance(frame, pl.DataFrame)
+    assert frame.shape == (3, 3)
+    assert frame["id"].to_list() == [1, 2, 3]
+
+
+def test_duckrel_from_pandas_roundtrip(connection: duckdb.DuckDBPyConnection) -> None:
+    pd = pytest.importorskip("pandas")
+
+    frame = pd.DataFrame({"id": [1, 2], "name": ["Alpha", "Beta"]})
+
+    rel = DuckRel.from_pandas(frame, connection=connection)
+
+    assert rel.columns == ["id", "name"]
+    assert rel.column_types == ["BIGINT", "VARCHAR"]
+    assert table_rows(rel.materialize().require_table()) == [
+        (1, "Alpha"),
+        (2, "Beta"),
+    ]
+
+
+def test_duckrel_from_polars_roundtrip() -> None:
+    pl = pytest.importorskip("polars")
+
+    frame = pl.DataFrame({"idx": [10, 11], "value": ["x", "y"]})
+
+    rel = DuckRel.from_polars(frame)
+
+    assert rel.columns == ["idx", "value"]
+    assert rel.column_types == ["BIGINT", "VARCHAR"]
+    assert table_rows(rel.materialize().require_table()) == [
+        (10, "x"),
+        (11, "y"),
+    ]

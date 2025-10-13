@@ -7,12 +7,15 @@ from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from enum import Enum
 from os import PathLike, fspath
-from typing import Any, Literal, Sequence, get_args
+from types import ModuleType
+from typing import Any, Literal, get_args
 
 import re
+from importlib import import_module
 
+_np: ModuleType | None
 try:  # pragma: no cover - optional dependency
-    import numpy as _np  # type: ignore[import-not-found]
+    _np = import_module("numpy")
 except ModuleNotFoundError:  # pragma: no cover - numpy isn't a project dependency
     _np = None
 
@@ -132,8 +135,10 @@ def coerce_scalar(value: Any) -> Any:
     if isinstance(value, PathLike):
         return fspath(value)
 
-    if _np is not None and isinstance(value, _np.generic):
-        return value.item()
+    if _np is not None:
+        numpy_generic = getattr(_np, "generic", None)
+        if numpy_generic is not None and isinstance(value, numpy_generic):
+            return value.item()
 
     return value
 
@@ -186,6 +191,24 @@ def ensure_unique_names(names: Sequence[str]) -> None:
         if key in seen:
             raise ValueError(f"Duplicate column name detected: {name!r}")
         seen.add(key)
+
+
+def require_optional_dependency(
+    package: str,
+    *,
+    feature: str,
+    extra: str,
+) -> None:
+    """Ensure *package* can be imported before using an optional feature."""
+
+    try:
+        import_module(package)
+    except ModuleNotFoundError as exc:  # pragma: no cover - exercised via tests
+        message = (
+            f"{feature} requires the optional dependency '{package}'. "
+            f"Install Duck+ with `pip install \"duckplus[{extra}]\"` and retry."
+        )
+        raise ModuleNotFoundError(message) from exc
 DuckDBType = Literal[
     "BOOLEAN",
     "TINYINT",
