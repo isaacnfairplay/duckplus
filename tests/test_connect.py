@@ -4,11 +4,29 @@ from importlib import import_module
 from typing import Any, Sequence
 
 import duckplus
+import duckplus.io  # noqa: F401  # ensure submodule is available for patching
 import pytest
 
 import duckdb
 
 connect_mod = import_module("duckplus.connect")
+
+
+def test_connection_read_parquet_filters_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    with duckplus.connect() as conn:
+        captured: dict[str, object] = {}
+
+        def fake_read_parquet(connection: duckplus.DuckConnection, paths: object, **kwargs: object) -> duckplus.DuckRel:
+            captured["paths"] = paths
+            captured["kwargs"] = kwargs
+            return duckplus.DuckRel(conn.raw.sql("SELECT 1 AS marker"))
+
+        monkeypatch.setattr(duckplus.io, "read_parquet", fake_read_parquet)
+
+        conn.read_parquet("/tmp/input.parquet", union_by_name=True)
+
+        assert captured["paths"] == "/tmp/input.parquet"
+        assert captured["kwargs"] == {"union_by_name": True}
 
 
 def test_connect_executes_simple_query() -> None:
