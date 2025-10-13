@@ -30,7 +30,8 @@ uv pip install duckplus
 
 For development, clone the repository and run `uv sync` to create the managed
 environment with test and typing dependencies. Build the documentation locally
-with `uv run sphinx-build -b html docs/source docs/_build/html`.
+with `uv run sphinx-build -b html docs/source docs/_build/html`, then open
+`docs/_build/html/index.html` in your browser to preview the site.
 
 ---
 
@@ -156,9 +157,37 @@ html = to_html(rel, max_rows=10, null_display="∅", class_="preview")
 
 ---
 
+## Documentation workflow
+
+The documentation site is published automatically to GitHub Pages by the
+[`Docs`](https://github.com/isaacnfairplay/duck/actions/workflows/docs.yml)
+workflow. Every push to `main` and each pull request runs `uv sync`, builds the
+Sphinx project, and deploys the generated HTML to the `gh-pages` branch. The
+latest deployment is always available at
+[https://isaacnfairplay.github.io/duck/](https://isaacnfairplay.github.io/duck/),
+and workflow summaries include preview links you can share for review.
+
+If a deployment fails:
+
+1. Open the **Actions → Docs** run for the failing commit or pull request.
+2. Review the build logs, especially the `uv run sphinx-build` step for Sphinx
+   warnings promoted to errors.
+3. Re-run the job from the Actions UI after fixing the problem to publish an
+   updated preview.
+
+For a local preview outside CI, run:
+
+```bash
+uv sync
+uv run sphinx-build -b html docs/source docs/_build/html
+python -m webbrowser docs/_build/html/index.html  # optional helper to open the preview
+```
+
+---
+
 ## Learn more
 
-- Review the [API reference](https://<site>/api_reference.html) for detailed method docs and
+- Review the [API reference](https://isaacnfairplay.github.io/duck/api_reference.html) for detailed method docs and
   typing information.
 - Explore unit tests under `tests/` to see edge cases and best practices.
 
