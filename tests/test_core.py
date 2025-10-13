@@ -65,6 +65,19 @@ def test_column_types_metadata(sample_rel: DuckRel) -> None:
     assert sample_rel.column_types == ["INTEGER", "VARCHAR", "INTEGER"]
 
 
+def test_row_count_returns_int(sample_rel: DuckRel) -> None:
+    count = sample_rel.row_count()
+    assert isinstance(count, int)
+    assert count == 3
+
+
+def test_row_count_empty_relation(sample_rel: DuckRel) -> None:
+    empty = sample_rel.filter("1 = 0")
+    count = empty.row_count()
+    assert isinstance(count, int)
+    assert count == 0
+
+
 def test_show_passthrough_returns_relation(sample_rel: DuckRel, capsys: pytest.CaptureFixture[str]) -> None:
     rel = sample_rel.show()
 

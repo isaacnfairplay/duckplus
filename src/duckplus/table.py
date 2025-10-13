@@ -119,13 +119,7 @@ class DuckTable:
         table_rel = DuckRel(self._connection.raw.table(self._name))
         existing = table_rel.project_columns(*resolved_keys)
         filtered = rel.anti_join(existing)
-
-        count_relation = filtered.relation.aggregate("count(*)")
-        result: Optional[Tuple[Any, ...]] = count_relation.fetchone()
-        count = 0
-        if result is not None:
-            first = result[0]
-            count = int(first or 0)
+        count = filtered.row_count()
 
         if count > 0:
             self.append(filtered)
