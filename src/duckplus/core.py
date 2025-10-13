@@ -5,7 +5,6 @@ from __future__ import annotations
 from ._core_specs import (
     AsofOrder,
     AsofSpec,
-    ColumnPredicate,
     ExpressionPredicate,
     JoinPredicate,
     JoinProjection,

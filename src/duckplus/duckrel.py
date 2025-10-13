@@ -8,11 +8,10 @@ import duckdb
 
 from . import util
 from .aggregates import AggregateExpression
-from .filters import FilterExpression
+from .filters import ColumnReference, FilterExpression
 from ._core_specs import (
     AsofOrder,
     AsofSpec,
-    ColumnPredicate,
     JoinProjection,
     JoinSpec,
     PartitionSpec,
@@ -75,6 +74,56 @@ def _format_join_condition(pairs: Sequence[tuple[str, str]], *, left_alias: str,
         f"{_qualify(left_alias, left)} = {_qualify(right_alias, right)}" for left, right in pairs
     ]
     return " AND ".join(comparisons)
+
+
+def _render_join_filter_expression(
+    expression: FilterExpression,
+    *,
+    left_columns: Sequence[str],
+    right_columns: Sequence[str],
+) -> str:
+    """Render *expression* as a join predicate against the provided columns."""
+
+    assignments: dict[int, str] = {}
+    for reference in expression._columns():
+        reference_id = id(reference)
+        if reference_id in assignments:
+            continue
+
+        left_matches = util.resolve_columns([reference.name], left_columns, missing_ok=True)
+        right_matches = util.resolve_columns([reference.name], right_columns, missing_ok=True)
+
+        left_match = left_matches[0] if left_matches else None
+        right_match = right_matches[0] if right_matches else None
+
+        if left_match and right_match:
+            raise ValueError(
+                "Join predicate column {name!r} was found in both relations; "
+                "rename one side or include it in equal_keys to disambiguate."
+                .format(name=reference.name)
+            )
+        if left_match:
+            assignments[reference_id] = _qualify("l", left_match)
+            continue
+        if right_match:
+            assignments[reference_id] = _qualify("r", right_match)
+            continue
+
+        raise KeyError(
+            "Join predicate column {name!r} was not found in either relation.".format(
+                name=reference.name
+            )
+        )
+
+    def resolver(reference: ColumnReference) -> str:
+        qualified = assignments.get(id(reference))
+        if qualified is None:
+            raise KeyError(
+                "Join predicate column {name!r} could not be resolved.".format(name=reference.name)
+            )
+        return qualified
+
+    return expression._render_with_resolver(resolver)
 
 
 _TEMPORAL_PREFIXES = ("TIMESTAMP", "DATE", "TIME")
@@ -1401,11 +1450,13 @@ class DuckRel:
 
         predicates: list[str] = []
         for predicate in spec.predicates:
-            if isinstance(predicate, ColumnPredicate):
-                left_column = util.resolve_columns([predicate.left], self._columns)[0]
-                right_column = util.resolve_columns([predicate.right], other._columns)[0]
+            if isinstance(predicate, FilterExpression):
                 predicates.append(
-                    f"{_qualify('l', left_column)} {predicate.operator} {_qualify('r', right_column)}"
+                    _render_join_filter_expression(
+                        predicate,
+                        left_columns=self._columns,
+                        right_columns=other._columns,
+                    )
                 )
             else:
                 predicates.append(predicate.expression)

@@ -11,7 +11,6 @@ from duckplus.core import (
     AggregateExpression,
     AsofOrder,
     AsofSpec,
-    ColumnPredicate,
     DuckRel,
     FilterExpression,
     ExpressionPredicate,
@@ -19,6 +18,7 @@ from duckplus.core import (
     JoinSpec,
     PartitionSpec,
     col,
+    column,
     equals,
 )
 import duckplus.util as util_module
@@ -743,7 +743,7 @@ def test_explicit_join_with_predicate(connection: duckdb.DuckDBPyConnection) -> 
 
     spec = JoinSpec(
         equal_keys=[("order_id", "customer_id")],
-        predicates=[ColumnPredicate("order_date", ">=", "customer_since")],
+        predicates=[column("order_date") >= column("customer_since")],
     )
     joined = left.left_outer(right, spec, project=JoinProjection(allow_collisions=True))
     assert joined.columns == ["order_id", "order_date", "customer_since", "tier"]
@@ -751,6 +751,68 @@ def test_explicit_join_with_predicate(connection: duckdb.DuckDBPyConnection) -> 
         (1, date(2024, 1, 1), date(2023, 12, 15), "A"),
         (2, date(2024, 2, 1), None, None),
     ]
+
+
+def test_join_predicate_requires_disambiguation(connection: duckdb.DuckDBPyConnection) -> None:
+    left = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                (1, 100, 'A')
+            ) AS t(id, shared, left_label)
+            """
+        )
+    )
+    right = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                (1, 200, 'B')
+            ) AS t(id, shared, right_label)
+            """
+        )
+    )
+
+    spec = JoinSpec(
+        equal_keys=[("id", "id")],
+        predicates=[column("shared") >= column("right_label")],
+    )
+
+    with pytest.raises(ValueError, match="found in both relations"):
+        left.inner_join(right, spec)
+
+
+def test_join_predicate_missing_column(connection: duckdb.DuckDBPyConnection) -> None:
+    left = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                (1, 10)
+            ) AS t(id, left_only)
+            """
+        )
+    )
+    right = DuckRel(
+        connection.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                (1, 20)
+            ) AS t(id, right_only)
+            """
+        )
+    )
+
+    spec = JoinSpec(
+        equal_keys=[("id", "id")],
+        predicates=[column("left_only") >= column("missing")],
+    )
+
+    with pytest.raises(KeyError, match="missing"):
+        left.inner_join(right, spec)
 
 
 def test_explicit_join_with_expression_predicate(

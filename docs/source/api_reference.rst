@@ -88,6 +88,10 @@ keeping transformations composable and type-aware while mirroring DuckDB's SQL
 semantics. Aggregations lean on :class:`duckplus.AggregateExpression` and
 :meth:`duckplus.DuckRel.aggregate`; see :doc:`aggregate_demos` for a tour of the
 available patterns.
+semantics. Filter helpers such as :func:`duckplus.core.column` produce
+structured expressions so you can compare two columns (for example,
+``column("order_date") >= column("customer_since")``) without dropping into raw
+SQL.
 
 DataFrame integrations follow DuckDB conventions. Use
 :meth:`duckplus.duckrel.DuckRel.df` and :meth:`duckplus.duckrel.DuckRel.pl` to
@@ -106,6 +110,7 @@ relations while honoring the same optional dependencies.
    AsofSpec
    JoinSpec
    FilterExpression
+   column
    col
 
 .. automodule:: duckplus.core
