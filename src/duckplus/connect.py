@@ -6,7 +6,7 @@ from collections.abc import Mapping, Sequence
 from contextlib import AbstractContextManager
 from os import PathLike, fspath
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, Literal, Optional, Self, Unpack
+from typing import TYPE_CHECKING, Any, Literal, Optional, Self
 
 import duckdb
 
@@ -103,7 +103,17 @@ class DuckConnection(AbstractContextManager["DuckConnection"]):
         self,
         paths: "io_module.PathsLike",
         /,
-        **options: "Unpack[io_module.ParquetReadOptions]",
+        *,
+        binary_as_string: bool | None = None,
+        file_row_number: bool | None = None,
+        filename: bool | None = None,
+        hive_partitioning: bool | None = None,
+        union_by_name: bool | None = None,
+        can_have_nan: bool | None = None,
+        compression: "io_module.ParquetCompression" | None = None,
+        parquet_version: "io_module.ParquetVersion" | None = None,
+        debug_use_openssl: bool | None = None,
+        explicit_cardinality: int | None = None,
     ) -> DuckRel:
         """Read Parquet data via :mod:`duckplus.io`.
 
@@ -113,7 +123,29 @@ class DuckConnection(AbstractContextManager["DuckConnection"]):
 
         from . import io as io_module
 
-        return io_module.read_parquet(self, paths, **options)
+        forward: dict[str, Any] = {}
+        if binary_as_string is not None:
+            forward["binary_as_string"] = binary_as_string
+        if file_row_number is not None:
+            forward["file_row_number"] = file_row_number
+        if filename is not None:
+            forward["filename"] = filename
+        if hive_partitioning is not None:
+            forward["hive_partitioning"] = hive_partitioning
+        if union_by_name is not None:
+            forward["union_by_name"] = union_by_name
+        if can_have_nan is not None:
+            forward["can_have_nan"] = can_have_nan
+        if compression is not None:
+            forward["compression"] = compression
+        if parquet_version is not None:
+            forward["parquet_version"] = parquet_version
+        if debug_use_openssl is not None:
+            forward["debug_use_openssl"] = debug_use_openssl
+        if explicit_cardinality is not None:
+            forward["explicit_cardinality"] = explicit_cardinality
+
+        return io_module.read_parquet(self, paths, **forward)
 
     def read_csv(
         self,
@@ -121,8 +153,31 @@ class DuckConnection(AbstractContextManager["DuckConnection"]):
         /,
         *,
         encoding: str = "utf-8",
-        header: bool = True,
-        **options: "Unpack[io_module.CSVReadOptions]",
+        header: bool | int = True,
+        delimiter: str | None = None,
+        quote: str | None = None,
+        escape: str | None = None,
+        nullstr: str | Sequence[str] | None = None,
+        sample_size: int | None = None,
+        auto_detect: bool | None = None,
+        ignore_errors: bool | None = None,
+        dateformat: str | None = None,
+        timestampformat: str | None = None,
+        decimal_separator: "io_module.CSVDecimalSeparator" | None = None,
+        columns: Mapping[str, util.DuckDBType] | None = None,
+        all_varchar: bool | None = None,
+        parallel: bool | None = None,
+        allow_quoted_nulls: bool | None = None,
+        null_padding: bool | None = None,
+        normalize_names: bool | None = None,
+        union_by_name: bool | None = None,
+        filename: bool | None = None,
+        hive_partitioning: bool | None = None,
+        hive_types_autocast: bool | None = None,
+        hive_types: Mapping[str, util.DuckDBType] | None = None,
+        files_to_sniff: int | None = None,
+        compression: "io_module.CSVCompression" | None = None,
+        thousands: str | None = None,
     ) -> DuckRel:
         """Read CSV data via :mod:`duckplus.io`.
 
@@ -132,19 +187,89 @@ class DuckConnection(AbstractContextManager["DuckConnection"]):
 
         from . import io as io_module
 
+        forward: dict[str, Any] = {}
+        if delimiter is not None:
+            forward["delimiter"] = delimiter
+        if quote is not None:
+            forward["quote"] = quote
+        if escape is not None:
+            forward["escape"] = escape
+        if nullstr is not None:
+            forward["nullstr"] = nullstr
+        if sample_size is not None:
+            forward["sample_size"] = sample_size
+        if auto_detect is not None:
+            forward["auto_detect"] = auto_detect
+        if ignore_errors is not None:
+            forward["ignore_errors"] = ignore_errors
+        if dateformat is not None:
+            forward["dateformat"] = dateformat
+        if timestampformat is not None:
+            forward["timestampformat"] = timestampformat
+        if decimal_separator is not None:
+            forward["decimal_separator"] = decimal_separator
+        if columns is not None:
+            forward["columns"] = columns
+        if all_varchar is not None:
+            forward["all_varchar"] = all_varchar
+        if parallel is not None:
+            forward["parallel"] = parallel
+        if allow_quoted_nulls is not None:
+            forward["allow_quoted_nulls"] = allow_quoted_nulls
+        if null_padding is not None:
+            forward["null_padding"] = null_padding
+        if normalize_names is not None:
+            forward["normalize_names"] = normalize_names
+        if union_by_name is not None:
+            forward["union_by_name"] = union_by_name
+        if filename is not None:
+            forward["filename"] = filename
+        if hive_partitioning is not None:
+            forward["hive_partitioning"] = hive_partitioning
+        if hive_types_autocast is not None:
+            forward["hive_types_autocast"] = hive_types_autocast
+        if hive_types is not None:
+            forward["hive_types"] = hive_types
+        if files_to_sniff is not None:
+            forward["files_to_sniff"] = files_to_sniff
+        if compression is not None:
+            forward["compression"] = compression
+        if thousands is not None:
+            forward["thousands"] = thousands
+
         return io_module.read_csv(
             self,
             paths,
             encoding=encoding,
             header=header,
-            **options,
+            **forward,
         )
 
     def read_json(
         self,
         paths: "io_module.PathsLike",
         /,
-        **options: "Unpack[io_module.JSONReadOptions]",
+        *,
+        columns: Mapping[str, util.DuckDBType] | None = None,
+        sample_size: int | None = None,
+        maximum_depth: int | None = None,
+        records: "io_module.JSONRecords" | None = None,
+        format: "io_module.JSONFormat" | None = None,
+        dateformat: str | None = None,
+        timestampformat: str | None = None,
+        compression: "io_module.JSONCompression" | None = None,
+        maximum_object_size: int | None = None,
+        ignore_errors: bool | None = None,
+        convert_strings_to_integers: bool | None = None,
+        field_appearance_threshold: float | int | None = None,
+        map_inference_threshold: int | None = None,
+        maximum_sample_files: int | None = None,
+        filename: bool | None = None,
+        hive_partitioning: bool | None = None,
+        union_by_name: bool | None = None,
+        hive_types: Mapping[str, util.DuckDBType] | None = None,
+        hive_types_autocast: bool | None = None,
+        auto_detect: bool | None = None,
     ) -> DuckRel:
         """Read JSON or NDJSON data via :mod:`duckplus.io`.
 
@@ -154,7 +279,49 @@ class DuckConnection(AbstractContextManager["DuckConnection"]):
 
         from . import io as io_module
 
-        return io_module.read_json(self, paths, **options)
+        forward: dict[str, Any] = {}
+        if columns is not None:
+            forward["columns"] = columns
+        if sample_size is not None:
+            forward["sample_size"] = sample_size
+        if maximum_depth is not None:
+            forward["maximum_depth"] = maximum_depth
+        if records is not None:
+            forward["records"] = records
+        if format is not None:
+            forward["format"] = format
+        if dateformat is not None:
+            forward["dateformat"] = dateformat
+        if timestampformat is not None:
+            forward["timestampformat"] = timestampformat
+        if compression is not None:
+            forward["compression"] = compression
+        if maximum_object_size is not None:
+            forward["maximum_object_size"] = maximum_object_size
+        if ignore_errors is not None:
+            forward["ignore_errors"] = ignore_errors
+        if convert_strings_to_integers is not None:
+            forward["convert_strings_to_integers"] = convert_strings_to_integers
+        if field_appearance_threshold is not None:
+            forward["field_appearance_threshold"] = field_appearance_threshold
+        if map_inference_threshold is not None:
+            forward["map_inference_threshold"] = map_inference_threshold
+        if maximum_sample_files is not None:
+            forward["maximum_sample_files"] = maximum_sample_files
+        if filename is not None:
+            forward["filename"] = filename
+        if hive_partitioning is not None:
+            forward["hive_partitioning"] = hive_partitioning
+        if union_by_name is not None:
+            forward["union_by_name"] = union_by_name
+        if hive_types is not None:
+            forward["hive_types"] = hive_types
+        if hive_types_autocast is not None:
+            forward["hive_types_autocast"] = hive_types_autocast
+        if auto_detect is not None:
+            forward["auto_detect"] = auto_detect
+
+        return io_module.read_json(self, paths, **forward)
 
     def from_pandas(self, frame: PandasDataFrame) -> DuckRel:
         """Return a relation constructed from a pandas DataFrame."""

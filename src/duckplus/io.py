@@ -741,7 +741,17 @@ def read_parquet(
     conn: DuckConnection,
     paths: PathsLike,
     /,
-    **options: Unpack[ParquetReadOptions],
+    *,
+    binary_as_string: bool | None = None,
+    file_row_number: bool | None = None,
+    filename: bool | None = None,
+    hive_partitioning: bool | None = None,
+    union_by_name: bool | None = None,
+    can_have_nan: bool | None = None,
+    compression: ParquetCompression | None = None,
+    parquet_version: ParquetVersion | None = None,
+    debug_use_openssl: bool | None = None,
+    explicit_cardinality: int | None = None,
 ) -> DuckRel:
     """Read Parquet files into a :class:`duckplus.DuckRel`.
 
@@ -752,31 +762,26 @@ def read_parquet(
     paths:
         A :class:`~pathlib.Path`, ``os.DirEntry`` or any ``__fspath__`` value, or a
         non-empty sequence of such paths.
-    ``**options``:
-        Keyword arguments forwarded to :meth:`duckdb.DuckDBPyConnection.read_parquet`
-        after type validation.
-
-    Supported options
-    -----------------
-    binary_as_string: bool
-        Treat Parquet ``BINARY`` columns as strings.
-    file_row_number: bool
-        Add a row-number column per file.
-    filename: bool
-        Add a column containing the originating file name.
-    hive_partitioning: bool
-        Enable Hive partition discovery for directory inputs.
-    union_by_name: bool
-        Align schemas by column name when files differ.
-    can_have_nan: bool
-        Permit ``NaN`` values inside statistics.
-    compression: ``Literal["auto", "none", "uncompressed", "snappy", "gzip", "zstd", "lz4", "brotli"]``
-        Override the compression codec DuckDB expects in the source file.
-    parquet_version: ``Literal["PARQUET_1_0", "PARQUET_2_0"]``
+    binary_as_string:
+        Treat Parquet ``BINARY`` columns as strings when ``True``.
+    file_row_number:
+        Add a row-number column per file when ``True``.
+    filename:
+        Add a column containing the originating file name when ``True``.
+    hive_partitioning:
+        Enable Hive partition discovery for directory inputs when ``True``.
+    union_by_name:
+        Align schemas by column name when files differ when ``True``.
+    can_have_nan:
+        Permit ``NaN`` values inside statistics when ``True``.
+    compression:
+        Override the expected compression codec. ``None`` defers to DuckDB's
+        defaults.
+    parquet_version:
         Force DuckDB to interpret the files as the specified Parquet version.
-    debug_use_openssl: bool
-        Prefer OpenSSL over the builtin crypto routines.
-    explicit_cardinality: int
+    debug_use_openssl:
+        Prefer OpenSSL over the builtin crypto routines when ``True``.
+    explicit_cardinality:
         Provide an expected row count for planner optimisations.
 
     Examples
@@ -794,7 +799,30 @@ def read_parquet(
     """
 
     normalized = _normalize_paths(paths)
-    read_options = _validate_parquet_read_options(options)
+    raw_options: ParquetReadOptions = {}
+
+    if binary_as_string is not None:
+        raw_options["binary_as_string"] = binary_as_string
+    if file_row_number is not None:
+        raw_options["file_row_number"] = file_row_number
+    if filename is not None:
+        raw_options["filename"] = filename
+    if hive_partitioning is not None:
+        raw_options["hive_partitioning"] = hive_partitioning
+    if union_by_name is not None:
+        raw_options["union_by_name"] = union_by_name
+    if can_have_nan is not None:
+        raw_options["can_have_nan"] = can_have_nan
+    if compression is not None:
+        raw_options["compression"] = compression
+    if parquet_version is not None:
+        raw_options["parquet_version"] = parquet_version
+    if debug_use_openssl is not None:
+        raw_options["debug_use_openssl"] = debug_use_openssl
+    if explicit_cardinality is not None:
+        raw_options["explicit_cardinality"] = explicit_cardinality
+
+    read_options = _validate_parquet_read_options(raw_options)
     relation = _execute_duckdb_reader(
         conn.raw.read_parquet, "read Parquet data", normalized.for_duckdb, options=read_options
     )
@@ -807,8 +835,31 @@ def read_csv(
     /,
     *,
     encoding: str = "utf-8",
-    header: bool = True,
-    **options: Unpack[CSVReadOptions],
+    header: bool | int = True,
+    delimiter: str | None = None,
+    quote: str | None = None,
+    escape: str | None = None,
+    nullstr: str | Sequence[str] | None = None,
+    sample_size: int | None = None,
+    auto_detect: bool | None = None,
+    ignore_errors: bool | None = None,
+    dateformat: str | None = None,
+    timestampformat: str | None = None,
+    decimal_separator: CSVDecimalSeparator | None = None,
+    columns: Mapping[str, util.DuckDBType] | None = None,
+    all_varchar: bool | None = None,
+    parallel: bool | None = None,
+    allow_quoted_nulls: bool | None = None,
+    null_padding: bool | None = None,
+    normalize_names: bool | None = None,
+    union_by_name: bool | None = None,
+    filename: bool | None = None,
+    hive_partitioning: bool | None = None,
+    hive_types_autocast: bool | None = None,
+    hive_types: Mapping[str, util.DuckDBType] | None = None,
+    files_to_sniff: int | None = None,
+    compression: CSVCompression | None = None,
+    thousands: str | None = None,
 ) -> DuckRel:
     """Read CSV files into a :class:`duckplus.DuckRel`.
 
@@ -824,58 +875,53 @@ def read_csv(
     header:
         Either ``True``/``False`` to indicate whether the file includes a header
         row or an integer index for the header line.
-    ``**options``:
-        Additional keyword arguments validated against DuckDB's CSV reader.
-
-    Supported options
-    -----------------
-    delimiter: str
-        Column delimiter (defaults to ",").
-    quote: str | None
+    delimiter:
+        Column delimiter (defaults to "," when omitted).
+    quote:
         Single-character quote marker or ``None`` to disable quoting.
-    escape: str | None
+    escape:
         Escape character used for quoted fields.
-    nullstr: str | Sequence[str] | None
+    nullstr:
         Values interpreted as SQL ``NULL``.
-    sample_size: int
+    sample_size:
         Number of bytes to scan for auto-detection.
-    auto_detect: bool
-        Enable DuckDB's schema auto-detection.
-    ignore_errors: bool
-        Skip malformed rows instead of raising.
-    dateformat: str
+    auto_detect:
+        Enable DuckDB's schema auto-detection when ``True``.
+    ignore_errors:
+        Skip malformed rows instead of raising when ``True``.
+    dateformat:
         Format string for DATE columns.
-    timestampformat: str
+    timestampformat:
         Format string for TIMESTAMP columns.
-    decimal_separator: ``Literal[",", "."]``
+    decimal_separator:
         Decimal separator when parsing numeric values.
-    columns: Mapping[str, :data:`duckplus.util.DuckDBType`]
+    columns:
         Explicit column type mapping.
-    all_varchar: bool
-        Force every column to be ``VARCHAR``.
-    parallel: bool
-        Allow parallel CSV parsing.
-    allow_quoted_nulls: bool
-        Interpret quoted ``nullstr`` values as ``NULL``.
-    null_padding: bool
-        Enable null padding for fixed-width values.
-    normalize_names: bool
-        Request DuckDB to normalise column identifiers.
-    union_by_name: bool
-        Align schemas by column name when loading multiple files.
-    filename: bool
-        Add a column containing the originating file name.
-    hive_partitioning: bool
-        Enable Hive partition discovery for directory inputs.
-    hive_types_autocast: bool
-        Automatically cast partition values based on Hive metadata.
-    hive_types: Mapping[str, :data:`duckplus.util.DuckDBType`]
+    all_varchar:
+        Force every column to be ``VARCHAR`` when ``True``.
+    parallel:
+        Allow parallel CSV parsing when ``True``.
+    allow_quoted_nulls:
+        Interpret quoted ``nullstr`` values as ``NULL`` when ``True``.
+    null_padding:
+        Enable null padding for fixed-width values when ``True``.
+    normalize_names:
+        Request DuckDB to normalise column identifiers when ``True``.
+    union_by_name:
+        Align schemas by column name when loading multiple files when ``True``.
+    filename:
+        Add a column containing the originating file name when ``True``.
+    hive_partitioning:
+        Enable Hive partition discovery for directory inputs when ``True``.
+    hive_types_autocast:
+        Automatically cast partition values based on Hive metadata when ``True``.
+    hive_types:
         Override Hive partition column types.
-    files_to_sniff: int
+    files_to_sniff:
         Limit the number of files inspected for schema inference.
-    compression: ``Literal["auto", "none", "gzip", "zstd", "bz2", "lz4", "xz", "snappy"]``
+    compression:
         Compression codec to expect from the source files.
-    thousands: str
+    thousands:
         Thousands separator for numeric parsing.
 
     Examples
@@ -899,7 +945,58 @@ def read_csv(
         raise TypeError("header must be a boolean or integer value.")
 
     normalized = _normalize_paths(paths)
-    read_options = _validate_csv_common(options)
+    raw_options: CSVReadOptions = {}
+
+    if delimiter is not None:
+        raw_options["delimiter"] = delimiter
+    if quote is not None:
+        raw_options["quote"] = quote
+    if escape is not None:
+        raw_options["escape"] = escape
+    if nullstr is not None:
+        raw_options["nullstr"] = nullstr
+    if sample_size is not None:
+        raw_options["sample_size"] = sample_size
+    if auto_detect is not None:
+        raw_options["auto_detect"] = auto_detect
+    if ignore_errors is not None:
+        raw_options["ignore_errors"] = ignore_errors
+    if dateformat is not None:
+        raw_options["dateformat"] = dateformat
+    if timestampformat is not None:
+        raw_options["timestampformat"] = timestampformat
+    if decimal_separator is not None:
+        raw_options["decimal_separator"] = decimal_separator
+    if columns is not None:
+        raw_options["columns"] = columns
+    if all_varchar is not None:
+        raw_options["all_varchar"] = all_varchar
+    if parallel is not None:
+        raw_options["parallel"] = parallel
+    if allow_quoted_nulls is not None:
+        raw_options["allow_quoted_nulls"] = allow_quoted_nulls
+    if null_padding is not None:
+        raw_options["null_padding"] = null_padding
+    if normalize_names is not None:
+        raw_options["normalize_names"] = normalize_names
+    if union_by_name is not None:
+        raw_options["union_by_name"] = union_by_name
+    if filename is not None:
+        raw_options["filename"] = filename
+    if hive_partitioning is not None:
+        raw_options["hive_partitioning"] = hive_partitioning
+    if hive_types_autocast is not None:
+        raw_options["hive_types_autocast"] = hive_types_autocast
+    if hive_types is not None:
+        raw_options["hive_types"] = hive_types
+    if files_to_sniff is not None:
+        raw_options["files_to_sniff"] = files_to_sniff
+    if compression is not None:
+        raw_options["compression"] = compression
+    if thousands is not None:
+        raw_options["thousands"] = thousands
+
+    read_options = _validate_csv_common(raw_options)
     read_options["encoding"] = encoding
     read_options["header"] = header
 
@@ -913,7 +1010,27 @@ def read_json(
     conn: DuckConnection,
     paths: PathsLike,
     /,
-    **options: Unpack[JSONReadOptions],
+    *,
+    columns: Mapping[str, util.DuckDBType] | None = None,
+    sample_size: int | None = None,
+    maximum_depth: int | None = None,
+    records: JSONRecords | None = None,
+    format: JSONFormat | None = None,
+    dateformat: str | None = None,
+    timestampformat: str | None = None,
+    compression: JSONCompression | None = None,
+    maximum_object_size: int | None = None,
+    ignore_errors: bool | None = None,
+    convert_strings_to_integers: bool | None = None,
+    field_appearance_threshold: float | int | None = None,
+    map_inference_threshold: int | None = None,
+    maximum_sample_files: int | None = None,
+    filename: bool | None = None,
+    hive_partitioning: bool | None = None,
+    union_by_name: bool | None = None,
+    hive_types: Mapping[str, util.DuckDBType] | None = None,
+    hive_types_autocast: bool | None = None,
+    auto_detect: bool | None = None,
 ) -> DuckRel:
     """Read JSON or NDJSON files into a :class:`duckplus.DuckRel`.
 
@@ -924,52 +1041,47 @@ def read_json(
     paths:
         A :class:`~pathlib.Path`, ``os.DirEntry`` or any ``__fspath__`` value, or a
         non-empty sequence of such paths.
-    ``**options``:
-        Keyword arguments forwarded to DuckDB's JSON reader.
-
-    Supported options
-    -----------------
-    columns: Mapping[str, :data:`duckplus.util.DuckDBType`]
+    columns:
         Explicit column type mapping.
-    sample_size: int
+    sample_size:
         Number of bytes sampled for schema detection.
-    maximum_depth: int
+    maximum_depth:
         Depth limit for nested objects.
-    records: ``Literal["auto", "array", "records"]``
+    records:
         Interpret the input as a JSON array, individual records, or let DuckDB
         auto-detect.
-    format: ``Literal["auto", "newline_delimited", "unstructured"]``
+    format:
         Choose between JSON, NDJSON, or unstructured log parsing.
-    dateformat: str
+    dateformat:
         Format string for DATE coercion.
-    timestampformat: str
+    timestampformat:
         Format string for TIMESTAMP coercion.
-    compression: ``Literal["auto", "none", "gzip", "zstd", "bz2", "lz4", "xz", "snappy"]``
+    compression:
         Compression codec to expect when reading files.
-    maximum_object_size: int
+    maximum_object_size:
         Upper bound on parsed JSON object size.
-    ignore_errors: bool
-        Skip malformed records instead of raising.
-    convert_strings_to_integers: bool
-        Attempt integer coercion for numeric-looking strings.
-    field_appearance_threshold: float
+    ignore_errors:
+        Skip malformed records instead of raising when ``True``.
+    convert_strings_to_integers:
+        Attempt integer coercion for numeric-looking strings when ``True``.
+    field_appearance_threshold:
         Fraction of rows required before creating a struct field.
-    map_inference_threshold: int
+    map_inference_threshold:
         Minimum object size before inferring a ``MAP`` type.
-    maximum_sample_files: int
+    maximum_sample_files:
         Number of files sampled during auto-detection.
-    filename: bool
-        Add a column containing the originating file name.
-    hive_partitioning: bool
-        Enable Hive partition discovery for directory inputs.
-    union_by_name: bool
-        Align schemas by column name when loading multiple files.
-    hive_types: Mapping[str, :data:`duckplus.util.DuckDBType`]
+    filename:
+        Add a column containing the originating file name when ``True``.
+    hive_partitioning:
+        Enable Hive partition discovery for directory inputs when ``True``.
+    union_by_name:
+        Align schemas by column name when loading multiple files when ``True``.
+    hive_types:
         Override Hive partition column types.
-    hive_types_autocast: bool
-        Automatically cast partition values based on Hive metadata.
-    auto_detect: bool
-        Let DuckDB infer data types from the sampled data.
+    hive_types_autocast:
+        Automatically cast partition values based on Hive metadata when ``True``.
+    auto_detect:
+        Let DuckDB infer data types from the sampled data when ``True``.
 
     Examples
     --------
@@ -986,7 +1098,50 @@ def read_json(
     """
 
     normalized = _normalize_paths(paths)
-    read_options = _validate_json_options(options)
+    raw_options: JSONReadOptions = {}
+
+    if columns is not None:
+        raw_options["columns"] = columns
+    if sample_size is not None:
+        raw_options["sample_size"] = sample_size
+    if maximum_depth is not None:
+        raw_options["maximum_depth"] = maximum_depth
+    if records is not None:
+        raw_options["records"] = records
+    if format is not None:
+        raw_options["format"] = format
+    if dateformat is not None:
+        raw_options["dateformat"] = dateformat
+    if timestampformat is not None:
+        raw_options["timestampformat"] = timestampformat
+    if compression is not None:
+        raw_options["compression"] = compression
+    if maximum_object_size is not None:
+        raw_options["maximum_object_size"] = maximum_object_size
+    if ignore_errors is not None:
+        raw_options["ignore_errors"] = ignore_errors
+    if convert_strings_to_integers is not None:
+        raw_options["convert_strings_to_integers"] = convert_strings_to_integers
+    if field_appearance_threshold is not None:
+        raw_options["field_appearance_threshold"] = field_appearance_threshold
+    if map_inference_threshold is not None:
+        raw_options["map_inference_threshold"] = map_inference_threshold
+    if maximum_sample_files is not None:
+        raw_options["maximum_sample_files"] = maximum_sample_files
+    if filename is not None:
+        raw_options["filename"] = filename
+    if hive_partitioning is not None:
+        raw_options["hive_partitioning"] = hive_partitioning
+    if union_by_name is not None:
+        raw_options["union_by_name"] = union_by_name
+    if hive_types is not None:
+        raw_options["hive_types"] = hive_types
+    if hive_types_autocast is not None:
+        raw_options["hive_types_autocast"] = hive_types_autocast
+    if auto_detect is not None:
+        raw_options["auto_detect"] = auto_detect
+
+    read_options = _validate_json_options(raw_options)
     relation = _execute_duckdb_reader(
         conn.raw.read_json, "read JSON data", normalized.for_duckdb, options=read_options
     )
@@ -1024,7 +1179,11 @@ def write_parquet(
     /,
     *,
     compression: ParquetCompression = "zstd",
-    **options: Unpack[ParquetWriteOptions],
+    row_group_size: int | None = None,
+    row_group_size_bytes: int | None = None,
+    partition_by: Sequence[str] | None = None,
+    write_partition_columns: bool | None = None,
+    per_thread_output: bool | None = None,
 ) -> None:
     """Write a :class:`duckplus.DuckRel` to a Parquet file.
 
@@ -1036,21 +1195,16 @@ def write_parquet(
         Target file location, converted to :class:`~pathlib.Path`.
     compression:
         Compression codec supplied to DuckDB. Defaults to ``"zstd"``.
-    ``**options``:
-        Additional DuckDB writer options documented below.
-
-    Supported options
-    -----------------
-    row_group_size: int
+    row_group_size:
         Number of rows per Parquet row group.
-    row_group_size_bytes: int
+    row_group_size_bytes:
         Maximum number of bytes per Parquet row group.
-    partition_by: Sequence[str]
+    partition_by:
         Columns used for directory partitioning.
-    write_partition_columns: bool
-        Persist partition columns in the written files.
-    per_thread_output: bool
-        Allow DuckDB to emit one file per writer thread.
+    write_partition_columns:
+        Persist partition columns in the written files when ``True``.
+    per_thread_output:
+        Allow DuckDB to emit one file per writer thread when ``True``.
 
     Examples
     --------
@@ -1077,7 +1231,20 @@ def write_parquet(
         )
 
     target = _ensure_path(path)
-    write_options = _validate_parquet_write_options(options)
+    raw_options: ParquetWriteOptions = {}
+
+    if row_group_size is not None:
+        raw_options["row_group_size"] = row_group_size
+    if row_group_size_bytes is not None:
+        raw_options["row_group_size_bytes"] = row_group_size_bytes
+    if partition_by is not None:
+        raw_options["partition_by"] = partition_by
+    if write_partition_columns is not None:
+        raw_options["write_partition_columns"] = write_partition_columns
+    if per_thread_output is not None:
+        raw_options["per_thread_output"] = per_thread_output
+
+    write_options = _validate_parquet_write_options(raw_options)
     write_options["compression"] = compression
 
     _write_with_temporary(
@@ -1095,8 +1262,18 @@ def write_csv(
     /,
     *,
     encoding: str = "utf-8",
-    header: bool = True,
-    **options: Unpack[CSVWriteOptions],
+    header: bool | int = True,
+    delimiter: str | None = None,
+    quote: str | None = None,
+    escape: str | None = None,
+    null_rep: str | None = None,
+    date_format: str | None = None,
+    timestamp_format: str | None = None,
+    quoting: CSVQuoting | None = None,
+    compression: CSVCompression | None = None,
+    per_thread_output: bool | None = None,
+    partition_by: Sequence[str] | None = None,
+    write_partition_columns: bool | None = None,
 ) -> None:
     """Write a :class:`duckplus.DuckRel` to a CSV file.
 
@@ -1111,33 +1288,28 @@ def write_csv(
     header:
         Whether DuckDB should emit a header row or the zero-based index of the
         header line.
-    ``**options``:
-        Additional DuckDB writer options documented below.
-
-    Supported options
-    -----------------
-    delimiter: str
-        Output delimiter (defaults to ",").
-    quote: str | None
+    delimiter:
+        Output delimiter (defaults to "," when omitted).
+    quote:
         Single-character quote marker or ``None`` to disable quoting.
-    escape: str | None
+    escape:
         Escape character used for quoted fields.
-    null_rep: str | None
+    null_rep:
         Representation for ``NULL`` values.
-    date_format: str | None
+    date_format:
         Format string for DATE values.
-    timestamp_format: str | None
+    timestamp_format:
         Format string for TIMESTAMP values.
-    quoting: ``Literal["all", "minimal", "nonnumeric", "none"]``
+    quoting:
         Control DuckDB's quoting policy.
-    compression: ``Literal["auto", "none", "gzip", "zstd", "bz2", "lz4", "xz", "snappy"]``
+    compression:
         Compression codec applied to the output file.
-    per_thread_output: bool
-        Allow DuckDB to emit one file per writer thread.
-    partition_by: Sequence[str]
+    per_thread_output:
+        Allow DuckDB to emit one file per writer thread when ``True``.
+    partition_by:
         Columns used for directory partitioning.
-    write_partition_columns: bool
-        Persist partition columns in the written files.
+    write_partition_columns:
+        Persist partition columns in the written files when ``True``.
 
     Examples
     --------
@@ -1156,7 +1328,32 @@ def write_csv(
         raise TypeError("header must be a boolean or integer value.")
 
     target = _ensure_path(path)
-    write_options = _validate_csv_write_options(options)
+    raw_options: CSVWriteOptions = {}
+
+    if delimiter is not None:
+        raw_options["delimiter"] = delimiter
+    if quote is not None:
+        raw_options["quote"] = quote
+    if escape is not None:
+        raw_options["escape"] = escape
+    if null_rep is not None:
+        raw_options["null_rep"] = null_rep
+    if date_format is not None:
+        raw_options["date_format"] = date_format
+    if timestamp_format is not None:
+        raw_options["timestamp_format"] = timestamp_format
+    if quoting is not None:
+        raw_options["quoting"] = quoting
+    if compression is not None:
+        raw_options["compression"] = compression
+    if per_thread_output is not None:
+        raw_options["per_thread_output"] = per_thread_output
+    if partition_by is not None:
+        raw_options["partition_by"] = partition_by
+    if write_partition_columns is not None:
+        raw_options["write_partition_columns"] = write_partition_columns
+
+    write_options = _validate_csv_write_options(raw_options)
     write_options["encoding"] = encoding
     write_options["header"] = header
 

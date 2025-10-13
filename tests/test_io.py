@@ -6,6 +6,7 @@ from pathlib import Path
 import pyarrow.parquet as pq  # type: ignore[import-untyped]
 import pytest
 
+import duckplus.io as io_module
 from duckplus import (
     DuckRel,
     DuckTable,
@@ -13,6 +14,9 @@ from duckplus import (
     append_parquet,
     append_ndjson,
     connect,
+    read_csv,
+    read_json,
+    read_parquet,
     write_csv,
     write_parquet,
 )
@@ -61,6 +65,45 @@ def test_read_parquet_runtime_error_includes_details(tmp_path: Path) -> None:
         assert "DuckDB error:" in message
 
 
+def test_read_parquet_forwards_options(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    path = tmp_path / "data.parquet"
+    with connect() as conn:
+        captured: dict[str, object] = {}
+
+        def fake_execute(
+            func: object,
+            description: str,
+            payload: object,
+            *,
+            options: dict[str, object],
+        ):
+            captured["func"] = func
+            captured["description"] = description
+            captured["payload"] = payload
+            captured["options"] = options
+            return conn.raw.sql("SELECT 1 AS marker")
+
+        monkeypatch.setattr(io_module, "_execute_duckdb_reader", fake_execute)
+
+        rel = read_parquet(
+            conn,
+            path,
+            union_by_name=True,
+            compression="snappy",
+            explicit_cardinality=5,
+            filename=True,
+        )
+
+        assert captured["payload"] == str(path)
+        assert captured["options"] == {
+            "union_by_name": True,
+            "compression": "snappy",
+            "explicit_cardinality": 5,
+            "filename": True,
+        }
+        assert _relation_rows(rel) == [(1,)]
+
+
 def test_read_csv_with_options(tmp_path: Path) -> None:
     csv_path = tmp_path / "values.csv"
     csv_path.write_text("id|name\n1|Alice\n2|Bob\n", encoding="utf-8")
@@ -75,6 +118,51 @@ def test_read_csv_with_options(tmp_path: Path) -> None:
         )
         assert rel.columns == ["id", "name"]
         assert _relation_rows(rel) == [(1, "Alice"), (2, "Bob")]
+
+
+def test_read_csv_forwards_options(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    csv_path = tmp_path / "values.csv"
+    csv_path.write_text("id|name\n1|Alice\n", encoding="utf-8")
+
+    with connect() as conn:
+        captured: dict[str, object] = {}
+
+        def fake_execute(
+            func: object,
+            description: str,
+            payload: object,
+            *,
+            options: dict[str, object],
+        ):
+            captured["func"] = func
+            captured["description"] = description
+            captured["payload"] = payload
+            captured["options"] = options
+            return conn.raw.sql("SELECT 1 AS marker")
+
+        monkeypatch.setattr(io_module, "_execute_duckdb_reader", fake_execute)
+
+        rel = read_csv(
+            conn,
+            csv_path,
+            encoding="utf-16",
+            header=False,
+            delimiter="|",
+            auto_detect=False,
+            columns={"id": "INTEGER"},
+            filename=True,
+        )
+
+        assert captured["payload"] == str(csv_path)
+        assert captured["options"] == {
+            "delimiter": "|",
+            "auto_detect": False,
+            "columns": {"id": "INTEGER"},
+            "filename": True,
+            "encoding": "utf-16",
+            "header": False,
+        }
+        assert _relation_rows(rel) == [(1,)]
 
 
 def test_read_csv_rejects_invalid_delimiter(tmp_path: Path) -> None:
@@ -122,6 +210,45 @@ def test_read_json_supports_newline_format(tmp_path: Path) -> None:
         assert _relation_rows(rel) == [(1,), (2,)]
 
 
+def test_read_json_forwards_options(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    json_path = tmp_path / "rows.json"
+    json_path.write_text("{}\n{}", encoding="utf-8")
+
+    with connect() as conn:
+        captured: dict[str, object] = {}
+
+        def fake_execute(
+            func: object,
+            description: str,
+            payload: object,
+            *,
+            options: dict[str, object],
+        ):
+            captured["func"] = func
+            captured["description"] = description
+            captured["payload"] = payload
+            captured["options"] = options
+            return conn.raw.sql("SELECT 1 AS marker")
+
+        monkeypatch.setattr(io_module, "_execute_duckdb_reader", fake_execute)
+
+        rel = read_json(
+            conn,
+            json_path,
+            format="newline_delimited",
+            maximum_depth=3,
+            filename=True,
+        )
+
+        assert captured["payload"] == str(json_path)
+        assert captured["options"] == {
+            "format": "newline_delimited",
+            "maximum_depth": 3,
+            "filename": True,
+        }
+        assert _relation_rows(rel) == [(1,)]
+
+
 def test_write_csv_round_trip(tmp_path: Path) -> None:
     csv_path = tmp_path / "output.csv"
     with connect() as conn:
@@ -131,6 +258,48 @@ def test_write_csv_round_trip(tmp_path: Path) -> None:
         assert _relation_rows(loaded) == [(1, "Alpha")]
         text = csv_path.read_text(encoding="utf-8")
         assert text.startswith("id,label\n")
+
+
+def test_write_csv_forwards_options(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    target = tmp_path / "out.csv"
+
+    with connect() as conn:
+        rel = DuckRel(conn.raw.sql("SELECT 1 AS id"))
+        captured: dict[str, object] = {}
+
+        def fake_write_with_temporary(
+            relation: object,
+            target: Path,
+            *,
+            writer: object,
+            description: str,
+            options: dict[str, object],
+        ) -> None:
+            captured["relation"] = relation
+            captured["target"] = target
+            captured["description"] = description
+            captured["options"] = options
+            encoding_opt = str(options.get("encoding", "utf-8"))
+            target.write_text("id\n1\n", encoding=encoding_opt)
+
+        monkeypatch.setattr(io_module, "_write_with_temporary", fake_write_with_temporary)
+
+        write_csv(
+            rel,
+            target,
+            encoding="utf-16",
+            header=False,
+            delimiter="|",
+            compression="gzip",
+        )
+
+        assert captured["options"] == {
+            "sep": "|",
+            "compression": "gzip",
+            "encoding": "utf-16",
+            "header": False,
+        }
+        assert target.read_text(encoding="utf-16") == "id\n1\n"
 
 
 def test_write_csv_rejects_empty_encoding(tmp_path: Path) -> None:
@@ -159,6 +328,45 @@ def test_write_parquet_runtime_error_includes_details(tmp_path: Path) -> None:
         message = str(excinfo.value)
         assert "DuckDB failed to write Parquet data" in message
         assert "DuckDB error:" in message
+
+
+def test_write_parquet_forwards_options(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    target = tmp_path / "out.parquet"
+
+    with connect() as conn:
+        rel = DuckRel(conn.raw.sql("SELECT 1 AS id"))
+        captured: dict[str, object] = {}
+
+        def fake_write_with_temporary(
+            relation: object,
+            target: Path,
+            *,
+            writer: object,
+            description: str,
+            options: dict[str, object],
+        ) -> None:
+            captured["relation"] = relation
+            captured["target"] = target
+            captured["description"] = description
+            captured["options"] = options
+            target.write_bytes(b"")
+
+        monkeypatch.setattr(io_module, "_write_with_temporary", fake_write_with_temporary)
+
+        write_parquet(
+            rel,
+            target,
+            compression="snappy",
+            partition_by=["id"],
+            per_thread_output=True,
+        )
+
+        assert captured["options"] == {
+            "compression": "snappy",
+            "partition_by": ["id"],
+            "per_thread_output": True,
+        }
+        assert target.exists()
 
 
 def test_append_csv_appends_rows(tmp_path: Path) -> None:
