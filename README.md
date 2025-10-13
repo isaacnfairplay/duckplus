@@ -29,7 +29,8 @@ uv pip install duckplus
 ```
 
 For development, clone the repository and run `uv sync` to create the managed
-environment with test and typing dependencies.
+environment with test and typing dependencies. Build the documentation locally
+with `uv run sphinx-build -b html docs/source docs/_build/html`.
 
 ---
 
@@ -157,7 +158,7 @@ html = to_html(rel, max_rows=10, null_display="∅", class_="preview")
 
 ## Learn more
 
-- Review the [API reference](docs/api_reference.md) for detailed method docs and
+- Review the [API reference](docs/source/api_reference.md) for detailed method docs and
   typing information.
 - Explore unit tests under `tests/` to see edge cases and best practices.
 
