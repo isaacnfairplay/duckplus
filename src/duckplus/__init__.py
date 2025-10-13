@@ -6,12 +6,14 @@ from importlib import metadata
 from pathlib import Path
 import tomllib
 
+from . import ducktypes  # re-export typed column markers
 from .cli import main as cli_main
 from .connect import DuckConnection, attach_nanodbc, connect, query_nanodbc
 from .core import (
     AggregateArgument,
     AggregateExpression,
     AggregateOrder,
+    ColumnExpression,
     AsofOrder,
     AsofSpec,
     FilterExpression,
@@ -90,6 +92,8 @@ __all__ = [
     "AggregateArgument",
     "AggregateExpression",
     "AggregateOrder",
+    "ColumnExpression",
+    "ducktypes",
     "AsofOrder",
     "AsofSpec",
     "FilterExpression",

@@ -2,13 +2,14 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, Any, Literal, NamedTuple
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple, cast
 
 import duckdb
 
 from . import util
 from .aggregates import AggregateExpression
-from .filters import ColumnReference, FilterExpression
+from .filters import AnyColumnExpression, ColumnExpression, FilterExpression
+from .ducktypes import DuckType, Unknown, lookup
 from ._core_specs import (
     AsofOrder,
     AsofSpec,
@@ -50,10 +51,50 @@ def _alias(expression: str, alias: str) -> str:
     return f"{expression} AS {_quote_identifier(alias)}"
 
 
+def _ensure_orderable_column(reference: AnyColumnExpression) -> None:
+    """Ensure *reference* refers to a comparable column when typed."""
+
+    duck_type = reference.duck_type
+    if duck_type is Unknown:
+        return
+    if duck_type.supports("comparable"):
+        return
+    raise TypeError(
+        "order_by() requires comparable column types; "
+        f"column {reference.name!r} is declared as {duck_type.describe()}."
+    )
+
+
 def _relation_types(relation: duckdb.DuckDBPyRelation) -> list[str]:
     """Return the DuckDB type names for *relation* columns."""
 
     return [str(type_name) for type_name in relation.types]
+
+
+def _ensure_declared_marker(
+    *,
+    column: str,
+    declared: type[DuckType],
+    actual: str,
+    context: str,
+) -> None:
+    """Validate that a declared :class:`DuckType` matches the relation schema."""
+
+    if declared is Unknown:
+        return
+    actual_marker = lookup(actual)
+    if actual_marker is Unknown:
+        return
+    if issubclass(actual_marker, declared):
+        return
+    raise TypeError(
+        "{context} column {column!r} is typed as {actual_type} but was declared as {declared_type}.".format(
+            context=context,
+            column=column,
+            actual_type=actual_marker.describe(),
+            declared_type=declared.describe(),
+        )
+    )
 
 
 def _format_projection(columns: Sequence[str], *, alias: str | None = None) -> list[str]:
@@ -115,7 +156,7 @@ def _render_join_filter_expression(
             )
         )
 
-    def resolver(reference: ColumnReference) -> str:
+    def resolver(reference: AnyColumnExpression) -> str:
         qualified = assignments.get(id(reference))
         if qualified is None:
             raise KeyError(
@@ -212,11 +253,18 @@ class DuckRel:
     :meth:`row_count` to efficiently compute the number of rows.
     """
 
-    __slots__ = ("_relation", "_columns", "_lookup", "_types")
+    __slots__ = (
+        "_relation",
+        "_columns",
+        "_lookup",
+        "_types",
+        "_duck_types",
+    )
     _relation: duckdb.DuckDBPyRelation
     _columns: tuple[str, ...]
     _lookup: dict[str, int]
     _types: tuple[str, ...]
+    _duck_types: tuple[type[DuckType], ...]
 
     def __setattr__(self, name: str, value: Any) -> None:  # pragma: no cover - defensive
         if name in self.__slots__ and hasattr(self, name):
@@ -229,6 +277,7 @@ class DuckRel:
         *,
         columns: Sequence[str] | None = None,
         types: Sequence[str] | None = None,
+        duck_types: Sequence[type[DuckType]] | None = None,
     ) -> None:
         super().__setattr__("_relation", relation)
         raw_columns = list(relation.columns if columns is None else columns)
@@ -242,6 +291,17 @@ class DuckRel:
                 f"expected {len(normalized)} types but received {len(raw_types)}."
             )
         super().__setattr__("_types", tuple(raw_types))
+        if duck_types is None:
+            resolved_duck_types: list[type[DuckType]] = [Unknown for _ in normalized]
+        else:
+            resolved_duck_types = list(duck_types)
+            if len(resolved_duck_types) != len(normalized):
+                raise ValueError(
+                    "Number of column type markers does not match the projected columns; "
+                    f"expected {len(normalized)} markers but received {len(resolved_duck_types)}."
+                )
+        super().__setattr__("_duck_types", tuple(resolved_duck_types))
+
 
     @property
     def relation(self) -> duckdb.DuckDBPyRelation:
@@ -272,6 +332,95 @@ class DuckRel:
         """Return the DuckDB type name for each projected column."""
 
         return list(self._types)
+
+    @property
+    def column_type_markers(self) -> list[type[DuckType]]:
+        """Return the declared DuckDB logical type markers per column."""
+
+        return list(self._duck_types)
+
+    @property
+    def column_python_annotations(self) -> list[Any]:
+        """Return the stored Python annotations for each projected column."""
+
+        return [marker.python_annotation for marker in self._duck_types]
+
+    def fetch_typed(self) -> list[tuple[Any, ...]]:
+        """Fetch every row as a typed tuple based on stored column metadata.
+
+        The returned tuples always include the relation's full projection. To
+        narrow the result set, project or select columns before calling
+        :meth:`fetch_typed`.
+        """
+
+        rows: list[tuple[Any, ...]] = self._relation.fetchall()
+        annotations = tuple(marker.python_annotation for marker in self._duck_types)
+        row_type: Any
+        if TYPE_CHECKING:
+            row_type = tuple[Any, ...]
+        else:
+            row_type = tuple[annotations]
+        return cast(list[row_type], rows)
+
+    def _column_index(self, name: str) -> int:
+        """Return the index for *name* in the projected column list."""
+
+        return self._lookup[name.casefold()]
+
+    def _marker_for_column(self, name: str) -> type[DuckType]:
+        """Return the stored :class:`DuckType` marker for *name*."""
+
+        return self._duck_types[self._column_index(name)]
+
+    def _type_for_column(self, name: str) -> str:
+        """Return the DuckDB type string for *name*."""
+
+        return self._types[self._column_index(name)]
+
+    def _annotation_for_column(self, name: str) -> Any:
+        """Return the stored Python annotation for *name*."""
+
+        return self._marker_for_column(name).python_annotation
+
+    def _markers_for_columns(self, columns: Sequence[str]) -> list[type[DuckType]]:
+        """Return markers aligned with *columns* in projection order."""
+
+        return [self._marker_for_column(column) for column in columns]
+
+    def _annotations_for_columns(self, columns: Sequence[str]) -> list[Any]:
+        """Return Python annotations aligned with *columns* in projection order."""
+
+        return [self._annotation_for_column(column) for column in columns]
+
+    def _metadata_from_expression(
+        self, expression: AnyColumnExpression, *, context: str
+    ) -> tuple[type[DuckType], Any]:
+        """Return ``(marker, annotation)`` for *expression* validating declared types."""
+
+        resolved = expression.resolve(self._columns)
+        declared = expression.duck_type
+        _ensure_declared_marker(
+            column=resolved,
+            declared=declared,
+            actual=self._type_for_column(resolved),
+            context=context,
+        )
+        if declared is Unknown:
+            marker = self._marker_for_column(resolved)
+        else:
+            marker = declared
+
+        return marker, marker.python_annotation
+
+    def _wrap_same_schema(self, relation: duckdb.DuckDBPyRelation) -> DuckRel:
+        """Return a :class:`DuckRel` for *relation* preserving schema metadata."""
+
+        return type(self)(
+            relation,
+            columns=self._columns,
+            types=self._types,
+            duck_types=self._duck_types,
+        )
 
     def row_count(self) -> int:
         """Return the total number of rows in the relation as an :class:`int`."""
@@ -323,7 +472,13 @@ class DuckRel:
         projection = _format_projection(resolved)
         relation = self._relation.project(", ".join(projection))
         types = [self._types[self._lookup[name.casefold()]] for name in resolved]
-        return type(self)(relation, columns=resolved, types=types)
+        duck_types = self._markers_for_columns(resolved)
+        return type(self)(
+            relation,
+            columns=resolved,
+            types=types,
+            duck_types=duck_types,
+        )
 
     def drop(self, *columns: str, missing_ok: bool = False) -> DuckRel:
         """Return a relation excluding the specified *columns*."""
@@ -350,9 +505,15 @@ class DuckRel:
         projection = _format_projection(remaining)
         relation = self._relation.project(", ".join(projection))
         types = [self._types[self._lookup[name.casefold()]] for name in remaining]
-        return type(self)(relation, columns=remaining, types=types)
+        duck_types = self._markers_for_columns(remaining)
+        return type(self)(
+            relation,
+            columns=remaining,
+            types=types,
+            duck_types=duck_types,
+        )
 
-    def project(self, expressions: Mapping[str, str]) -> DuckRel:
+    def project(self, expressions: Mapping[str, str | AnyColumnExpression]) -> DuckRel:
         """Project explicit *expressions* keyed by output column name."""
 
         if not expressions:
@@ -361,16 +522,36 @@ class DuckRel:
         alias_candidates = list(expressions.keys())
         aliases, _ = util.normalize_columns(alias_candidates)
         compiled: list[str] = []
+        alias_markers: list[type[DuckType]] = []
         for alias in aliases:
-            expression = expressions[alias]
-            if not isinstance(expression, str):
-                raise TypeError(
-                    "Projection expressions must be provided as strings; "
-                    f"alias {alias!r} mapped to {type(expression).__name__}."
+            expression_obj = expressions[alias]
+            if isinstance(expression_obj, ColumnExpression):
+                expression_sql = expression_obj.render(self._columns)
+                marker, _ = self._metadata_from_expression(
+                    expression_obj, context="Projection"
                 )
-            compiled.append(_alias(expression, alias))
+            elif isinstance(expression_obj, str):
+                if not expression_obj.strip():
+                    raise ValueError(
+                        "Projection expressions must not be empty; "
+                        f"alias {alias!r} received an empty expression."
+                )
+                expression_sql = expression_obj
+                marker = Unknown
+            else:
+                raise TypeError(
+                    "Projection expressions must be strings or ColumnExpression instances; "
+                    f"alias {alias!r} mapped to {type(expression_obj).__name__}."
+                )
+            compiled.append(_alias(expression_sql, alias))
+            alias_markers.append(marker)
         relation = self._relation.project(", ".join(compiled))
-        return type(self)(relation, columns=aliases, types=_relation_types(relation))
+        return type(self)(
+            relation,
+            columns=aliases,
+            types=_relation_types(relation),
+            duck_types=alias_markers,
+        )
 
     def rename_columns(self, **mappings: str) -> DuckRel:
         """Rename columns using DuckDB's ``RENAME`` star modifier."""
@@ -408,25 +589,15 @@ class DuckRel:
 
         return self._apply_star_projection(rename_entries=resolved)
 
-    def transform_columns(self, **expressions: str) -> DuckRel:
+    def transform_columns(self, **expressions: str | AnyColumnExpression) -> DuckRel:
         """Replace columns using DuckDB's ``REPLACE`` star modifier."""
 
         if not expressions:
             raise ValueError("transform_columns() requires at least one column expression.")
 
-        resolved: list[tuple[str, str]] = []
+        resolved: list[tuple[str, str, type[DuckType]]] = []
         seen: set[str] = set()
         for target, expression in expressions.items():
-            if not isinstance(expression, str):
-                raise TypeError(
-                    "transform_columns() expects SQL expressions as strings; "
-                    f"received {type(expression).__name__} for {target!r}."
-                )
-            if not expression.strip():
-                raise ValueError(
-                    "transform_columns() expressions must not be empty; "
-                    f"column {target!r} received an empty expression."
-                )
 
             resolved_name = util.resolve_columns([target], self._columns)[0]
             key = resolved_name.casefold()
@@ -437,31 +608,36 @@ class DuckRel:
                 )
             seen.add(key)
 
-            quoted = _quote_identifier(resolved_name)
-            templated = expression.replace("{column}", quoted).replace("{col}", quoted)
-            resolved.append((resolved_name, templated))
+            if isinstance(expression, ColumnExpression):
+                templated = expression.render(self._columns)
+                marker, _ = self._metadata_from_expression(expression, context="transform_columns()")
+            elif isinstance(expression, str):
+                if not expression.strip():
+                    raise ValueError(
+                        "transform_columns() expressions must not be empty; "
+                        f"column {target!r} received an empty expression."
+                    )
+                quoted = _quote_identifier(resolved_name)
+                templated = expression.replace("{column}", quoted).replace("{col}", quoted)
+                marker = Unknown
+            else:
+                raise TypeError(
+                    "transform_columns() expects SQL expressions as strings or ColumnExpression instances; "
+                    f"received {type(expression).__name__} for {target!r}."
+                )
+            resolved.append((resolved_name, templated, marker))
 
         return self._apply_star_projection(transform_entries=resolved)
 
-    def add_columns(self, **expressions: str) -> DuckRel:
+    def add_columns(self, **expressions: str | AnyColumnExpression) -> DuckRel:
         """Add computed columns to the relation using ``*`` projection syntax."""
 
         if not expressions:
             raise ValueError("add_columns() requires at least one expression mapping.")
 
-        resolved: list[tuple[str, str]] = []
+        resolved: list[tuple[str, str, type[DuckType]]] = []
         seen: set[str] = set()
         for name, expression in expressions.items():
-            if not isinstance(expression, str):
-                raise TypeError(
-                    "add_columns() expects SQL expressions as strings; "
-                    f"received {type(expression).__name__} for {name!r}."
-                )
-            if not expression.strip():
-                raise ValueError(
-                    "add_columns() expressions must not be empty; "
-                    f"column {name!r} received an empty expression."
-                )
             key = name.casefold()
             if key in seen:
                 raise ValueError(
@@ -469,7 +645,23 @@ class DuckRel:
                     f"column {name!r} mapped multiple times."
                 )
             seen.add(key)
-            resolved.append((name, expression))
+            if isinstance(expression, ColumnExpression):
+                rendered = expression.render(self._columns)
+                marker, _ = self._metadata_from_expression(expression, context="add_columns()")
+            elif isinstance(expression, str):
+                if not expression.strip():
+                    raise ValueError(
+                        "add_columns() expressions must not be empty; "
+                        f"column {name!r} received an empty expression."
+                    )
+                rendered = expression
+                marker = Unknown
+            else:
+                raise TypeError(
+                    "add_columns() expects SQL expressions as strings or ColumnExpression instances; "
+                    f"received {type(expression).__name__} for {name!r}."
+                )
+            resolved.append((name, rendered, marker))
 
         return self._apply_star_projection(add_entries=resolved)
 
@@ -497,24 +689,26 @@ class DuckRel:
 
         rendered = self._render_filter_expression(expression, args)
         relation = self._relation.filter(rendered)
-        return type(self)(relation, columns=self._columns, types=self._types)
+        return self._wrap_same_schema(relation)
 
     def aggregate(
         self,
-        *group_columns: str,
-        aggregates: Mapping[str, str | AggregateExpression] | None = None,
+        *group_columns: str | AnyColumnExpression,
+        aggregates: Mapping[str, str | AnyColumnExpression | AggregateExpression] | None = None,
         having_expressions: Sequence[str | FilterExpression] | None = None,
-        **aggregate_columns: str | AggregateExpression,
+        **aggregate_columns: str | AnyColumnExpression | AggregateExpression,
     ) -> DuckRel:
         """Return a grouped aggregate relation.
 
         Parameters
         ----------
         group_columns:
-            Column names used for ``GROUP BY`` processing. Names are resolved in a
-            case-insensitive manner while preserving their stored casing.
+            Column names or :class:`~duckplus.filters.ColumnExpression` instances used for
+            ``GROUP BY`` processing. Names are resolved in a case-insensitive manner
+            while preserving their stored casing.
         aggregates, aggregate_columns:
-            Mapping of output column names to aggregate SQL fragments or
+            Mapping of output column names to aggregate SQL fragments,
+            :class:`~duckplus.filters.ColumnExpression` instances, or
             :class:`AggregateExpression` helpers. Both the ``aggregates`` mapping
             and keyword arguments contribute to the final projection order.
         having_expressions:
@@ -528,7 +722,7 @@ class DuckRel:
                 f"received {type(aggregates).__name__}."
             )
 
-        combined: list[tuple[str, str | AggregateExpression]] = []
+        combined: list[tuple[str, str | AnyColumnExpression | AggregateExpression]] = []
         if aggregates:
             combined.extend(aggregates.items())
         if aggregate_columns:
@@ -538,22 +732,37 @@ class DuckRel:
             raise ValueError("aggregate() requires at least one aggregate expression.")
 
         resolved_groups: list[str] = []
+        group_expressions: list[str] = []
+        final_markers: list[type[DuckType]] = []
         if group_columns:
-            resolved_groups = util.resolve_columns(group_columns, self._columns)
             seen_groups: set[str] = set()
-            deduped: list[str] = []
-            for column in resolved_groups:
-                key = column.casefold()
+            for group in group_columns:
+                if isinstance(group, ColumnExpression):
+                    resolved_name = group.resolve(self._columns)
+                    expression_sql = group.render(self._columns)
+                    marker, _ = self._metadata_from_expression(
+                        group, context="aggregate() GROUP BY"
+                    )
+                elif isinstance(group, str):
+                    resolved_name = util.resolve_columns([group], self._columns)[0]
+                    expression_sql = _quote_identifier(resolved_name)
+                    marker = self._marker_for_column(resolved_name)
+                else:
+                    raise TypeError(
+                        "aggregate() group columns must be strings or ColumnExpression instances; "
+                        f"received {type(group).__name__}."
+                    )
+
+                key = resolved_name.casefold()
                 if key in seen_groups:
                     raise ValueError(
                         "aggregate() received duplicate group-by column names; "
-                        f"column {column!r} specified multiple times."
+                        f"column {resolved_name!r} specified multiple times."
                     )
                 seen_groups.add(key)
-                deduped.append(column)
-            resolved_groups = deduped
-
-        group_expressions = [_quote_identifier(column) for column in resolved_groups]
+                resolved_groups.append(resolved_name)
+                group_expressions.append(expression_sql)
+                final_markers.append(marker)
 
         final_columns = list(resolved_groups)
         selection_parts = list(group_expressions)
@@ -577,22 +786,30 @@ class DuckRel:
 
             if isinstance(expression, AggregateExpression):
                 rendered = expression.render(self._columns)
-            else:
-                if not isinstance(expression, str):
-                    raise TypeError(
-                        "aggregate() expressions must be strings or AggregateExpression; "
-                        f"alias {alias!r} mapped to {type(expression).__name__}."
-                    )
+                marker = expression.duck_type
+            elif isinstance(expression, ColumnExpression):
+                rendered = expression.render_for_aggregate(self._columns)
+                marker, _ = self._metadata_from_expression(
+                    expression, context="aggregate() projection"
+                )
+            elif isinstance(expression, str):
                 if not expression.strip():
                     raise ValueError(
                         "aggregate() expressions must not be empty; "
                         f"alias {alias!r} received an empty expression."
                     )
                 rendered = expression
+                marker = Unknown
+            else:
+                raise TypeError(
+                    "aggregate() expressions must be strings, ColumnExpression instances, or AggregateExpression; "
+                    f"alias {alias!r} mapped to {type(expression).__name__}."
+                )
 
             selection_parts.append(_alias(rendered, alias))
             final_columns.append(alias)
             seen_aliases.add(key)
+            final_markers.append(marker)
 
         util.ensure_unique_names(final_columns)
 
@@ -631,7 +848,12 @@ class DuckRel:
 
         relation = self._relation.query(source_alias, query_sql)
         types = _relation_types(relation)
-        return type(self)(relation, columns=final_columns, types=types)
+        return type(self)(
+            relation,
+            columns=final_columns,
+            types=types,
+            duck_types=final_markers,
+        )
 
     def split(
         self, expression: str | FilterExpression, /, *args: Any
@@ -644,17 +866,9 @@ class DuckRel:
         """
 
         rendered = self._render_filter_expression(expression, args)
-        matches = type(self)(
-            self._relation.filter(rendered),
-            columns=self._columns,
-            types=self._types,
-        )
+        matches = self._wrap_same_schema(self._relation.filter(rendered))
         remainder_expression = f"NOT (COALESCE(({rendered}), FALSE))"
-        remainder = type(self)(
-            self._relation.filter(remainder_expression),
-            columns=self._columns,
-            types=self._types,
-        )
+        remainder = self._wrap_same_schema(self._relation.filter(remainder_expression))
         return matches, remainder
 
     def natural_inner(
@@ -981,15 +1195,72 @@ class DuckRel:
         resolved = self._build_natural_join_spec(other, strict=strict, key_aliases=key_aliases)
         return self._execute_join(other, how="anti", resolved=resolved, projection=None)
 
-    def order_by(self, **orders: Literal["asc", "desc", "ASC", "DESC"]) -> DuckRel:
-        """Return a relation ordered by the specified *orders* mapping."""
+    def order_by(
+        self,
+        *orderings: Mapping[str | AnyColumnExpression, str]
+        | tuple[str | AnyColumnExpression, str],
+        **orders: str,
+    ) -> DuckRel:
+        """Return a relation ordered by the specified *orders* mapping.
 
-        if not orders:
+        Accepts keyword pairs, ``(column, direction)`` tuples, or mappings where
+        columns may be strings or :class:`~duckplus.filters.ColumnExpression`
+        instances.
+        """
+
+        if not orderings and not orders:
             raise ValueError("order_by() requires at least one column/direction pair.")
 
-        order_clauses: list[str] = []
+        normalized_inputs: list[tuple[str | AnyColumnExpression, str]] = []
+        for ordering in orderings:
+            if isinstance(ordering, Mapping):
+                for column, direction in ordering.items():
+                    if not isinstance(column, (str, ColumnExpression)):
+                        raise TypeError(
+                            "order_by() mapping keys must be strings or ColumnExpression instances; "
+                            f"received {type(column).__name__}."
+                        )
+                    if not isinstance(direction, str):
+                        raise TypeError(
+                            "Ordering direction must be a string literal 'asc' or 'desc'; "
+                            f"received {type(direction).__name__} for column {column!r}."
+                        )
+                    normalized_inputs.append((column, direction))
+                continue
+            if not isinstance(ordering, tuple) or len(ordering) != 2:
+                raise TypeError(
+                    "order_by() positional arguments must be (column, direction) tuples or mappings."
+                )
+            column, direction = ordering
+            if not isinstance(column, (str, ColumnExpression)):
+                raise TypeError(
+                    "order_by() tuple columns must be strings or ColumnExpression instances; "
+                    f"received {type(column).__name__}."
+                )
+            if not isinstance(direction, str):
+                raise TypeError(
+                    "Ordering direction must be a string literal 'asc' or 'desc'; "
+                    f"received {type(direction).__name__} for column {column!r}."
+                )
+            normalized_inputs.append((column, direction))
+
         for column, direction in orders.items():
-            resolved = util.resolve_columns([column], self._columns)[0]
+            normalized_inputs.append((column, direction))
+
+        order_clauses: list[str] = []
+        for column, direction in normalized_inputs:
+            if isinstance(column, ColumnExpression):
+                _ensure_orderable_column(column)
+                rendered_column = column.render(self._columns)
+            elif isinstance(column, str):
+                resolved = util.resolve_columns([column], self._columns)[0]
+                rendered_column = _quote_identifier(resolved)
+            else:
+                raise TypeError(
+                    "order_by() keys must be column names or ColumnExpression instances; "
+                    f"received {type(column).__name__}."
+                )
+
             if not isinstance(direction, str):
                 raise TypeError(
                     "Ordering direction must be a string literal 'asc' or 'desc'; "
@@ -1001,10 +1272,10 @@ class DuckRel:
                     "Ordering direction must be 'asc' or 'desc'; "
                     f"received {direction!r} for column {column!r}."
                 )
-            clause = f"{_quote_identifier(resolved)} {normalized.upper()}"
+            clause = f"{rendered_column} {normalized.upper()}"
             order_clauses.append(clause)
         relation = self._relation.order(", ".join(order_clauses))
-        return type(self)(relation, columns=self._columns, types=self._types)
+        return self._wrap_same_schema(relation)
 
     def limit(self, count: int) -> DuckRel:
         """Limit the relation to *count* rows."""
@@ -1017,7 +1288,7 @@ class DuckRel:
         if count < 0:
             raise ValueError(f"limit() requires a non-negative count; received {count}.")
         relation = self._relation.limit(count)
-        return type(self)(relation, columns=self._columns, types=self._types)
+        return self._wrap_same_schema(relation)
 
     def cast_columns(
         self,
@@ -1079,6 +1350,7 @@ class DuckRel:
                 result.relation,
                 columns=resolved_columns,
                 types=_relation_types(result.relation),
+                duck_types=self._duck_types,
             )
 
         return Materialized(
@@ -1112,26 +1384,35 @@ class DuckRel:
 
         expressions: list[str] = []
         updated_types: list[str] = []
+        updated_markers: list[type[DuckType]] = []
         for column, current_type in zip(self._columns, self._types, strict=True):
             if column not in resolved:
                 expressions.append(_alias(_quote_identifier(column), column))
                 updated_types.append(current_type)
+                updated_markers.append(self._marker_for_column(column))
                 continue
 
             cast_type = resolved[column]
             expression = f"{function}({_quote_identifier(column)} AS {cast_type})"
             expressions.append(_alias(expression, column))
             updated_types.append(cast_type)
+            marker = lookup(cast_type)
+            updated_markers.append(marker)
 
         relation = self._relation.project(", ".join(expressions))
-        return type(self)(relation, columns=self._columns, types=updated_types)
+        return type(self)(
+            relation,
+            columns=self._columns,
+            types=updated_types,
+            duck_types=updated_markers,
+        )
 
     def _apply_star_projection(
         self,
         *,
         rename_entries: Sequence[tuple[str, str]] | None = None,
-        transform_entries: Sequence[tuple[str, str]] | None = None,
-        add_entries: Sequence[tuple[str, str]] | None = None,
+        transform_entries: Sequence[tuple[str, str, type[DuckType]]] | None = None,
+        add_entries: Sequence[tuple[str, str, type[DuckType]]] | None = None,
     ) -> DuckRel:
         rename_entries = list(rename_entries or [])
         transform_entries = list(transform_entries or [])
@@ -1141,6 +1422,7 @@ class DuckRel:
             raise ValueError("Star projection requires at least one modification.")
 
         final_columns = list(self._columns)
+        final_markers = list(self._duck_types)
         for original, new in rename_entries:
             index = self._lookup[original.casefold()]
             final_columns[index] = new
@@ -1163,12 +1445,12 @@ class DuckRel:
         if transform_entries:
             replace_sql = [
                 f"({expression}) AS {_quote_identifier(final_aliases[original.casefold()])}"
-                for original, expression in transform_entries
+                for original, expression, _ in transform_entries
             ]
 
         seen = {name.casefold() for name in final_columns}
         add_sql: list[str] = []
-        for name, expression in add_entries:
+        for name, expression, _ in add_entries:
             key = name.casefold()
             if key in seen:
                 raise ValueError(
@@ -1177,6 +1459,7 @@ class DuckRel:
                 )
             seen.add(key)
             add_sql.append(f"({expression}) AS {_quote_identifier(name)}")
+            final_columns.append(name)
 
         star_parts = ["*"]
         if rename_sql:
@@ -1188,7 +1471,12 @@ class DuckRel:
         projection_parts = [star_expr, *add_sql]
         projection_sql = ", ".join(part for part in projection_parts if part)
         relation = self._relation.project(projection_sql)
-        return type(self)(relation)
+        for original, _, marker in transform_entries:
+            index = self._lookup[original.casefold()]
+            final_markers[index] = marker
+        for _, _, marker in add_entries:
+            final_markers.append(marker)
+        return type(self)(relation, duck_types=final_markers)
 
     def _build_projection(
         self,
@@ -1208,7 +1496,12 @@ class DuckRel:
         resolved: _ResolvedJoinSpec,
         projection: JoinProjection | None,
         include_right_keys: bool,
-    ) -> tuple[list[str], list[str], list[str]]:
+    ) -> tuple[
+        list[str],
+        list[str],
+        list[str],
+        list[type[DuckType]],
+    ]:
         """Compile projection expressions for join outputs."""
 
         config = projection or JoinProjection()
@@ -1248,6 +1541,7 @@ class DuckRel:
         expressions: list[str] = []
         columns: list[str] = []
         types: list[str] = []
+        duck_types: list[type[DuckType]] = []
         seen: set[str] = set()
 
         for column, type_name in zip(self._columns, self._types, strict=True):
@@ -1267,6 +1561,7 @@ class DuckRel:
             expressions.append(_alias(_qualify("l", column), output))
             columns.append(output)
             types.append(type_name)
+            duck_types.append(self._duck_types[self._lookup[key]])
 
         for column, type_name in zip(other._columns, other._types, strict=True):
             key = column.casefold()
@@ -1286,8 +1581,9 @@ class DuckRel:
             expressions.append(_alias(_qualify("r", column), output))
             columns.append(output)
             types.append(type_name)
+            duck_types.append(other._duck_types[other._lookup[key]])
 
-        return expressions, columns, types
+        return expressions, columns, types, duck_types
 
     def _build_natural_join_spec(
         self,
@@ -1497,16 +1793,21 @@ class DuckRel:
         if how in {"semi", "anti"}:
             projection_exprs = _format_projection(self._columns, alias="l")
             relation = joined.project(", ".join(projection_exprs))
-            return type(self)(relation, columns=self._columns, types=self._types)
+            return self._wrap_same_schema(relation)
 
-        expressions, columns, types = self._compile_projection(
+        expressions, columns, types, duck_types = self._compile_projection(
             other,
             resolved=resolved,
             projection=projection,
             include_right_keys=how in {"right", "outer"},
         )
         relation = joined.project(", ".join(expressions))
-        return type(self)(relation, columns=columns, types=types)
+        return type(self)(
+            relation,
+            columns=columns,
+            types=types,
+            duck_types=duck_types,
+        )
 
     def _resolve_asof_spec(self, other: DuckRel, spec: AsofSpec) -> _ResolvedAsofSpec:
         """Resolve an :class:`AsofSpec` against relation metadata."""
@@ -1583,7 +1884,7 @@ class DuckRel:
         resolved: _ResolvedAsofSpec,
         projection: JoinProjection | None,
     ) -> DuckRel:
-        expressions, columns, types = self._compile_projection(
+        expressions, columns, types, duck_types = self._compile_projection(
             other,
             resolved=resolved.join,
             projection=projection,
@@ -1659,7 +1960,12 @@ ORDER BY __duckplus_row_id
 """
 
         relation = self._relation.query("left_input", query)
-        return type(self)(relation, columns=columns, types=types)
+        return type(self)(
+            relation,
+            columns=columns,
+            types=types,
+            duck_types=duck_types,
+        )
 
     @classmethod
     def from_pandas(
@@ -1705,5 +2011,3 @@ ORDER BY __duckplus_row_id
             else raw.from_arrow(arrow_table)
         )
         return cls(relation)
-
-

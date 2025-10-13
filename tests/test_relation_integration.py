@@ -8,6 +8,7 @@ from decimal import Decimal
 import pytest
 
 from duckplus import (
+    AggregateExpression,
     ArrowMaterializeStrategy,
     AsofOrder,
     DuckConnection,
@@ -15,8 +16,10 @@ from duckplus import (
     ExpressionPredicate,
     JoinSpec,
     ParquetMaterializeStrategy,
+    col,
     column,
     connect,
+    ducktypes,
 )
 
 import pyarrow as pa
@@ -38,6 +41,185 @@ def table_rows(table: pa.Table) -> list[tuple[object, ...]]:
     if not columns:
         return [tuple() for _ in range(table.num_rows)]
     return list(zip(*columns, strict=True))
+
+
+def test_column_expression_end_to_end(connection: DuckConnection) -> None:
+    """ColumnExpression integrates with filtering, projections, aggregates, and ordering."""
+
+    rel = DuckRel(
+        connection.raw.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                ('a', 1),
+                ('a', 2),
+                ('b', 3)
+            ) AS t(category, value)
+            """
+        )
+    )
+
+    category = col("category", duck_type=ducktypes.Varchar)
+    value = col("value", duck_type=ducktypes.Integer)
+
+    aggregated = (
+        rel
+        .filter(value > 1)
+        .project({"category": category, "value": value})
+        .add_columns(category_copy=col("category"))
+        .transform_columns(value=col("value"))
+        .aggregate(
+            category,
+            total=AggregateExpression.sum(value),
+            largest=AggregateExpression.function("first", value).with_order_by((value, "desc")),
+            category_label=category,
+        )
+        .order_by((col("total"), "desc"))
+    )
+
+    assert aggregated.columns == ["category", "total", "largest", "category_label"]
+    assert aggregated.relation.fetchall() == [("b", 3, 3, "b"), ("a", 2, 2, "a")]
+    assert aggregated.column_type_markers == [
+        ducktypes.Varchar,
+        ducktypes.Integer,
+        ducktypes.Unknown,
+        ducktypes.Varchar,
+    ]
+
+
+def test_fetch_typed_uses_column_markers(connection: DuckConnection) -> None:
+    """fetch_typed() projects typed tuples derived from column metadata."""
+
+    rel = DuckRel(
+        connection.raw.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                ('a', 1),
+                ('b', 2),
+                ('a', 3)
+            ) AS t(category, quantity)
+            """
+        )
+    )
+
+    category = col("category", duck_type=ducktypes.Varchar)
+    quantity = col("quantity", duck_type=ducktypes.Integer)
+
+    typed = rel.project({"category": category, "quantity": quantity})
+    assert typed.fetch_typed() == [("a", 1), ("b", 2), ("a", 3)]
+
+    summary = (
+        typed
+        .aggregate(category, total=AggregateExpression.sum(quantity))
+        .order_by((col("category", duck_type=ducktypes.Varchar), "asc"))
+    )
+    assert summary.fetch_typed() == [("a", 4), ("b", 2)]
+
+
+def test_fetch_typed_rejects_column_arguments(connection: DuckConnection) -> None:
+    """fetch_typed() requires callers to project columns ahead of time."""
+
+    rel = DuckRel(connection.raw.sql("SELECT 1 AS id"))
+
+    with pytest.raises(TypeError):
+        rel.fetch_typed("id")  # type: ignore[arg-type]
+
+
+def test_project_validates_declared_type(connection: DuckConnection) -> None:
+    """Explicit column typing is validated against the relation schema."""
+
+    rel = DuckRel(
+        connection.raw.sql(
+            """
+            SELECT *
+            FROM (VALUES (1, 'x')) AS t(identifier, label)
+            """
+        )
+    )
+
+    with pytest.raises(
+        TypeError,
+        match=r"Projection column 'identifier' is typed as INTEGER but was declared as VARCHAR",
+    ):
+        rel.project({"identifier": col("identifier", duck_type=ducktypes.Varchar)})
+
+
+def test_column_markers_propagate_through_pipeline(connection: DuckConnection) -> None:
+    """Column type markers follow projections, transforms, aggregates, and additions."""
+
+    rel = DuckRel(
+        connection.raw.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                ('basic', 5, 1.5),
+                ('basic', 7, 2.0)
+            ) AS source(category, quantity, ratio)
+            """
+        )
+    )
+
+    assert rel.column_type_markers == [ducktypes.Unknown, ducktypes.Unknown, ducktypes.Unknown]
+
+    category = col("category", duck_type=ducktypes.Varchar)
+    quantity = col("quantity", duck_type=ducktypes.Integer)
+
+    typed = rel.project({"category": category, "quantity": quantity})
+    assert typed.column_type_markers == [ducktypes.Varchar, ducktypes.Integer]
+
+    transformed = typed.transform_columns(quantity=col("quantity"))
+    assert transformed.column_type_markers == [ducktypes.Varchar, ducktypes.Integer]
+
+    augmented = transformed.add_columns(
+        quantity_copy=col("quantity"),
+        total=col("quantity", duck_type=ducktypes.Integer),
+    )
+    assert augmented.column_type_markers == [
+        ducktypes.Varchar,
+        ducktypes.Integer,
+        ducktypes.Integer,
+        ducktypes.Integer,
+    ]
+
+    aggregated = augmented.aggregate(
+        category,
+        quantity_sum=AggregateExpression.sum(col("quantity")),
+        observed=AggregateExpression.count(),
+    )
+
+    assert aggregated.columns == ["category", "quantity_sum", "observed"]
+    assert aggregated.column_type_markers == [
+        ducktypes.Varchar,
+        ducktypes.Numeric,
+        ducktypes.BigInt,
+    ]
+
+
+def test_sum_rejects_text_column() -> None:
+    """Typed column expressions reject invalid aggregate input types."""
+
+    text_column = col("category", duck_type=ducktypes.Varchar)
+
+    with pytest.raises(TypeError, match=r"SUM aggregate requires numeric arguments"):
+        AggregateExpression.sum(text_column)
+
+
+def test_order_by_rejects_non_comparable(connection: DuckConnection) -> None:
+    """order_by() validates type information when provided."""
+
+    rel = DuckRel(
+        connection.raw.sql(
+            """
+            SELECT * FROM (VALUES (BLOB 'abc')) AS t(payload)
+            """
+        )
+    )
+
+    blob_column = col("payload", duck_type=ducktypes.Blob)
+
+    with pytest.raises(TypeError, match=r"order_by\(\) requires comparable column types"):
+        rel.order_by((blob_column, "asc"))
 
 
 def test_exploratory_feature_engineering_pipeline(connection: DuckConnection) -> None:

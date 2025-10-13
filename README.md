@@ -38,7 +38,7 @@ with `uv run sphinx-build -b html docs/source docs/_build/html`, then open
 ## Quickstart
 
 ```python
-from duckplus import DuckRel, connect
+from duckplus import DuckRel, col, connect
 
 with connect() as conn:
     rel = DuckRel(
@@ -56,16 +56,16 @@ with connect() as conn:
 
     top_scores = (
         rel
-        .filter('"score" >= ?', 8)
-        .project_columns("id", "name", "score")
-        .order_by(score="desc")
+        .filter(col("score") >= 8)
+        .project({"id": col("id"), "name": col("name"), "score": col("score")})
+        .order_by((col("score"), "desc"))
     )
 
     print(top_scores.materialize().require_table().to_pylist())
 ```
 
 This snippet opens an in-memory DuckDB connection, builds a relation, filters
-rows with positional parameters, and materializes results safely.
+rows with fluent column expressions, and materializes results safely.
 
 ---
 
@@ -98,6 +98,98 @@ deduped = (
 DuckRel methods always return new relations and validate column names with
 case-aware lookups.
 
+### Compose with column expressions
+
+The :func:`duckplus.col` helper returns a ``ColumnExpression`` that validates
+column references before rendering SQL. Provide an optional
+``duck_type=duckplus.ducktypes.*`` marker to opt into static type hints and
+runtime validation for aggregates and ordering. Use the helper to build
+filters, projections, aggregates, and ordering clauses without hand-writing
+identifiers:
+
+```python
+from duckplus import AggregateExpression, col, ducktypes
+
+team = col("team", duck_type=ducktypes.Varchar)
+score = col("score", duck_type=ducktypes.Integer)
+
+ranked = (
+    rel
+    .filter(score > 0)
+    .add_columns(double_score=score)
+    .aggregate(
+        team,
+        total_score=AggregateExpression.sum(score),
+        peak_score=AggregateExpression.max(score),
+    )
+    .order_by((col("total_score", duck_type=ducktypes.Integer), "desc"))
+)
+```
+
+Typed column expressions propagate through the pipeline. A relation exposes
+``column_type_markers`` so you can inspect the currently declared DuckDB logical
+types. Untyped expressions default to :class:`duckplus.ducktypes.Unknown`, letting
+you opt into validation incrementally:
+
+```python
+typed = rel.project({"team": team, "score": score})
+print([marker.describe() for marker in typed.column_type_markers])
+# ['VARCHAR', 'INTEGER']
+```
+
+Declaring an incompatible type raises a helpful error before execution. For
+example, projecting ``col("score", duck_type=ducktypes.Varchar)`` on a numeric
+column fails fast with ``Projection column 'score' is typed as INTEGER but was
+declared as VARCHAR``.
+
+Typed metadata also powers ``DuckRel.fetch_typed()``, which turns the current
+relation into Python tuples using the declared :mod:`duckplus.ducktypes` markers
+as type hints. The method always returns every projected column so you can rely
+on the stored schema. Columns without explicit typing fall back to ``Any``;
+Python hints are derived from the declared DuckDB markers so there's a single
+source of truth for both runtime validation and static analysis:
+
+```python
+rows = typed.fetch_typed()
+# list[tuple[str, int]]
+
+totals = (
+    typed
+    .aggregate(team, total=AggregateExpression.sum(score))
+    .order_by((team, "asc"))
+)
+print(totals.fetch_typed())
+# [('alpha', 200), ('beta', 80)]
+```
+
+### Explore typed pipelines
+
+End-to-end demos that exercise typed projections, aggregates, and fetches live
+in :mod:`duckplus.examples.typed_pipeline_demos`. They build a small in-memory
+orders dataset, carry DuckDB markers through transformations, and surface the
+results with ``fetch_typed()`` so consumers receive precise Python annotations.
+
+```python
+from duckplus import connect
+from duckplus.examples import typed_pipeline_demos
+
+with connect() as conn:
+    orders = typed_pipeline_demos.typed_orders_demo_relation(conn)
+
+    print(typed_pipeline_demos.priority_order_snapshot(orders))
+    # [(1, 'north', 'Alice', 120, 5, datetime.date(2024, 1, 1), True), ...]
+
+    print(typed_pipeline_demos.regional_revenue_summary(orders))
+    # [('east', 1, 15), ('north', 3, 365), ('south', 1, 98), ('west', 1, 155)]
+
+    taxed = typed_pipeline_demos.apply_manual_tax_projection(orders)
+    print(typed_pipeline_demos.describe_markers(taxed))
+    # ['INTEGER', 'VARCHAR', 'VARCHAR', 'UNKNOWN', 'INTEGER', 'DATE', 'BOOLEAN']
+```
+
+The helper functions double as living documentation—the automated tests execute
+them to ensure guides stay accurate as the API evolves.
+
 ### Aggregate with ``AggregateExpression``
 
 ```python
@@ -122,14 +214,14 @@ with duckdb.connect() as conn:
 
     rollup = (
         sales.aggregate(
-            "region",
-            total_amount=AggregateExpression.sum("amount"),
-            non_north=AggregateExpression.sum("amount").with_filter(col("region") != "north"),
+            col("region"),
+            total_amount=AggregateExpression.sum(col("amount")),
+            non_north=AggregateExpression.sum(col("amount")).with_filter(col("region") != "north"),
             first_sale_amount=(
-                AggregateExpression.function("first", "amount").with_order_by(("sale_date", "asc"))
+                AggregateExpression.function("first", col("amount")).with_order_by((col("sale_date"), "asc"))
             ),
         )
-        .order_by(region="asc")
+        .order_by((col("region"), "asc"))
     )
 
     print(rollup.relation.fetchall())

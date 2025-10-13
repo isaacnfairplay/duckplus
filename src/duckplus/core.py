@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from . import ducktypes  # re-export typed column markers
 from ._core_specs import (
     AsofOrder,
     AsofSpec,
@@ -13,6 +14,7 @@ from ._core_specs import (
 )
 from .aggregates import AggregateArgument, AggregateExpression, AggregateOrder
 from .filters import (
+    ColumnExpression,
     FilterExpression,
     col,
     column,
@@ -29,6 +31,7 @@ __all__ = [
     "AsofOrder",
     "AsofSpec",
     "ColumnPredicate",
+    "ColumnExpression",
     "AggregateArgument",
     "AggregateExpression",
     "AggregateOrder",
@@ -47,5 +50,6 @@ __all__ = [
     "less_than",
     "less_than_or_equal",
     "not_equals",
+    "ducktypes",
 ]
 
