@@ -1,0 +1,78 @@
+name: Docs
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      base_url: ${{ steps.configure.outputs.base_url }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Configure GitHub Pages
+        id: configure
+        uses: actions/configure-pages@v4
+
+      - name: Sync project environment
+        run: uv sync
+
+      - name: Build documentation
+        run: uv run sphinx-build -b html docs/source docs/_build/html
+
+      - name: Upload documentation artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/_build/html
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Publish deployment summary
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+          BASE_URL: ${{ needs.build.outputs.base_url }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          {
+            echo "### Documentation site";
+            echo "";
+            if [ -n "$PAGE_URL" ]; then
+              if [ "$EVENT_NAME" = "pull_request" ]; then
+                echo "- 🔍 Preview for this PR: [$PAGE_URL]($PAGE_URL)";
+              else
+                echo "- 🚀 Published site: [$PAGE_URL]($PAGE_URL)";
+              fi
+            fi
+            if [ -n "$BASE_URL" ] && [ "$BASE_URL" != "$PAGE_URL" ]; then
+              echo "- ℹ️ Base URL: [$BASE_URL]($BASE_URL)";
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
