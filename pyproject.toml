@@ -1,6 +1,6 @@
 [project]
 name = "duckplus"                     # PyPI-safe name; brand "Duck+"
-version = "0.0.5"
+version = "0.0.6"
 description = "Pythonic, typed wrappers for DuckDB relations and tables (Duck+)."
 readme = "README.md"
 license = { file = "LICENSE" }
