@@ -467,7 +467,7 @@ def test_aggregate_having_filter(connection: duckdb.DuckDBPyConnection) -> None:
     filtered = rel.aggregate(
         "category",
         total=AggregateExpression.sum("amount"),
-        having_expressions=['SUM("amount") > 10'],
+        having_expressions=[FilterExpression.raw('SUM("amount") > 10')],
     )
 
     assert table_rows(filtered.materialize().require_table()) == [("A", 25)]
@@ -542,7 +542,7 @@ def test_aggregate_having_sum_greater_than_100(sales_rel: DuckRel) -> None:
     filtered = sales_rel.aggregate(
         "region",
         total_amount=AggregateExpression.sum("amount"),
-        having_expressions=['SUM("amount") > 100'],
+        having_expressions=[FilterExpression.raw('SUM("amount") > 100')],
     )
 
     assert table_rows(filtered.materialize().require_table()) == [("north", 110)]

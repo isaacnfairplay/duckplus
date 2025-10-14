@@ -7,13 +7,13 @@ from collections.abc import Mapping, Sequence
 from typing import Any, Generic, TypeVar, cast
 
 from .. import util
-from ..aggregates import AggregateExpression
+from ..aggregates import AggregateArgument, AggregateExpression
 from ..duckrel import DuckRel
-from ..ducktypes import DuckType, Unknown, lookup
+from ..ducktypes import Boolean, DuckType, Unknown, lookup
 from ..filters import ColumnExpression, FilterExpression
 from ..schema import AnyRow, ColumnDefinition, DuckSchema
 
-__all__ = ["Relation"]
+__all__ = ["Expression", "Relation"]
 
 
 def _quote(column: ColumnDefinition) -> str:
@@ -27,7 +27,7 @@ def _format_literal(value: Any) -> str:
 class _OrderSpec:
     __slots__ = ("expression", "direction")
 
-    def __init__(self, expression: "_Expression", direction: str) -> None:
+    def __init__(self, expression: "Expression[Any]", direction: str) -> None:
         self.expression = expression
         self.direction = direction
 
@@ -35,20 +35,25 @@ class _OrderSpec:
         return self.expression._to_projection(), self.direction
 
 
-class _Expression:
-    __slots__ = ("_sql", "_column", "_marker", "_schema")
+PythonT_co = TypeVar("PythonT_co", covariant=True)
+
+
+class Expression(Generic[PythonT_co]):
+    __slots__ = ("_sql", "_column", "_marker", "_annotation", "_schema")
 
     def __init__(
         self,
         sql: str,
         *,
+        schema: DuckSchema[Any] | None,
         column: ColumnExpression[Any, Any] | None = None,
         marker: type[DuckType] = Unknown,
-        schema: DuckSchema[Any] | None = None,
+        annotation: Any = Any,
     ) -> None:
         self._sql = sql
         self._column = column
         self._marker = marker
+        self._annotation = annotation
         self._schema = schema
 
     @property
@@ -59,82 +64,101 @@ class _Expression:
     def marker(self) -> type[DuckType]:
         return self._marker
 
-    def _binary(self, other: Any, operator: str, *, reverse: bool = False) -> "_Expression":
+    @property
+    def python_annotation(self) -> Any:
+        return self._annotation
+
+    def _require_schema(self) -> DuckSchema[Any]:
+        if self._schema is None:
+            raise TypeError("Expression operations require schema context.")
+        return self._schema
+
+    def _binary(self, other: Any, operator: str, *, reverse: bool = False) -> "Expression[Any]":
+        schema = self._require_schema()
         left, right = (self, self._coerce(other))
         if reverse:
             left, right = right, left
         sql = f"({left.sql}) {operator} ({right.sql})"
-        return _Expression(sql)
+        return Expression(sql, schema=schema)
 
     def _compare(self, other: Any, operator: str, *, reverse: bool = False) -> FilterExpression:
+        schema = self._require_schema()
         left, right = (self, self._coerce(other))
         if reverse:
             left, right = right, left
         sql = f"({left.sql}) {operator} ({right.sql})"
+        # Comparisons always yield booleans; validation already occurred during coercion.
         return FilterExpression.raw(sql)
 
-    def _coerce(self, value: Any) -> "_Expression":
-        if isinstance(value, _Expression):
+    def _coerce(self, value: Any) -> "Expression[Any]":
+        schema = self._require_schema()
+        if isinstance(value, Expression):
+            if value._schema is None:
+                return Expression(
+                    value.sql,
+                    schema=schema,
+                    column=value._column,
+                    marker=value.marker,
+                    annotation=value.python_annotation,
+                )
+            if value._schema is not schema:
+                raise TypeError("Expressions from different schemas cannot be combined.")
             return value
         if isinstance(value, ColumnExpression):
-            if self._schema is None:
-                raise TypeError("Column expressions require schema context.")
-            rendered = value.render(self._schema.column_names)
-            marker, _ = Relation._metadata_from_column_expression(
-                self._schema, value, context="expression"
-            )
-            return _Expression(rendered, column=value, marker=marker, schema=self._schema)
+            return Expression.from_column_expression(value, schema)
         if isinstance(value, FilterExpression):
-            return _Expression(f"({value.render(self._schema.column_names if self._schema else [])})")
-        return _Expression(_format_literal(value))
+            return Expression.from_filter(value, schema)
+        return Expression.literal(value, schema=schema)
 
-    def __add__(self, other: Any) -> "_Expression":
+    def __add__(self, other: Any) -> "Expression[Any]":
         return self._binary(other, "+")
 
-    def __radd__(self, other: Any) -> "_Expression":
+    def __radd__(self, other: Any) -> "Expression[Any]":
         return self._binary(other, "+", reverse=True)
 
-    def __sub__(self, other: Any) -> "_Expression":
+    def __sub__(self, other: Any) -> "Expression[Any]":
         return self._binary(other, "-")
 
-    def __rsub__(self, other: Any) -> "_Expression":
+    def __rsub__(self, other: Any) -> "Expression[Any]":
         return self._binary(other, "-", reverse=True)
 
-    def __mul__(self, other: Any) -> "_Expression":
+    def __mul__(self, other: Any) -> "Expression[Any]":
         return self._binary(other, "*")
 
-    def __rmul__(self, other: Any) -> "_Expression":
+    def __rmul__(self, other: Any) -> "Expression[Any]":
         return self._binary(other, "*", reverse=True)
 
-    def __truediv__(self, other: Any) -> "_Expression":
+    def __truediv__(self, other: Any) -> "Expression[Any]":
         return self._binary(other, "/")
 
-    def __rtruediv__(self, other: Any) -> "_Expression":
+    def __rtruediv__(self, other: Any) -> "Expression[Any]":
         return self._binary(other, "/", reverse=True)
 
-    def __floordiv__(self, other: Any) -> "_Expression":
+    def __floordiv__(self, other: Any) -> "Expression[Any]":
         return self._binary(other, "//")
 
-    def __rfloordiv__(self, other: Any) -> "_Expression":
+    def __rfloordiv__(self, other: Any) -> "Expression[Any]":
         return self._binary(other, "//", reverse=True)
 
-    def __mod__(self, other: Any) -> "_Expression":
+    def __mod__(self, other: Any) -> "Expression[Any]":
         return self._binary(other, "%")
 
-    def __rmod__(self, other: Any) -> "_Expression":
+    def __rmod__(self, other: Any) -> "Expression[Any]":
         return self._binary(other, "%", reverse=True)
 
-    def __pow__(self, other: Any) -> "_Expression":
+    def __pow__(self, other: Any) -> "Expression[Any]":
         return self._binary(other, "^")
 
-    def __rpow__(self, other: Any) -> "_Expression":
+    def __rpow__(self, other: Any) -> "Expression[Any]":
         return self._binary(other, "^", reverse=True)
 
-    def __neg__(self) -> "_Expression":
-        return _Expression(f"-({self._sql})")
+    def __neg__(self) -> "Expression[Any]":
+        schema = self._schema
+        return Expression(f"-({self._sql})", schema=schema, marker=self._marker, annotation=self._annotation)
 
-    def __pos__(self) -> "_Expression":
-        return _Expression(f"+({self._sql})")
+    def __pos__(self) -> "Expression[Any]":
+        schema = self._schema
+        return Expression(f"+({self._sql})", schema=schema, marker=self._marker, annotation=self._annotation)
 
     def __eq__(self, other: Any) -> FilterExpression:  # type: ignore[override]
         return self._compare(other, "=")
@@ -169,19 +193,95 @@ class _Expression:
             return self._column
         return self._sql
 
+    def as_aggregate_argument(self) -> AggregateArgument:
+        projection = self._to_projection()
+        if isinstance(projection, ColumnExpression):
+            return AggregateArgument.column(projection)
+        return AggregateArgument.raw(self._sql)
+
     @classmethod
     def from_column(
         cls, definition: ColumnDefinition, schema: DuckSchema[Any]
-    ) -> "_Expression":
+    ) -> "Expression[Any]":
         column: ColumnExpression[Any, Any] = ColumnExpression(
             definition.name,
             duck_type=definition.duck_type,
         )
-        return cls(_quote(definition), column=column, marker=definition.duck_type, schema=schema)
+        marker, annotation = Relation._metadata_from_column_expression(
+            schema,
+            column,
+            context="expression",
+        )
+        return cls(
+            _quote(definition),
+            schema=schema,
+            column=column,
+            marker=marker,
+            annotation=annotation,
+        )
 
     @classmethod
-    def literal(cls, value: Any) -> "_Expression":
-        return cls(_format_literal(value))
+    def from_column_expression(
+        cls, expression: ColumnExpression[Any, Any], schema: DuckSchema[Any]
+    ) -> "Expression[Any]":
+        rendered = expression.render(schema.column_names)
+        marker, annotation = Relation._metadata_from_column_expression(
+            schema,
+            expression,
+            context="expression",
+        )
+        return cls(
+            rendered,
+            schema=schema,
+            column=expression,
+            marker=marker,
+            annotation=annotation,
+        )
+
+    @classmethod
+    def from_filter(
+        cls, expression: FilterExpression, schema: DuckSchema[Any]
+    ) -> "Expression[bool]":
+        rendered = expression.render(schema.column_names)
+        return Expression(
+            rendered,
+            schema=schema,
+            marker=Boolean,
+            annotation=bool,
+        )
+
+    @classmethod
+    def literal(cls, value: Any, *, schema: DuckSchema[Any]) -> "Expression[Any]":
+        return cls(
+            _format_literal(value),
+            schema=schema,
+            marker=Unknown,
+            annotation=type(value) if value is not None else type(None),
+        )
+
+    @classmethod
+    def raw(
+        cls, expression: str, *, schema: DuckSchema[Any] | None = None
+    ) -> "Expression[Any]":
+        if not isinstance(expression, str):
+            raise TypeError(
+                "Raw expressions must be provided as strings; "
+                f"received {type(expression).__name__}."
+            )
+        if not expression.strip():
+            raise ValueError("Raw expression must not be empty.")
+        return cls(expression, schema=schema)
+
+    @classmethod
+    def boolean(
+        cls, expression: str, *, schema: DuckSchema[Any]
+    ) -> "Expression[bool]":
+        return Expression(
+            expression,
+            schema=schema,
+            marker=Boolean,
+            annotation=bool,
+        )
 
 
 class ColumnContext:
@@ -190,11 +290,11 @@ class ColumnContext:
     def __init__(self, schema: DuckSchema[Any]) -> None:
         self._schema = schema
 
-    def __getitem__(self, name: str) -> _Expression:
+    def __getitem__(self, name: str) -> Expression[Any]:
         definition = self._schema.column(name)
-        return _Expression.from_column(definition, self._schema)
+        return Expression.from_column(definition, self._schema)
 
-    def __getattr__(self, name: str) -> _Expression:
+    def __getattr__(self, name: str) -> Expression[Any]:
         if name.startswith("_"):
             raise AttributeError(name)
         try:
@@ -202,11 +302,11 @@ class ColumnContext:
         except KeyError as exc:  # pragma: no cover - defensive path
             raise AttributeError(name) from exc
 
-    def literal(self, value: Any) -> _Expression:
-        return _Expression.literal(value)
+    def literal(self, value: Any) -> Expression[Any]:
+        return Expression.literal(value, schema=self._schema)
 
-    def raw(self, expression: str) -> _Expression:
-        return _Expression(expression)
+    def raw(self, expression: str) -> Expression[Any]:
+        return Expression.raw(expression, schema=self._schema)
 
 
 class AggregateContext:
@@ -269,30 +369,33 @@ class Relation(DuckRel[RowT], Generic[RowT]):
             marker = lookup(schema.duckdb_type(resolved))
         return marker, marker.python_annotation
 
-    def _resolve_expression(self, value: Any) -> _Expression:
+    def _resolve_expression(self, value: Any) -> Expression[Any]:
         if callable(value):
             return self._resolve_expression(value(self._column_context()))
-        if isinstance(value, _Expression):
+        if isinstance(value, Expression):
             if value._schema is None:
-                return _Expression(value.sql, schema=self.schema)
+                return Expression(
+                    value.sql,
+                    schema=self.schema,
+                    column=value._column,
+                    marker=value.marker,
+                    annotation=value.python_annotation,
+                )
+            if value._schema is not self.schema:
+                raise TypeError("Expressions can only be reused with the originating relation schema.")
             return value
         if isinstance(value, ColumnExpression):
-            marker, _ = self._metadata_from_column_expression(
-                self.schema, value, context="expression"
-            )
-            rendered = value.render(self.schema.column_names)
-            return _Expression(rendered, column=value, marker=marker, schema=self.schema)
+            return Expression.from_column_expression(value, self.schema)
         if isinstance(value, FilterExpression):
-            rendered = value.render(self.schema.column_names)
-            return _Expression(rendered)
+            return Expression.from_filter(value, self.schema)
         if isinstance(value, str):
             if value.casefold() in self.schema.lookup:
                 definition = self.schema.column(value)
-                return _Expression.from_column(definition, self.schema)
-            return _Expression(value)
-        if isinstance(value, (int, float, bool)) or value is None:
-            return _Expression.literal(value)
-        return _Expression(str(value))
+                return Expression.from_column(definition, self.schema)
+            raise TypeError(
+                "String expressions must reference projected columns; use Expression.raw() for SQL fragments."
+            )
+        return Expression.literal(value, schema=self.schema)
 
     def _prepare_projection(self, value: Any) -> str | ColumnExpression[Any, Any]:
         expression = self._resolve_expression(value)

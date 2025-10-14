@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 from . import util
 from .filters import AnyColumnExpression, ColumnExpression, FilterExpression
@@ -15,6 +15,9 @@ __all__ = [
     "AggregateExpression",
     "AggregateOrder",
 ]
+
+if TYPE_CHECKING:
+    from .relation.core import Expression
 
 
 class AggregateArgument:
@@ -461,9 +464,19 @@ class AggregateExpression:
         return self._result_type.python_annotation
 
 
-def _normalize_argument(argument: AggregateArgument | str | AnyColumnExpression) -> AggregateArgument:
+def _normalize_argument(
+    argument: AggregateArgument | str | AnyColumnExpression | "Expression[Any]"
+) -> AggregateArgument:
     if isinstance(argument, AggregateArgument):
         return argument
+    as_argument = getattr(argument, "as_aggregate_argument", None)
+    if callable(as_argument):
+        candidate = as_argument()
+        if not isinstance(candidate, AggregateArgument):
+            raise TypeError(
+                "Expression.as_aggregate_argument() must return an AggregateArgument instance."
+            )
+        return candidate
     if isinstance(argument, ColumnExpression):
         return AggregateArgument.column(argument)
     if isinstance(argument, str):
