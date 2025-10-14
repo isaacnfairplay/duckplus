@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from collections import OrderedDict
-from collections.abc import Mapping, Sequence
-from typing import Any, Generic, TypeVar, cast
+from collections.abc import Iterator, Mapping, Sequence
+from typing import Any, Generic, LiteralString, TypeVar, cast, overload
 
 from .. import util
 from ..aggregates import AggregateArgument, AggregateExpression
@@ -13,7 +13,10 @@ from ..ducktypes import Boolean, DuckType, Unknown, lookup
 from ..filters import ColumnExpression, FilterExpression
 from ..schema import AnyRow, ColumnDefinition, DuckSchema
 
-__all__ = ["Expression", "Relation"]
+__all__ = ["Expression", "Relation", "RelationColumnSet"]
+
+
+RowSetT = TypeVar("RowSetT", bound=AnyRow, covariant=True)
 
 
 def _quote(column: ColumnDefinition) -> str:
@@ -284,15 +287,56 @@ class Expression(Generic[PythonT_co]):
         )
 
 
-class ColumnContext:
+class RelationColumnSet(Sequence[str], Generic[RowSetT]):
+    """Sequence-like descriptor exposing schema backed column expressions."""
+
     __slots__ = ("_schema",)
 
-    def __init__(self, schema: DuckSchema[Any]) -> None:
+    def __init__(self, schema: DuckSchema[RowSetT]) -> None:
         self._schema = schema
 
-    def __getitem__(self, name: str) -> Expression[Any]:
-        definition = self._schema.column(name)
-        return Expression.from_column(definition, self._schema)
+    def __len__(self) -> int:  # pragma: no cover - trivial
+        return len(self._schema.column_names)
+
+    def __iter__(self) -> Iterator[str]:  # pragma: no cover - trivial
+        return iter(self._schema.column_names)
+
+    @overload
+    def __getitem__(self, key: int) -> str:
+        ...
+
+    @overload
+    def __getitem__(self, key: slice) -> list[str]:
+        ...
+
+    @overload
+    def __getitem__(self, key: LiteralString) -> Expression[Any]:
+        ...
+
+    def __getitem__(self, key: int | slice | str) -> str | list[str] | Expression[Any]:
+        if isinstance(key, slice):
+            return list(self._schema.column_names[key])
+        if isinstance(key, int):
+            return self._schema.column_names[key]
+        if isinstance(key, str):
+            definition = self._schema.column(key)
+            return Expression.from_column(definition, self._schema)
+        raise TypeError("Column lookups must use indexes or column names.")
+
+    def __contains__(self, name: object) -> bool:  # pragma: no cover - trivial
+        if not isinstance(name, str):
+            return False
+        return name.casefold() in self._schema.lookup
+
+    def __repr__(self) -> str:  # pragma: no cover - trivial
+        return f"RelationColumnSet({list(self)!r})"
+
+    def __eq__(self, other: object) -> bool:  # pragma: no cover - trivial
+        if isinstance(other, RelationColumnSet):
+            return tuple(self) == tuple(other)
+        if isinstance(other, Sequence):
+            return list(self) == list(other)
+        return NotImplemented
 
     def __getattr__(self, name: str) -> Expression[Any]:
         if name.startswith("_"):
@@ -308,36 +352,97 @@ class ColumnContext:
     def raw(self, expression: str) -> Expression[Any]:
         return Expression.raw(expression, schema=self._schema)
 
+    @property
+    def schema(self) -> DuckSchema[RowSetT]:  # pragma: no cover - trivial
+        return self._schema
+
 
 class AggregateContext:
-    __slots__ = ("_relation", "columns")
+    __slots__ = ("_relation", "columns", "c")
 
     def __init__(self, relation: "Relation[AnyRow]") -> None:
         self._relation = relation
-        self.columns = ColumnContext(relation.schema)
+        column_set = relation._column_context()
+        self.columns = column_set
+        self.c = column_set
 
-    def _resolve(self, value: Any) -> str | ColumnExpression[Any, Any]:
+    def _resolve(
+        self,
+        value: Expression[Any]
+        | ColumnExpression[Any, Any]
+        | AggregateArgument
+        | FilterExpression
+        | str,
+    ) -> AggregateArgument:
+        if isinstance(value, AggregateArgument):
+            return value
         expr = self._relation._resolve_expression(value)
-        return expr._to_projection()
+        return expr.as_aggregate_argument()
 
-    def count(self, value: Any | None = None, *, distinct: bool = False) -> AggregateExpression:
+    def count(
+        self,
+        value: Expression[Any]
+        | ColumnExpression[Any, Any]
+        | AggregateArgument
+        | FilterExpression
+        | str
+        | None = None,
+        *,
+        distinct: bool = False,
+    ) -> AggregateExpression:
         if value is None:
             return AggregateExpression.count(distinct=distinct)
         return AggregateExpression.count(self._resolve(value), distinct=distinct)
 
-    def sum(self, value: Any) -> AggregateExpression:
+    def sum(
+        self,
+        value: Expression[Any]
+        | ColumnExpression[Any, Any]
+        | AggregateArgument
+        | FilterExpression
+        | str,
+    ) -> AggregateExpression:
         return AggregateExpression.sum(self._resolve(value))
 
-    def avg(self, value: Any) -> AggregateExpression:
+    def avg(
+        self,
+        value: Expression[Any]
+        | ColumnExpression[Any, Any]
+        | AggregateArgument
+        | FilterExpression
+        | str,
+    ) -> AggregateExpression:
         return AggregateExpression.avg(self._resolve(value))
 
-    def min(self, value: Any) -> AggregateExpression:
+    def min(
+        self,
+        value: Expression[Any]
+        | ColumnExpression[Any, Any]
+        | AggregateArgument
+        | FilterExpression
+        | str,
+    ) -> AggregateExpression:
         return AggregateExpression.min(self._resolve(value))
 
-    def max(self, value: Any) -> AggregateExpression:
+    def max(
+        self,
+        value: Expression[Any]
+        | ColumnExpression[Any, Any]
+        | AggregateArgument
+        | FilterExpression
+        | str,
+    ) -> AggregateExpression:
         return AggregateExpression.max(self._resolve(value))
 
-    def function(self, name: str, *arguments: Any) -> AggregateExpression:
+    def function(
+        self,
+        name: str,
+        *arguments: Expression[Any]
+        | ColumnExpression[Any, Any]
+        | AggregateArgument
+        | FilterExpression
+        | str,
+    ) -> AggregateExpression:
         resolved = [self._resolve(argument) for argument in arguments]
         return AggregateExpression.function(name, *resolved)
 
@@ -348,8 +453,16 @@ RowT = TypeVar("RowT", bound=AnyRow, covariant=True)
 class Relation(DuckRel[RowT], Generic[RowT]):
     """Immutable relational wrapper with fluent expression helpers."""
 
-    def _column_context(self) -> ColumnContext:
-        return ColumnContext(self.schema)
+    def _column_context(self) -> RelationColumnSet[RowT]:
+        return RelationColumnSet(self.schema)
+
+    @property
+    def columns(self) -> RelationColumnSet[RowT]:
+        return self._column_context()
+
+    @property
+    def c(self) -> RelationColumnSet[RowT]:
+        return self._column_context()
 
     @staticmethod
     def _metadata_from_column_expression(

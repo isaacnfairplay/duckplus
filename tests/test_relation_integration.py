@@ -22,6 +22,7 @@ from duckplus import (
     connect,
     ducktypes,
 )
+from duckplus.relation.core import Expression
 
 import pyarrow as pa
 
@@ -117,6 +118,52 @@ def test_relation_fluent_pipeline(connection: DuckConnection) -> None:
 
     assert result.columns == ["category", "total", "observed"]
     assert result.relation.fetchall() == [("b", 14, 2), ("a", 5, 1)]
+
+
+def test_relation_column_descriptor_access(connection: DuckConnection) -> None:
+    rel = Relation(
+        connection.raw.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                (1, 'alpha', 10),
+                (2, 'alpha', 5)
+            ) AS t(id, category, score)
+            """
+        )
+    ).select(
+        id=col("id", duck_type=ducktypes.Integer),
+        category=col("category", duck_type=ducktypes.Varchar),
+        score=col("score", duck_type=ducktypes.Integer),
+    )
+
+    columns = rel.columns
+    assert list(columns) == ["id", "category", "score"]
+
+    score_expr = columns.score
+    assert isinstance(score_expr, Expression)
+    assert score_expr.marker is ducktypes.Integer
+    assert rel.c["score"].sql == score_expr.sql
+    assert rel.columns == ["id", "category", "score"]
+
+    with pytest.raises(KeyError):
+        _ = columns["missing"]
+    with pytest.raises(AttributeError):
+        _ = getattr(columns, "missing")
+
+    aggregated = (
+        rel.aggregate(
+            "category",
+            total=lambda agg: agg.sum(agg.c.score),
+            passing=lambda agg: agg.count(agg.c.score).with_filter(
+                agg.c.score > agg.columns.literal(6)
+            ),
+        )
+        .order_by(lambda c: c.total.desc())
+    )
+
+    assert aggregated.columns == ["category", "total", "passing"]
+    assert aggregated.relation.fetchall() == [("alpha", 15, 1)]
 
 
 def test_fetch_typed_uses_column_markers(connection: DuckConnection) -> None:
