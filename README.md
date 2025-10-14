@@ -408,11 +408,11 @@ html = to_html(rel, max_rows=10, null_display="∅", class_="preview")
 ## Documentation workflow
 
 The documentation site is published automatically to GitHub Pages by the
-[`Docs`](https://github.com/isaacnfairplay/duck/actions/workflows/docs.yml)
+[`Docs`](https://github.com/isaacnfairplay/duckplus/actions/workflows/docs.yml)
 workflow. Every push to `main` and each pull request runs `uv sync`, builds the
 Sphinx project, and uploads the generated HTML as a GitHub Pages artifact. Pages
 serves the most recent deployment at
-[https://isaacnfairplay.github.io/duck/](https://isaacnfairplay.github.io/duck/),
+[https://isaacnfairplay.github.io/duckplus/](https://isaacnfairplay.github.io/duckplus/),
 and workflow summaries include preview links you can share for review.
 
 If a deployment fails:
@@ -435,7 +435,7 @@ python -m webbrowser docs/_build/html/index.html  # optional helper to open the 
 
 ## Learn more
 
-- Review the [API reference](https://isaacnfairplay.github.io/duck/api_reference.html) for detailed method docs and
+- Review the [API reference](https://isaacnfairplay.github.io/duckplus/api_reference.html) for detailed method docs and
   typing information.
 - Explore unit tests under `tests/` to see edge cases and best practices.
 
