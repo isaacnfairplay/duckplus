@@ -16,6 +16,7 @@ explicit casing, and safe mutation helpers.
    :caption: Guides
 
    aggregate_demos.rst
+   reliability_demos.rst
    typed_pipeline_demos.rst
 
 Getting started

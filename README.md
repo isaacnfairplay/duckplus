@@ -190,6 +190,27 @@ with connect() as conn:
 The helper functions double as living documentation—the automated tests execute
 them to ensure guides stay accurate as the API evolves.
 
+### Release 0.0.7 reliability demos
+
+Release ``0.0.7`` introduced :mod:`duckplus.examples.reliability_demos`, a
+collection of production-grade helpers that demonstrate how to combine typed
+column dictionaries, ``DuckTable`` idempotent writes, and Arrow materialisation
+for resilient pipelines:
+
+* ``priority_dispatch_payload`` builds an ordered alert payload with explicit
+  revenue thresholds.
+* ``incremental_fact_ingest`` shows how to hydrate a fact table while inserting
+  only unseen keys.
+* ``customer_spike_detector`` and ``regional_order_kpis`` provide ready-made
+  guardrails that leverage aggregate filters without losing type metadata.
+* ``arrow_priority_snapshot`` materializes a cache-friendly Arrow table for fast
+  fan-out.
+* ``lean_projection_shortcut`` keeps curated projections short by reusing typed
+  expressions even after string-based transforms.
+
+Each helper returns plain Python structures so orchestration layers can assert
+on counts, payloads, or schema drift with zero additional wiring.
+
 ### Aggregate with ``AggregateExpression``
 
 ```python

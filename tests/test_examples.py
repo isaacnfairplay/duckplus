@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from datetime import date
+from typing import Iterator
 
 import duckdb
 import pytest
 
-from duckplus import DuckRel
-from duckplus.examples import aggregate_demos, typed_pipeline_demos
+from duckplus import DuckConnection, DuckRel, connect
+from duckplus.examples import aggregate_demos, reliability_demos, typed_pipeline_demos
 
 
 @pytest.fixture()
@@ -16,6 +17,12 @@ def connection() -> duckdb.DuckDBPyConnection:
         yield conn
     finally:
         conn.close()
+
+
+@pytest.fixture()
+def duck_connection() -> Iterator[DuckConnection]:
+    with connect() as conn:
+        yield conn
 
 
 @pytest.fixture()
@@ -112,4 +119,64 @@ def test_apply_manual_tax_projection_marks_unknown(orders_rel: DuckRel) -> None:
         "INTEGER",
         "DATE",
         "BOOLEAN",
+    ]
+
+
+def test_priority_dispatch_payload(duck_connection: DuckConnection) -> None:
+    rows = reliability_demos.priority_dispatch_payload(duck_connection)
+    assert rows == [
+        (6, "north", 200, True),
+        (4, "west", 155, True),
+    ]
+
+
+def test_incremental_fact_ingest(duck_connection: DuckConnection) -> None:
+    inserted, snapshot = reliability_demos.incremental_fact_ingest(duck_connection)
+    assert inserted == 3
+    assert snapshot == [
+        (1, "north", 120),
+        (2, "north", 45),
+        (3, "south", 98),
+        (4, "west", 155),
+        (5, "east", 15),
+        (6, "north", 200),
+    ]
+
+
+def test_customer_spike_detector(duck_connection: DuckConnection) -> None:
+    rows = reliability_demos.customer_spike_detector(duck_connection)
+    assert rows == [
+        ("Eve", 1, 200),
+        ("Cathy", 1, 155),
+    ]
+
+
+def test_regional_order_kpis(duck_connection: DuckConnection) -> None:
+    rows = reliability_demos.regional_order_kpis(duck_connection)
+    assert rows == [
+        ("east", 1, 0, 15),
+        ("north", 3, 2, 365),
+        ("south", 1, 1, 98),
+        ("west", 1, 1, 155),
+    ]
+
+
+def test_arrow_priority_snapshot(duck_connection: DuckConnection) -> None:
+    rows = reliability_demos.arrow_priority_snapshot(duck_connection)
+    assert rows == [
+        (1, "Alice"),
+        (4, "Cathy"),
+        (6, "Eve"),
+    ]
+
+
+def test_lean_projection_shortcut(duck_connection: DuckConnection) -> None:
+    rows = reliability_demos.lean_projection_shortcut(duck_connection)
+    assert rows == [
+        (1, "NORTH", "Alice"),
+        (2, "NORTH", "Bob"),
+        (3, "SOUTH", "Alice"),
+        (4, "WEST", "Cathy"),
+        (5, "EAST", "Dan"),
+        (6, "NORTH", "Eve"),
     ]
