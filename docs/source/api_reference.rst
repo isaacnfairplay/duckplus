@@ -79,11 +79,12 @@ Relational transformations (``duckplus.core``)
 ----------------------------------------------
 
 ``duckplus.core`` implements immutable relational pipelines that defer execution
-until explicitly materialized. Each helper returns a new :class:`DuckRel`,
-keeping transformations composable and type-aware while mirroring DuckDB's SQL
-semantics. Aggregations lean on :class:`duckplus.AggregateExpression` and
-:meth:`duckplus.DuckRel.aggregate`; see :doc:`aggregate_demos` for a tour of the
-available patterns. Column helpers such as :func:`duckplus.core.col` and
+until explicitly materialized. Each helper returns a new
+:class:`duckplus.Relation`, keeping transformations composable and type-aware
+while mirroring DuckDB's SQL semantics. Aggregations lean on
+:class:`duckplus.AggregateExpression` and :meth:`duckplus.Relation.aggregate`;
+see :doc:`aggregate_demos` for a tour of the available patterns. Column helpers
+such as :attr:`duckplus.Relation.columns`, :func:`duckplus.core.col`, and
 :func:`duckplus.core.column` return :class:`duckplus.ColumnExpression`
 instances, allowing filters, projections, aggregates, and ordering clauses to
 share the same validated column references without hand-written SQL. Provide the
@@ -91,30 +92,29 @@ optional ``duck_type=duckplus.ducktypes.*`` keyword to opt into type-aware
 validation; Duck+ will surface meaningful errors when aggregates or ordering
 operations are incompatible with the declared column types.
 
-Typed expressions update the relation's :attr:`duckplus.duckrel.DuckRel.schema`
+Typed expressions update the relation's :attr:`duckplus.Relation.schema`
 property, which returns a :class:`duckplus.schema.DuckSchema` containing
 canonical column definitions, DuckDB logical markers, and cached Python
 annotations. Iterate over :attr:`~duckplus.schema.DuckSchema.definitions` when you
 need structured metadata or call :meth:`~duckplus.schema.DuckSchema.resolve` to
 canonicalise user input. Legacy accessors such as
-:attr:`duckplus.duckrel.DuckRel.column_type_markers` and
-:attr:`duckplus.duckrel.DuckRel.column_python_annotations` remain available for
-quick checks while existing code transitions to the richer schema interface.
-Once markers are in place, :meth:`duckplus.duckrel.DuckRel.fetch_typed` returns
-Python tuples for *every* projected column, letting static type checkers track
-the shape of query results. The Python hints are derived from the DuckDB
-markers, keeping a single source of truth for both SQL validation and type
-checking. To narrow the output, project first and then call
-:meth:`~duckplus.duckrel.DuckRel.fetch_typed`; untyped columns fall back to
-``Any``.
+:attr:`duckplus.Relation.column_type_markers` and
+:attr:`duckplus.Relation.column_python_annotations` remain available for quick
+checks while existing code transitions to the richer schema interface. Once
+markers are in place, :meth:`duckplus.Relation.fetch_typed` returns Python
+tuples for *every* projected column, letting static type checkers track the
+shape of query results. The Python hints are derived from the DuckDB markers,
+keeping a single source of truth for both SQL validation and type checking. To
+narrow the output, project first and then call
+:meth:`~duckplus.Relation.fetch_typed`; untyped columns fall back to ``Any``.
 
 DataFrame integrations follow DuckDB conventions. Use
-:meth:`duckplus.duckrel.DuckRel.df` and :meth:`duckplus.duckrel.DuckRel.pl` to
-materialize relations as pandas or Polars DataFrames once the corresponding
+:meth:`duckplus.Relation.df` and :meth:`duckplus.Relation.pl` to materialize
+relations as pandas or Polars DataFrames once the corresponding
 ``duckplus[pandas]`` or ``duckplus[polars]`` extra is installed. The class
-methods :meth:`duckplus.duckrel.DuckRel.from_pandas` and
-:meth:`duckplus.duckrel.DuckRel.from_polars` convert DataFrames back into
-relations while honoring the same optional dependencies.
+methods :meth:`duckplus.Relation.from_pandas` and
+:meth:`duckplus.Relation.from_polars` convert DataFrames back into relations
+while honoring the same optional dependencies.
 
 .. currentmodule:: duckplus.core
 
@@ -334,7 +334,7 @@ additional helpers.
 Demo: Build a transformation pipeline
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This example chains a handful of ``DuckRel`` helpers to prepare a transformed
+This example chains a handful of ``Relation`` helpers to prepare a transformed
 view before materializing it for downstream use.
 
 .. code-block:: python
@@ -344,9 +344,11 @@ view before materializing it for downstream use.
    from duckplus import connect
 
    with connect() as conn:
-       # Load two datasets from disk into immutable DuckRel wrappers.
+       # Load two datasets from disk into immutable Relation wrappers.
        staging = conn.read_parquet([Path("/data/staging_orders.parquet")])
        reference = conn.read_csv([Path("/data/customer_lookup.csv")])
+
+       columns = staging.columns
 
        enriched = (
            staging
@@ -354,9 +356,10 @@ view before materializing it for downstream use.
            .cast_columns(total="DECIMAL(18,2)")
            # Join on shared customer_id while tolerating extra right-side columns.
            .natural_left(reference, allow_collisions=True)
-           # Filter to shipped orders in the current quarter.
-           .filter("status = ? AND ship_date >= ?", "SHIPPED", "2024-01-01")
-           .order_by(order_id="asc")
+           # Filter to shipped orders in the current quarter with typed columns.
+           .where(columns.status == "SHIPPED")
+           .where(columns.ship_date >= columns.literal("2024-01-01"))
+           .order_by(columns.order_id.asc())
            .limit(1000)
        )
 
@@ -364,10 +367,10 @@ view before materializing it for downstream use.
        arrow_snapshot = enriched.materialize().require_table()
 
 - ``DuckConnection.read_parquet`` and ``DuckConnection.read_csv`` validate paths
-  and wrap the resulting relations in ``DuckRel`` for further
+  and wrap the resulting relations in ``Relation`` for further
   composition.【F:src/duckplus/connect.py†L85-L143】【F:src/duckplus/io.py†L680-L812】
-- ``cast_columns``, ``natural_left``, ``filter``, ``order_by``, and ``limit`` each
-  return a new ``DuckRel``, ensuring the pipeline stays immutable and
+- ``cast_columns``, ``natural_left``, ``where``, ``order_by``, and ``limit`` each
+  return a new ``Relation``, ensuring the pipeline stays immutable and
   case-aware.【F:src/duckplus/core.py†L533-L807】
 - ``materialize()`` defaults to the Arrow strategy and ensures the resulting
   table can be reused without mutating the original

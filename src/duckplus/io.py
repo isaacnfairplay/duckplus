@@ -754,8 +754,12 @@ def read_parquet(
     parquet_version: ParquetVersion | None = None,
     debug_use_openssl: bool | None = None,
     explicit_cardinality: int | None = None,
-) -> DuckRel[AnyRow]:
-    """Read Parquet files into a :class:`duckplus.DuckRel`.
+) -> Relation[AnyRow]:
+    """Read Parquet files into a :class:`duckplus.Relation`.
+
+    The returned relation exposes the fluent, typed column API via
+    :attr:`duckplus.Relation.columns`, allowing downstream transformations to
+    chain callables that operate on validated expressions.
 
     Parameters
     ----------
@@ -862,8 +866,12 @@ def read_csv(
     files_to_sniff: int | None = None,
     compression: CSVCompression | None = None,
     thousands: str | None = None,
-) -> DuckRel[AnyRow]:
-    """Read CSV files into a :class:`duckplus.DuckRel`.
+) -> Relation[AnyRow]:
+    """Read CSV files into a :class:`duckplus.Relation`.
+
+    The returned relation carries schema metadata so helpers such as
+    :attr:`duckplus.Relation.columns` and :meth:`duckplus.Relation.where` can
+    compose typed pipelines without re-validating column names.
 
     Parameters
     ----------
@@ -1033,8 +1041,12 @@ def read_json(
     hive_types: Mapping[str, util.DuckDBType] | None = None,
     hive_types_autocast: bool | None = None,
     auto_detect: bool | None = None,
-) -> DuckRel[AnyRow]:
-    """Read JSON or NDJSON files into a :class:`duckplus.DuckRel`.
+) -> Relation[AnyRow]:
+    """Read JSON or NDJSON files into a :class:`duckplus.Relation`.
+
+    The resulting relation keeps DuckDB's inferred schema so
+    :attr:`duckplus.Relation.columns` can supply typed expressions for
+    downstream filters, projections, and aggregations.
 
     Parameters
     ----------
