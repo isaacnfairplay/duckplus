@@ -13,6 +13,7 @@ from duckplus import (
     AsofOrder,
     DuckConnection,
     DuckRel,
+    FilterExpression,
     ExpressionPredicate,
     JoinSpec,
     ParquetMaterializeStrategy,
@@ -164,6 +165,54 @@ def test_relation_column_descriptor_access(connection: DuckConnection) -> None:
 
     assert aggregated.columns == ["category", "total", "passing"]
     assert aggregated.relation.fetchall() == [("alpha", 15, 1)]
+
+
+def test_expression_arithmetic_comparisons_and_lambda_projection(
+    connection: DuckConnection,
+) -> None:
+    relation = Relation(
+        connection.raw.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                (2, 3, 1),
+                (4, 2, 2),
+                (3, 1, 3)
+            ) AS t(amount, factor, offset_value)
+            """
+        )
+    ).select(
+        amount=col("amount", duck_type=ducktypes.Integer),
+        factor=col("factor", duck_type=ducktypes.Integer),
+        offset=col("offset_value", duck_type=ducktypes.Integer),
+    )
+
+    columns = relation.columns
+    combined = columns.amount + columns.factor
+    shifted = columns.amount - columns.literal(1)
+    assert isinstance(combined, Expression)
+    assert isinstance(shifted, Expression)
+
+    predicate = combined >= columns.literal(4)
+    assert isinstance(predicate, FilterExpression)
+
+    projected = (
+        relation
+        .select(
+            lambda c: {
+                "amount": c.amount,
+                "sum": c.amount + c.factor,
+                "difference": c.amount - c.offset,
+                "product": c.amount * c.factor,
+                "remainder": (c.amount + c.literal(5)) % (c.factor + c.literal(1)),
+            }
+        )
+        .where(lambda c: (c.product >= c.sum) & (c.difference > c.literal(0)))
+        .order_by(lambda c: c.product.desc())
+    )
+
+    assert projected.columns == ["amount", "sum", "difference", "product", "remainder"]
+    assert projected.relation.fetchall() == [(4, 6, 2, 8, 0), (2, 5, 1, 6, 3)]
 
 
 def test_fetch_typed_uses_column_markers(connection: DuckConnection) -> None:
