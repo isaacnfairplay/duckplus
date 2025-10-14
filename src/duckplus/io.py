@@ -13,6 +13,7 @@ import duckdb
 from . import util
 from .connect import DuckConnection
 from .core import DuckRel
+from .schema import AnyRow
 from .table import DuckTable
 
 Pathish = str | PathLike[str]
@@ -752,7 +753,7 @@ def read_parquet(
     parquet_version: ParquetVersion | None = None,
     debug_use_openssl: bool | None = None,
     explicit_cardinality: int | None = None,
-) -> DuckRel:
+) -> DuckRel[AnyRow]:
     """Read Parquet files into a :class:`duckplus.DuckRel`.
 
     Parameters
@@ -860,7 +861,7 @@ def read_csv(
     files_to_sniff: int | None = None,
     compression: CSVCompression | None = None,
     thousands: str | None = None,
-) -> DuckRel:
+) -> DuckRel[AnyRow]:
     """Read CSV files into a :class:`duckplus.DuckRel`.
 
     Parameters
@@ -1031,7 +1032,7 @@ def read_json(
     hive_types: Mapping[str, util.DuckDBType] | None = None,
     hive_types_autocast: bool | None = None,
     auto_detect: bool | None = None,
-) -> DuckRel:
+) -> DuckRel[AnyRow]:
     """Read JSON or NDJSON files into a :class:`duckplus.DuckRel`.
 
     Parameters
@@ -1174,7 +1175,7 @@ def _write_with_temporary(
 
 
 def write_parquet(
-    rel: DuckRel,
+    rel: DuckRel[AnyRow],
     path: Pathish,
     /,
     *,
@@ -1257,7 +1258,7 @@ def write_parquet(
 
 
 def write_csv(
-    rel: DuckRel,
+    rel: DuckRel[AnyRow],
     path: Pathish,
     /,
     *,

@@ -126,13 +126,19 @@ ranked = (
 )
 ```
 
-Typed column expressions propagate through the pipeline. A relation exposes
-``column_type_markers`` so you can inspect the currently declared DuckDB logical
-types. Untyped expressions default to :class:`duckplus.ducktypes.Unknown`, letting
-you opt into validation incrementally:
+Typed column expressions propagate through the pipeline. Every relation exposes a
+schema snapshot via :attr:`duckplus.DuckRel.schema`, which returns a
+:class:`duckplus.DuckSchema` containing canonical column definitions, DuckDB
+markers, and cached Python annotations. Iterate over the schema when you need
+structured metadata, or fall back to ``column_type_markers`` for quick summaries:
 
 ```python
 typed = rel.project({"team": team, "score": score})
+for definition in typed.schema.definitions:
+    print(definition.name, definition.duck_type.describe(), definition.python_type)
+# team VARCHAR str
+# score INTEGER int
+
 print([marker.describe() for marker in typed.column_type_markers])
 # ['VARCHAR', 'INTEGER']
 ```
@@ -179,8 +185,26 @@ with connect() as conn:
     print(typed_pipeline_demos.priority_order_snapshot(orders))
     # [(1, 'north', 'Alice', 120, 5, datetime.date(2024, 1, 1), True), ...]
 
+    print(typed_pipeline_demos.schema_driven_projection(orders))
+    # [(1, 'north', True), (2, 'north', False), ...]
+
     print(typed_pipeline_demos.regional_revenue_summary(orders))
     # [('east', 1, 15), ('north', 3, 365), ('south', 1, 98), ('west', 1, 155)]
+
+    print(typed_pipeline_demos.priority_region_rollup(orders))
+    # [('east', 0, 0, 1), ('north', 2, 1, 10), ...]
+
+    print(typed_pipeline_demos.customer_priority_profile(orders))
+    # [('Alice', datetime.date(2024, 1, 1), 218, 2), ('Bob', datetime.date(2024, 1, 2), 45, 0), ...]
+
+    print(typed_pipeline_demos.regional_customer_diversity(orders))
+    # [('east', 1, 0), ('north', 3, 2), ('south', 1, 1), ('west', 1, 1)]
+
+    print(typed_pipeline_demos.daily_priority_summary(orders))
+    # [(datetime.date(2024, 1, 1), 120, 1), (datetime.date(2024, 1, 2), 45, 0), ...]
+
+    print(typed_pipeline_demos.describe_schema(orders)[0])
+    # {'name': 'order_id', 'duckdb_type': 'INTEGER', 'marker': 'INTEGER', 'python': 'int'}
 
     taxed = typed_pipeline_demos.apply_manual_tax_projection(orders)
     print(typed_pipeline_demos.describe_markers(taxed))
@@ -189,6 +213,39 @@ with connect() as conn:
 
 The helper functions double as living documentation—the automated tests execute
 them to ensure guides stay accurate as the API evolves.
+
+### Release 0.0.11 typed schema workflows
+
+Release ``0.0.11`` finalises the schema-first typed API overhaul. Every
+``DuckRel`` keeps a :class:`duckplus.DuckSchema` instance so column metadata is
+centralised, case-insensitive, and available for both runtime validation and
+static typing. The new demos lean on that shared schema to keep projections and
+aggregations tight while preserving ``DuckType`` markers and stored Python
+annotations.
+
+Highlights include:
+
+* ``DuckRel.schema`` for direct access to column definitions, including helper
+  methods such as :meth:`duckplus.DuckSchema.column` and
+  :meth:`duckplus.DuckSchema.select`.
+* Schema-aware demos like ``priority_region_rollup`` and
+  ``schema_driven_projection`` that fetch typed metrics without re-declaring
+  markers.
+* ``describe_schema`` and ``describe_markers`` utilities that turn the schema
+  cache into human-readable reports for docs, notebooks, or assertions.
+
+```python
+from duckplus.examples import typed_pipeline_demos
+
+orders = typed_pipeline_demos.typed_orders_demo_relation(connection)
+schema_report = typed_pipeline_demos.describe_schema(orders)
+
+first_column = orders.schema.column("order_id")
+assert first_column.python_type is int
+
+print(typed_pipeline_demos.priority_region_rollup(orders))
+# [('east', 0, 0, 1), ('north', 2, 2, 9), ...]
+```
 
 ### Release 0.0.7 reliability demos
 

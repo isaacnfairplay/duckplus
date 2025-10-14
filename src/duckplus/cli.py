@@ -12,6 +12,7 @@ import pyarrow as pa  # type: ignore[import-untyped]
 
 from .connect import DuckConnection, connect
 from .core import DuckRel
+from .schema import AnyRow
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -115,7 +116,7 @@ def _handle_schema(args: argparse.Namespace, conn: DuckConnection) -> int:
         print("error: SQL statement cannot be empty", file=sys.stderr)
         return 1
     try:
-        relation = DuckRel(conn.raw.sql(statement))
+        relation: DuckRel[AnyRow] = DuckRel(conn.raw.sql(statement))
     except duckdb.Error as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
@@ -139,7 +140,7 @@ def _run_statement(
     stderr: TextIO,
 ) -> int:
     try:
-        relation = DuckRel(conn.raw.sql(statement))
+        relation: DuckRel[AnyRow] = DuckRel(conn.raw.sql(statement))
     except duckdb.Error as exc:
         stderr.write(f"error: {exc}\n")
         return 1
@@ -159,7 +160,7 @@ def _run_statement(
     return 0
 
 
-def _preview_relation(rel: DuckRel, *, limit: int) -> tuple[pa.Table, bool]:
+def _preview_relation(rel: DuckRel[AnyRow], *, limit: int) -> tuple[pa.Table, bool]:
     if limit < 0:  # pragma: no cover - enforced by argparse
         raise ValueError("limit must be non-negative")
     preview_limit = 1 if limit == 0 else limit + 1

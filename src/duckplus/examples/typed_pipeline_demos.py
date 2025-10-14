@@ -1,25 +1,54 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import List
+from typing import Any, List, cast
 
 import duckdb
 
 from duckplus import AggregateExpression, DuckRel, col, ducktypes
+from duckplus.schema import AnyRow
+from duckplus.filters import ColumnDuckType
 
 __all__ = [
     "typed_orders_demo_relation",
     "priority_order_snapshot",
     "regional_revenue_summary",
+    "priority_region_rollup",
+    "customer_priority_profile",
+    "regional_customer_diversity",
+    "daily_priority_summary",
+    "schema_driven_projection",
     "apply_manual_tax_projection",
+    "describe_schema",
     "describe_markers",
 ]
 
 
-def typed_orders_demo_relation(connection: duckdb.DuckDBPyConnection) -> DuckRel:
+def _schema_expression(orders: DuckRel[AnyRow], name: str) -> Any:
+    """Return a column expression derived from the relation's schema."""
+
+    definition = orders.schema.column(name)
+    marker = definition.duck_type
+    if marker is ducktypes.Unknown:
+        return col(definition.name)
+    typed_marker = cast(ColumnDuckType, marker)
+    return col(definition.name, duck_type=typed_marker)
+
+
+def _python_type_repr(value: object) -> str:
+    """Return a readable representation for stored Python annotations."""
+
+    if isinstance(value, type):
+        return value.__name__
+    return str(value)
+
+
+def typed_orders_demo_relation(
+    connection: duckdb.DuckDBPyConnection,
+) -> DuckRel[AnyRow]:
     """Return a sample relation with column typing metadata applied."""
 
-    base = DuckRel(
+    base: DuckRel[AnyRow] = DuckRel(
         connection.sql(
             """
             SELECT *
@@ -49,39 +78,164 @@ def typed_orders_demo_relation(connection: duckdb.DuckDBPyConnection) -> DuckRel
 
 
 def priority_order_snapshot(
-    orders: DuckRel,
+    orders: DuckRel[AnyRow],
 ) -> List[tuple[int, str, str, int, int, date, bool]]:
     """Return high-value priority orders using typed fetch semantics."""
 
+    priority_expression = _schema_expression(orders, "priority")
+    total_expression = _schema_expression(orders, "order_total")
     filtered = orders.filter(
-        (col("priority", duck_type=ducktypes.Boolean) == True)  # noqa: E712
-        & (col("order_total", duck_type=ducktypes.Integer) >= 100)
+        (priority_expression == True)  # noqa: E712
+        & (total_expression >= 100)
     )
-    ordered = filtered.order_by((col("placed_at", duck_type=ducktypes.Date), "asc"))
+    ordered = filtered.order_by((
+        _schema_expression(filtered, "placed_at"),
+        "asc",
+    ))
     return ordered.fetch_typed()
 
 
 def regional_revenue_summary(
-    orders: DuckRel,
+    orders: DuckRel[AnyRow],
 ) -> List[tuple[str, int, int]]:
     """Return typed grouped revenue statistics by region."""
 
+    region = _schema_expression(orders, "region")
+    order_total = _schema_expression(orders, "order_total")
     summary = orders.aggregate(
-        col("region", duck_type=ducktypes.Varchar),
-        order_count=AggregateExpression.count(col("order_id", duck_type=ducktypes.Integer)),
-        total_revenue=AggregateExpression.sum(col("order_total", duck_type=ducktypes.Integer)),
+        region,
+        order_count=AggregateExpression.count(),
+        total_revenue=AggregateExpression.sum(order_total),
     )
-    ordered = summary.order_by((col("region", duck_type=ducktypes.Varchar), "asc"))
+    ordered = summary.order_by((region, "asc"))
     return ordered.fetch_typed()
 
 
-def apply_manual_tax_projection(orders: DuckRel) -> DuckRel:
+def priority_region_rollup(
+    orders: DuckRel[AnyRow],
+) -> List[tuple[str, int, int, int]]:
+    """Return typed metrics that highlight regional priority order behavior."""
+
+    region = _schema_expression(orders, "region")
+    total = _schema_expression(orders, "order_total")
+    items = _schema_expression(orders, "items")
+    priority = _schema_expression(orders, "priority")
+
+    prepared = orders.project(
+        {
+            "region": region,
+            "order_total": total,
+            "items": items,
+            "priority": priority,
+        }
+    )
+
+    summary = prepared.aggregate(
+        region,
+        priority_orders=AggregateExpression.count().with_filter(priority == True),  # noqa: E712
+        high_value_orders=AggregateExpression.count().with_filter(total >= 150),
+        total_items=AggregateExpression.sum(items),
+    )
+    ordered = summary.order_by((region, "asc"))
+    return ordered.fetch_typed()
+
+
+def customer_priority_profile(
+    orders: DuckRel[AnyRow],
+) -> List[tuple[str, date, int, int]]:
+    """Summarise customer behaviour including first purchase and priority counts."""
+
+    customer = _schema_expression(orders, "customer")
+    placed_at = _schema_expression(orders, "placed_at")
+    total = _schema_expression(orders, "order_total")
+    priority = _schema_expression(orders, "priority")
+
+    summary = orders.aggregate(
+        customer,
+        first_purchase=AggregateExpression.min(placed_at),
+        lifetime_value=AggregateExpression.sum(total),
+        priority_orders=AggregateExpression.count().with_filter(priority == True),  # noqa: E712
+    )
+    ordered = summary.order_by((customer, "asc"))
+    return ordered.fetch_typed()
+
+
+def regional_customer_diversity(
+    orders: DuckRel[AnyRow],
+) -> List[tuple[str, int, int]]:
+    """Report distinct and priority customers per region with typed results."""
+
+    region = _schema_expression(orders, "region")
+    customer = _schema_expression(orders, "customer")
+    priority = _schema_expression(orders, "priority")
+
+    summary = orders.aggregate(
+        region,
+        distinct_customers=AggregateExpression.count(customer).distinct(),
+        priority_customers=AggregateExpression.count(customer)
+        .with_filter(priority == True)  # noqa: E712
+        .distinct(),
+    )
+    ordered = summary.order_by((region, "asc"))
+    return ordered.fetch_typed()
+
+
+def daily_priority_summary(
+    orders: DuckRel[AnyRow],
+) -> List[tuple[date, int, int]]:
+    """Track daily revenue alongside the number of flagged priority orders."""
+
+    placed_at = _schema_expression(orders, "placed_at")
+    total = _schema_expression(orders, "order_total")
+    priority = _schema_expression(orders, "priority")
+
+    summary = orders.aggregate(
+        placed_at,
+        daily_revenue=AggregateExpression.sum(total),
+        priority_orders=AggregateExpression.count().with_filter(priority == True),  # noqa: E712
+    )
+    ordered = summary.order_by((placed_at, "asc"))
+    return ordered.fetch_typed()
+
+
+def schema_driven_projection(
+    orders: DuckRel[AnyRow],
+) -> List[tuple[int, str, bool]]:
+    """Return a typed projection driven entirely by the stored schema metadata."""
+
+    subset = orders.schema.select(["order_id", "region", "priority"])
+    projection = {
+        definition.name: _schema_expression(orders, definition.name)
+        for definition in subset.definitions
+    }
+    projected = orders.project(projection)
+    return projected.fetch_typed()
+
+
+def apply_manual_tax_projection(orders: DuckRel[AnyRow]) -> DuckRel[AnyRow]:
     """Adjust order totals using raw SQL, demonstrating Unknown typing fallback."""
 
     return orders.transform_columns(order_total="({column}) * 1.08")
 
 
-def describe_markers(orders: DuckRel) -> List[str]:
-    """Return a human-readable view of the relation's column type markers."""
+def describe_schema(orders: DuckRel[AnyRow]) -> List[dict[str, str]]:
+    """Return a human-readable view of the relation's column type metadata."""
 
-    return [marker.describe() for marker in orders.column_type_markers]
+    schema = orders.schema
+    report: List[dict[str, str]] = []
+    for definition in schema.definitions:
+        report.append(
+            {
+                "name": definition.name,
+                "duckdb_type": definition.duckdb_type,
+                "marker": definition.duck_type.describe(),
+                "python": _python_type_repr(definition.python_type),
+            }
+        )
+    return report
+
+
+def describe_markers(orders: DuckRel[AnyRow]) -> List[str]:
+    """Return DuckDB marker descriptions for backward-compatible demos."""
+
+    return [entry["marker"] for entry in describe_schema(orders)]

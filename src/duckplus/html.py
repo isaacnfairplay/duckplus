@@ -5,6 +5,7 @@ from html import escape as html_escape
 from typing import Any
 
 from .core import DuckRel
+from .schema import AnyRow
 
 
 def _quote_identifier(identifier: str) -> str:
@@ -65,7 +66,7 @@ def _build_row_expression(columns: list[str], null_literal: str) -> str:
 
 
 def to_html(
-    rel: DuckRel,
+    rel: DuckRel[AnyRow],
     *,
     max_rows: int = 100,
     null_display: str = "",

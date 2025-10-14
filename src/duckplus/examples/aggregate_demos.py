@@ -8,9 +8,10 @@ from typing import List, Sequence
 import duckdb
 
 from duckplus import AggregateExpression, DuckRel, FilterExpression, col
+from duckplus.schema import AnyRow
 
 
-def sales_demo_relation(connection: duckdb.DuckDBPyConnection) -> DuckRel:
+def sales_demo_relation(connection: duckdb.DuckDBPyConnection) -> DuckRel[AnyRow]:
     """Return a sample sales relation used across aggregate demonstrations."""
 
     return DuckRel(
@@ -29,14 +30,14 @@ def sales_demo_relation(connection: duckdb.DuckDBPyConnection) -> DuckRel:
     )
 
 
-def total_sales_amount(sales: DuckRel) -> int:
+def total_sales_amount(sales: DuckRel[AnyRow]) -> int:
     """Return the sum of the ``amount`` column across all sales rows."""
 
     summary = sales.aggregate(total_amount=AggregateExpression.sum("amount"))
     return _coerce_integral(_fetch_single_value(summary))
 
 
-def sales_by_region(sales: DuckRel) -> List[tuple[str, int]]:
+def sales_by_region(sales: DuckRel[AnyRow]) -> List[tuple[str, int]]:
     """Return grouped totals ordered alphabetically by ``region``."""
 
     grouped = sales.aggregate("region", total_amount=AggregateExpression.sum("amount"))
@@ -45,7 +46,7 @@ def sales_by_region(sales: DuckRel) -> List[tuple[str, int]]:
     return [(str(region), int(total)) for region, total in rows]
 
 
-def regions_over_target(sales: DuckRel, *, minimum_total: int) -> List[str]:
+def regions_over_target(sales: DuckRel[AnyRow], *, minimum_total: int) -> List[str]:
     """Return regions whose aggregated ``amount`` exceeds ``minimum_total``."""
 
     grouped = sales.aggregate(
@@ -59,7 +60,7 @@ def regions_over_target(sales: DuckRel, *, minimum_total: int) -> List[str]:
     return [str(region) for region, _ in ordered.relation.fetchall()]
 
 
-def distinct_region_count(sales: DuckRel) -> int:
+def distinct_region_count(sales: DuckRel[AnyRow]) -> int:
     """Return the number of distinct regions present in the sales data."""
 
     summary = sales.aggregate(
@@ -68,7 +69,7 @@ def distinct_region_count(sales: DuckRel) -> int:
     return _coerce_integral(_fetch_single_value(summary))
 
 
-def filtered_total_excluding_north(sales: DuckRel) -> int:
+def filtered_total_excluding_north(sales: DuckRel[AnyRow]) -> int:
     """Return the total ``amount`` excluding sales where the region is ``north``."""
 
     filtered_sum = AggregateExpression.sum("amount").with_filter(col("region") != "north")
@@ -76,7 +77,7 @@ def filtered_total_excluding_north(sales: DuckRel) -> int:
     return _coerce_integral(_fetch_single_value(summary))
 
 
-def ordered_region_list(sales: DuckRel) -> List[str]:
+def ordered_region_list(sales: DuckRel[AnyRow]) -> List[str]:
     """Return a list of regions sorted by ``amount`` in descending order."""
 
     ordered_list = AggregateExpression.function("list", "region").with_order_by(
@@ -87,7 +88,7 @@ def ordered_region_list(sales: DuckRel) -> List[str]:
     return [str(region) for region in _coerce_sequence(values)]
 
 
-def first_sale_amount(sales: DuckRel) -> int:
+def first_sale_amount(sales: DuckRel[AnyRow]) -> int:
     """Return the ``amount`` from the earliest sale by ``sale_date``."""
 
     first_amount = AggregateExpression.function("first", "amount").with_order_by(
@@ -97,7 +98,7 @@ def first_sale_amount(sales: DuckRel) -> int:
     return _coerce_integral(_fetch_single_value(summary))
 
 
-def _fetch_single_value(relation: DuckRel) -> object:
+def _fetch_single_value(relation: DuckRel[AnyRow]) -> object:
     """Return the first column of the first row for *relation* or raise."""
 
     row = relation.relation.fetchone()

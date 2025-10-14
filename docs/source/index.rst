@@ -18,6 +18,7 @@ explicit casing, and safe mutation helpers.
    aggregate_demos.rst
    reliability_demos.rst
    typed_pipeline_demos.rst
+   release_0.0.11_schema_workflows.rst
 
 Getting started
 ---------------

@@ -29,6 +29,19 @@ markers.
    :pyobject: priority_order_snapshot
    :language: python
 
+Schema-driven projections
+-------------------------
+
+Schema metadata can drive downstream projections without reaching back to the
+database. ``DuckRel.schema`` exposes a :class:`duckplus.DuckSchema` that stores
+canonical column names, DuckDB markers, and Python annotations. The demo below
+selects a case-insensitive subset of columns and fetches typed rows using only
+the cached metadata.
+
+.. literalinclude:: ../../src/duckplus/examples/typed_pipeline_demos.py
+   :pyobject: schema_driven_projection
+   :language: python
+
 Grouped summaries with automatic typing
 ---------------------------------------
 
@@ -40,6 +53,52 @@ columns—the stored metadata controls both runtime validation and static typing
    :pyobject: regional_revenue_summary
    :language: python
 
+Priority rollups with filtered aggregates
+-----------------------------------------
+
+The schema-aware projections power richer aggregates as well. ``priority_region_rollup``
+filters on typed boolean columns, counts high-value orders, and sums item
+quantities while preserving marker metadata for the resulting relation.
+
+.. literalinclude:: ../../src/duckplus/examples/typed_pipeline_demos.py
+   :pyobject: priority_region_rollup
+   :language: python
+
+Customer lifetime and priority profiles
+---------------------------------------
+
+``customer_priority_profile`` combines minimum, sum, and filtered count
+aggregates. The schema ensures comparisons and numeric operations are valid,
+and the resulting tuples carry :class:`datetime.date` annotations alongside the
+integer metrics.
+
+.. literalinclude:: ../../src/duckplus/examples/typed_pipeline_demos.py
+   :pyobject: customer_priority_profile
+   :language: python
+
+Distinct customers per region
+-----------------------------
+
+``regional_customer_diversity`` demonstrates distinct counts with and without
+filters. The helper reuses schema-derived expressions so both ``COUNT`` calls
+validate compatible column types before DuckDB evaluates the query.
+
+.. literalinclude:: ../../src/duckplus/examples/typed_pipeline_demos.py
+   :pyobject: regional_customer_diversity
+   :language: python
+
+Daily priority summaries
+------------------------
+
+``daily_priority_summary`` builds per-day metrics that track revenue and flagged
+orders. Even with filtered aggregates the resulting relation remains fully
+typed, so ``fetch_typed()`` produces ``date`` and ``int`` annotations without
+manual casts.
+
+.. literalinclude:: ../../src/duckplus/examples/typed_pipeline_demos.py
+   :pyobject: daily_priority_summary
+   :language: python
+
 Unknown falls back when using manual SQL
 ---------------------------------------
 
@@ -49,6 +108,10 @@ API signals that Python typing falls back to ``Any``.
 
 .. literalinclude:: ../../src/duckplus/examples/typed_pipeline_demos.py
    :pyobject: apply_manual_tax_projection
+   :language: python
+
+.. literalinclude:: ../../src/duckplus/examples/typed_pipeline_demos.py
+   :pyobject: describe_schema
    :language: python
 
 .. literalinclude:: ../../src/duckplus/examples/typed_pipeline_demos.py
