@@ -28,8 +28,8 @@ Answer these before starting any TODO item to confirm the work is understood and
   - [x] Implement `Relation.rename(**renames)` backed by `SELECT * RENAME` and ensure conflicting names raise clear errors.
   - [x] Add `rename_if_exists` soft variant that skips missing columns with warnings/logging.
 - [ ] Column addition helpers
-  - [ ] Implement `Relation.add(**expressions)` using `SELECT *, <expr> AS <alias>`.
-  - [ ] Support dependent expressions (new columns referencing existing ones) with validation.
+  - [x] Implement `Relation.add(**expressions)` using `SELECT *, <expr> AS <alias>`.
+  - [ ] Support dependent expressions (new columns referencing existing ones) with validation (blocked by typed expression API; see notes below).
 - [ ] Column subset helpers
   - [ ] Implement `Relation.keep(*columns)` to project only requested columns, raising on unknown names by default.
   - [ ] Provide `keep_if_exists` variant that tolerates absent columns.
@@ -43,6 +43,10 @@ Answer these before starting any TODO item to confirm the work is understood and
 - [ ] Enable expression comparisons (`ducktype.Varchar("customer") == "prime"`) and joins between differently named columns.
 - [ ] Support aliasing and renaming via methods like `.alias("my_customer")` with dict/str serialization.
 - [ ] Add window function construction helpers on typed expressions.
+
+### Notes for "Typed Expression API"
+1. Rich expression objects should expose column dependency metadata so helpers like `Relation.add` can validate references to both existing and newly-created columns.
+2. Once expressions carry type information, revisit column helpers (`add`, `transform`, and future subset/drop utilities) to accept expression instances alongside raw SQL strings for safer composition.
 
 ## Aggregation and Filtering
 - [ ] Implement `Relation.aggregate(group_by, **named_aggs, *filters)` with validation of group columns.
