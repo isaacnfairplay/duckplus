@@ -739,6 +739,193 @@ def _execute_duckdb_reader(
         ) from exc
 
 
+@dataclass(slots=True)
+class _ParquetReader:
+    conn: DuckConnection
+    paths: _ValidatedPaths
+    options: ParquetReadOptions
+
+    @classmethod
+    def from_paths(
+        cls,
+        conn: DuckConnection,
+        paths: PathsLike,
+        options: ParquetReadOptions,
+    ) -> "_ParquetReader":
+        return cls(conn=conn, paths=_normalize_paths(paths), options=options)
+
+    def relation(self) -> Relation[AnyRow]:
+        read_options = _validate_parquet_read_options(self.options)
+        relation = _execute_duckdb_reader(
+            self.conn.raw.read_parquet,
+            "read Parquet data",
+            self.paths.for_duckdb,
+            options=read_options,
+        )
+        return Relation(relation)
+
+
+@dataclass(slots=True)
+class _CSVReader:
+    conn: DuckConnection
+    paths: _ValidatedPaths
+    options: CSVReadOptions
+    encoding: str
+    header: bool | int
+
+    @classmethod
+    def from_paths(
+        cls,
+        conn: DuckConnection,
+        paths: PathsLike,
+        *,
+        options: CSVReadOptions,
+        encoding: str,
+        header: bool | int,
+    ) -> "_CSVReader":
+        if not isinstance(encoding, str) or not encoding:
+            raise TypeError("encoding must be provided as a non-empty string.")
+        if not isinstance(header, (bool, int)):
+            raise TypeError("header must be a boolean or integer value.")
+        normalized = _normalize_paths(paths)
+        return cls(
+            conn=conn,
+            paths=normalized,
+            options=options,
+            encoding=encoding,
+            header=header,
+        )
+
+    def relation(self) -> Relation[AnyRow]:
+        read_options = _validate_csv_common(self.options)
+        read_options["encoding"] = self.encoding
+        read_options["header"] = self.header
+        relation = _execute_duckdb_reader(
+            self.conn.raw.read_csv,
+            "read CSV data",
+            self.paths.for_duckdb,
+            options=read_options,
+        )
+        return Relation(relation)
+
+
+@dataclass(slots=True)
+class _JSONReader:
+    conn: DuckConnection
+    paths: _ValidatedPaths
+    options: JSONReadOptions
+
+    @classmethod
+    def from_paths(
+        cls,
+        conn: DuckConnection,
+        paths: PathsLike,
+        options: JSONReadOptions,
+    ) -> "_JSONReader":
+        return cls(conn=conn, paths=_normalize_paths(paths), options=options)
+
+    def relation(self) -> Relation[AnyRow]:
+        read_options = _validate_json_options(self.options)
+        relation = _execute_duckdb_reader(
+            self.conn.raw.read_json,
+            "read JSON data",
+            self.paths.for_duckdb,
+            options=read_options,
+        )
+        return Relation(relation)
+
+
+@dataclass(slots=True)
+class _ParquetWriter:
+    rel: DuckRel[AnyRow]
+    target: Path
+    options: ParquetWriteOptions
+    compression: ParquetCompression
+
+    @classmethod
+    def to_path(
+        cls,
+        rel: DuckRel[AnyRow],
+        path: Pathish,
+        *,
+        compression: ParquetCompression,
+        options: ParquetWriteOptions,
+    ) -> "_ParquetWriter":
+        if compression not in {
+            "auto",
+            "none",
+            "uncompressed",
+            "snappy",
+            "gzip",
+            "zstd",
+            "lz4",
+            "brotli",
+        }:
+            raise ValueError(
+                "compression must be one of 'auto', 'none', 'uncompressed', 'snappy', 'gzip', 'zstd', 'lz4', or 'brotli'."
+            )
+        return cls(
+            rel=rel,
+            target=_ensure_path(path),
+            options=options,
+            compression=compression,
+        )
+
+    def write(self) -> None:
+        write_options = _validate_parquet_write_options(self.options)
+        write_options["compression"] = self.compression
+        _write_with_temporary(
+            self.rel.relation,
+            self.target,
+            writer=self.rel.relation.write_parquet,
+            description="write Parquet data",
+            options=write_options,
+        )
+
+
+@dataclass(slots=True)
+class _CSVWriter:
+    rel: DuckRel[AnyRow]
+    target: Path
+    options: CSVWriteOptions
+    encoding: str
+    header: bool | int
+
+    @classmethod
+    def to_path(
+        cls,
+        rel: DuckRel[AnyRow],
+        path: Pathish,
+        *,
+        options: CSVWriteOptions,
+        encoding: str,
+        header: bool | int,
+    ) -> "_CSVWriter":
+        if not isinstance(encoding, str) or not encoding:
+            raise TypeError("encoding must be provided as a non-empty string.")
+        if not isinstance(header, (bool, int)):
+            raise TypeError("header must be a boolean or integer value.")
+        return cls(
+            rel=rel,
+            target=_ensure_path(path),
+            options=options,
+            encoding=encoding,
+            header=header,
+        )
+
+    def write(self) -> None:
+        write_options = _validate_csv_write_options(self.options)
+        write_options["encoding"] = self.encoding
+        write_options["header"] = self.header
+        _write_with_temporary(
+            self.rel.relation,
+            self.target,
+            writer=self.rel.relation.write_csv,
+            description="write CSV data",
+            options=write_options,
+        )
+
+
 def read_parquet(
     conn: DuckConnection,
     paths: PathsLike,
@@ -804,7 +991,6 @@ def read_parquet(
     ...
     """
 
-    normalized = _normalize_paths(paths)
     raw_options: ParquetReadOptions = {}
 
     if binary_as_string is not None:
@@ -828,11 +1014,8 @@ def read_parquet(
     if explicit_cardinality is not None:
         raw_options["explicit_cardinality"] = explicit_cardinality
 
-    read_options = _validate_parquet_read_options(raw_options)
-    relation = _execute_duckdb_reader(
-        conn.raw.read_parquet, "read Parquet data", normalized.for_duckdb, options=read_options
-    )
-    return Relation(relation)
+    reader = _ParquetReader.from_paths(conn, paths, raw_options)
+    return reader.relation()
 
 
 def read_csv(
@@ -948,13 +1131,6 @@ def read_csv(
     ...
     """
 
-    if not isinstance(encoding, str) or not encoding:
-        raise TypeError("encoding must be provided as a non-empty string.")
-
-    if not isinstance(header, (bool, int)):
-        raise TypeError("header must be a boolean or integer value.")
-
-    normalized = _normalize_paths(paths)
     raw_options: CSVReadOptions = {}
 
     if delimiter is not None:
@@ -1006,14 +1182,14 @@ def read_csv(
     if thousands is not None:
         raw_options["thousands"] = thousands
 
-    read_options = _validate_csv_common(raw_options)
-    read_options["encoding"] = encoding
-    read_options["header"] = header
-
-    relation = _execute_duckdb_reader(
-        conn.raw.read_csv, "read CSV data", normalized.for_duckdb, options=read_options
+    reader = _CSVReader.from_paths(
+        conn,
+        paths,
+        options=raw_options,
+        encoding=encoding,
+        header=header,
     )
-    return Relation(relation)
+    return reader.relation()
 
 
 def read_json(
@@ -1111,7 +1287,6 @@ def read_json(
     ...
     """
 
-    normalized = _normalize_paths(paths)
     raw_options: JSONReadOptions = {}
 
     if columns is not None:
@@ -1155,11 +1330,8 @@ def read_json(
     if auto_detect is not None:
         raw_options["auto_detect"] = auto_detect
 
-    read_options = _validate_json_options(raw_options)
-    relation = _execute_duckdb_reader(
-        conn.raw.read_json, "read JSON data", normalized.for_duckdb, options=read_options
-    )
-    return Relation(relation)
+    reader = _JSONReader.from_paths(conn, paths, raw_options)
+    return reader.relation()
 
 
 def _write_with_temporary(
@@ -1230,21 +1402,6 @@ def write_parquet(
     ...
     """
 
-    if compression not in {
-        "auto",
-        "none",
-        "uncompressed",
-        "snappy",
-        "gzip",
-        "zstd",
-        "lz4",
-        "brotli",
-    }:
-        raise ValueError(
-            "compression must be one of 'auto', 'none', 'uncompressed', 'snappy', 'gzip', 'zstd', 'lz4', or 'brotli'."
-        )
-
-    target = _ensure_path(path)
     raw_options: ParquetWriteOptions = {}
 
     if row_group_size is not None:
@@ -1258,16 +1415,13 @@ def write_parquet(
     if per_thread_output is not None:
         raw_options["per_thread_output"] = per_thread_output
 
-    write_options = _validate_parquet_write_options(raw_options)
-    write_options["compression"] = compression
-
-    _write_with_temporary(
-        rel.relation,
-        target,
-        writer=rel.relation.write_parquet,
-        description="write Parquet data",
-        options=write_options,
+    writer = _ParquetWriter.to_path(
+        rel,
+        path,
+        compression=compression,
+        options=raw_options,
     )
+    writer.write()
 
 
 def write_csv(
@@ -1335,13 +1489,6 @@ def write_csv(
     ...
     """
 
-    if not isinstance(encoding, str) or not encoding:
-        raise TypeError("encoding must be provided as a non-empty string.")
-
-    if not isinstance(header, (bool, int)):
-        raise TypeError("header must be a boolean or integer value.")
-
-    target = _ensure_path(path)
     raw_options: CSVWriteOptions = {}
 
     if delimiter is not None:
@@ -1367,17 +1514,14 @@ def write_csv(
     if write_partition_columns is not None:
         raw_options["write_partition_columns"] = write_partition_columns
 
-    write_options = _validate_csv_write_options(raw_options)
-    write_options["encoding"] = encoding
-    write_options["header"] = header
-
-    _write_with_temporary(
-        rel.relation,
-        target,
-        writer=rel.relation.write_csv,
-        description="write CSV data",
-        options=write_options,
+    writer = _CSVWriter.to_path(
+        rel,
+        path,
+        options=raw_options,
+        encoding=encoding,
+        header=header,
     )
+    writer.write()
 
 
 def append_csv(
