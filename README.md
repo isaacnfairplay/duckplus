@@ -350,8 +350,8 @@ html = to_html(rel, max_rows=10, null_display="∅", class_="preview")
 The documentation site is published automatically to GitHub Pages by the
 [`Docs`](https://github.com/isaacnfairplay/duck/actions/workflows/docs.yml)
 workflow. Every push to `main` and each pull request runs `uv sync`, builds the
-Sphinx project, and deploys the generated HTML to the `gh-pages` branch. The
-latest deployment is always available at
+Sphinx project, and uploads the generated HTML as a GitHub Pages artifact. Pages
+serves the most recent deployment at
 [https://isaacnfairplay.github.io/duck/](https://isaacnfairplay.github.io/duck/),
 and workflow summaries include preview links you can share for review.
 
