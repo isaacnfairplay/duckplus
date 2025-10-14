@@ -25,8 +25,8 @@ Answer these before starting any TODO item to confirm the work is understood and
   - [x] Implement `Relation.transform(**replacements)` that issues a `SELECT * REPLACE` statement and validates referenced columns.
   - [x] Provide ergonomic overloads for simple casts, e.g. `relation.transform(column="column::INTEGER")`.
 - [ ] Rename helpers
-  - [ ] Implement `Relation.rename(**renames)` backed by `SELECT * RENAME` and ensure conflicting names raise clear errors.
-  - [ ] Add `rename_if_exists` soft variant that skips missing columns with warnings/logging.
+  - [x] Implement `Relation.rename(**renames)` backed by `SELECT * RENAME` and ensure conflicting names raise clear errors.
+  - [x] Add `rename_if_exists` soft variant that skips missing columns with warnings/logging.
 - [ ] Column addition helpers
   - [ ] Implement `Relation.add(**expressions)` using `SELECT *, <expr> AS <alias>`.
   - [ ] Support dependent expressions (new columns referencing existing ones) with validation.
