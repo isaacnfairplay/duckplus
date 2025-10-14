@@ -23,9 +23,9 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/isaacnfairplay/duck"
-Documentation = "https://isaacnfairplay.github.io/duck/"
-Issues = "https://github.com/isaacnfairplay/duck/issues"
+Homepage = "https://github.com/isaacnfairplay/duckplus"
+Documentation = "https://isaacnfairplay.github.io/duckplus/"
+Issues = "https://github.com/isaacnfairplay/duckplus/issues"
 
 # Optional extras (keep minimal; ODBC removed — loaded at runtime if needed)
 [project.optional-dependencies]
