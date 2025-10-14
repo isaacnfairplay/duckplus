@@ -746,6 +746,49 @@ class _ParquetReader:
     options: ParquetReadOptions
 
     @classmethod
+    def from_connection(
+        cls,
+        conn: DuckConnection,
+        paths: PathsLike,
+        /,
+        *,
+        binary_as_string: bool | None = None,
+        file_row_number: bool | None = None,
+        filename: bool | None = None,
+        hive_partitioning: bool | None = None,
+        union_by_name: bool | None = None,
+        can_have_nan: bool | None = None,
+        compression: ParquetCompression | None = None,
+        parquet_version: ParquetVersion | None = None,
+        debug_use_openssl: bool | None = None,
+        explicit_cardinality: int | None = None,
+    ) -> "_ParquetReader":
+        options: ParquetReadOptions = {}
+
+        if binary_as_string is not None:
+            options["binary_as_string"] = binary_as_string
+        if file_row_number is not None:
+            options["file_row_number"] = file_row_number
+        if filename is not None:
+            options["filename"] = filename
+        if hive_partitioning is not None:
+            options["hive_partitioning"] = hive_partitioning
+        if union_by_name is not None:
+            options["union_by_name"] = union_by_name
+        if can_have_nan is not None:
+            options["can_have_nan"] = can_have_nan
+        if compression is not None:
+            options["compression"] = compression
+        if parquet_version is not None:
+            options["parquet_version"] = parquet_version
+        if debug_use_openssl is not None:
+            options["debug_use_openssl"] = debug_use_openssl
+        if explicit_cardinality is not None:
+            options["explicit_cardinality"] = explicit_cardinality
+
+        return cls.from_paths(conn, paths, options)
+
+    @classmethod
     def from_paths(
         cls,
         conn: DuckConnection,
@@ -753,6 +796,9 @@ class _ParquetReader:
         options: ParquetReadOptions,
     ) -> "_ParquetReader":
         return cls(conn=conn, paths=_normalize_paths(paths), options=options)
+
+    def run(self) -> Relation[AnyRow]:
+        return self.relation()
 
     def relation(self) -> Relation[AnyRow]:
         read_options = _validate_parquet_read_options(self.options)
@@ -772,6 +818,99 @@ class _CSVReader:
     options: CSVReadOptions
     encoding: str
     header: bool | int
+
+    @classmethod
+    def from_connection(
+        cls,
+        conn: DuckConnection,
+        paths: PathsLike,
+        /,
+        *,
+        encoding: str = "utf-8",
+        header: bool | int = True,
+        delimiter: str | None = None,
+        quote: str | None = None,
+        escape: str | None = None,
+        nullstr: str | Sequence[str] | None = None,
+        sample_size: int | None = None,
+        auto_detect: bool | None = None,
+        ignore_errors: bool | None = None,
+        dateformat: str | None = None,
+        timestampformat: str | None = None,
+        decimal_separator: CSVDecimalSeparator | None = None,
+        columns: Mapping[str, util.DuckDBType] | None = None,
+        all_varchar: bool | None = None,
+        parallel: bool | None = None,
+        allow_quoted_nulls: bool | None = None,
+        null_padding: bool | None = None,
+        normalize_names: bool | None = None,
+        union_by_name: bool | None = None,
+        filename: bool | None = None,
+        hive_partitioning: bool | None = None,
+        hive_types_autocast: bool | None = None,
+        hive_types: Mapping[str, util.DuckDBType] | None = None,
+        files_to_sniff: int | None = None,
+        compression: CSVCompression | None = None,
+        thousands: str | None = None,
+    ) -> "_CSVReader":
+        options: CSVReadOptions = {}
+
+        if delimiter is not None:
+            options["delimiter"] = delimiter
+        if quote is not None:
+            options["quote"] = quote
+        if escape is not None:
+            options["escape"] = escape
+        if nullstr is not None:
+            options["nullstr"] = nullstr
+        if sample_size is not None:
+            options["sample_size"] = sample_size
+        if auto_detect is not None:
+            options["auto_detect"] = auto_detect
+        if ignore_errors is not None:
+            options["ignore_errors"] = ignore_errors
+        if dateformat is not None:
+            options["dateformat"] = dateformat
+        if timestampformat is not None:
+            options["timestampformat"] = timestampformat
+        if decimal_separator is not None:
+            options["decimal_separator"] = decimal_separator
+        if columns is not None:
+            options["columns"] = columns
+        if all_varchar is not None:
+            options["all_varchar"] = all_varchar
+        if parallel is not None:
+            options["parallel"] = parallel
+        if allow_quoted_nulls is not None:
+            options["allow_quoted_nulls"] = allow_quoted_nulls
+        if null_padding is not None:
+            options["null_padding"] = null_padding
+        if normalize_names is not None:
+            options["normalize_names"] = normalize_names
+        if union_by_name is not None:
+            options["union_by_name"] = union_by_name
+        if filename is not None:
+            options["filename"] = filename
+        if hive_partitioning is not None:
+            options["hive_partitioning"] = hive_partitioning
+        if hive_types_autocast is not None:
+            options["hive_types_autocast"] = hive_types_autocast
+        if hive_types is not None:
+            options["hive_types"] = hive_types
+        if files_to_sniff is not None:
+            options["files_to_sniff"] = files_to_sniff
+        if compression is not None:
+            options["compression"] = compression
+        if thousands is not None:
+            options["thousands"] = thousands
+
+        return cls.from_paths(
+            conn,
+            paths,
+            options=options,
+            encoding=encoding,
+            header=header,
+        )
 
     @classmethod
     def from_paths(
@@ -796,6 +935,9 @@ class _CSVReader:
             header=header,
         )
 
+    def run(self) -> Relation[AnyRow]:
+        return self.relation()
+
     def relation(self) -> Relation[AnyRow]:
         read_options = _validate_csv_common(self.options)
         read_options["encoding"] = self.encoding
@@ -816,6 +958,79 @@ class _JSONReader:
     options: JSONReadOptions
 
     @classmethod
+    def from_connection(
+        cls,
+        conn: DuckConnection,
+        paths: PathsLike,
+        /,
+        *,
+        columns: Mapping[str, util.DuckDBType] | None = None,
+        sample_size: int | None = None,
+        maximum_depth: int | None = None,
+        records: JSONRecords | None = None,
+        format: JSONFormat | None = None,
+        dateformat: str | None = None,
+        timestampformat: str | None = None,
+        compression: JSONCompression | None = None,
+        maximum_object_size: int | None = None,
+        ignore_errors: bool | None = None,
+        convert_strings_to_integers: bool | None = None,
+        field_appearance_threshold: float | int | None = None,
+        map_inference_threshold: int | None = None,
+        maximum_sample_files: int | None = None,
+        filename: bool | None = None,
+        hive_partitioning: bool | None = None,
+        union_by_name: bool | None = None,
+        hive_types: Mapping[str, util.DuckDBType] | None = None,
+        hive_types_autocast: bool | None = None,
+        auto_detect: bool | None = None,
+    ) -> "_JSONReader":
+        options: JSONReadOptions = {}
+
+        if columns is not None:
+            options["columns"] = columns
+        if sample_size is not None:
+            options["sample_size"] = sample_size
+        if maximum_depth is not None:
+            options["maximum_depth"] = maximum_depth
+        if records is not None:
+            options["records"] = records
+        if format is not None:
+            options["format"] = format
+        if dateformat is not None:
+            options["dateformat"] = dateformat
+        if timestampformat is not None:
+            options["timestampformat"] = timestampformat
+        if compression is not None:
+            options["compression"] = compression
+        if maximum_object_size is not None:
+            options["maximum_object_size"] = maximum_object_size
+        if ignore_errors is not None:
+            options["ignore_errors"] = ignore_errors
+        if convert_strings_to_integers is not None:
+            options["convert_strings_to_integers"] = convert_strings_to_integers
+        if field_appearance_threshold is not None:
+            options["field_appearance_threshold"] = field_appearance_threshold
+        if map_inference_threshold is not None:
+            options["map_inference_threshold"] = map_inference_threshold
+        if maximum_sample_files is not None:
+            options["maximum_sample_files"] = maximum_sample_files
+        if filename is not None:
+            options["filename"] = filename
+        if hive_partitioning is not None:
+            options["hive_partitioning"] = hive_partitioning
+        if union_by_name is not None:
+            options["union_by_name"] = union_by_name
+        if hive_types is not None:
+            options["hive_types"] = hive_types
+        if hive_types_autocast is not None:
+            options["hive_types_autocast"] = hive_types_autocast
+        if auto_detect is not None:
+            options["auto_detect"] = auto_detect
+
+        return cls.from_paths(conn, paths, options)
+
+    @classmethod
     def from_paths(
         cls,
         conn: DuckConnection,
@@ -823,6 +1038,9 @@ class _JSONReader:
         options: JSONReadOptions,
     ) -> "_JSONReader":
         return cls(conn=conn, paths=_normalize_paths(paths), options=options)
+
+    def run(self) -> Relation[AnyRow]:
+        return self.relation()
 
     def relation(self) -> Relation[AnyRow]:
         read_options = _validate_json_options(self.options)
@@ -991,31 +1209,21 @@ def read_parquet(
     ...
     """
 
-    raw_options: ParquetReadOptions = {}
-
-    if binary_as_string is not None:
-        raw_options["binary_as_string"] = binary_as_string
-    if file_row_number is not None:
-        raw_options["file_row_number"] = file_row_number
-    if filename is not None:
-        raw_options["filename"] = filename
-    if hive_partitioning is not None:
-        raw_options["hive_partitioning"] = hive_partitioning
-    if union_by_name is not None:
-        raw_options["union_by_name"] = union_by_name
-    if can_have_nan is not None:
-        raw_options["can_have_nan"] = can_have_nan
-    if compression is not None:
-        raw_options["compression"] = compression
-    if parquet_version is not None:
-        raw_options["parquet_version"] = parquet_version
-    if debug_use_openssl is not None:
-        raw_options["debug_use_openssl"] = debug_use_openssl
-    if explicit_cardinality is not None:
-        raw_options["explicit_cardinality"] = explicit_cardinality
-
-    reader = _ParquetReader.from_paths(conn, paths, raw_options)
-    return reader.relation()
+    reader = _ParquetReader.from_connection(
+        conn,
+        paths,
+        binary_as_string=binary_as_string,
+        file_row_number=file_row_number,
+        filename=filename,
+        hive_partitioning=hive_partitioning,
+        union_by_name=union_by_name,
+        can_have_nan=can_have_nan,
+        compression=compression,
+        parquet_version=parquet_version,
+        debug_use_openssl=debug_use_openssl,
+        explicit_cardinality=explicit_cardinality,
+    )
+    return reader.run()
 
 
 def read_csv(
@@ -1131,65 +1339,37 @@ def read_csv(
     ...
     """
 
-    raw_options: CSVReadOptions = {}
-
-    if delimiter is not None:
-        raw_options["delimiter"] = delimiter
-    if quote is not None:
-        raw_options["quote"] = quote
-    if escape is not None:
-        raw_options["escape"] = escape
-    if nullstr is not None:
-        raw_options["nullstr"] = nullstr
-    if sample_size is not None:
-        raw_options["sample_size"] = sample_size
-    if auto_detect is not None:
-        raw_options["auto_detect"] = auto_detect
-    if ignore_errors is not None:
-        raw_options["ignore_errors"] = ignore_errors
-    if dateformat is not None:
-        raw_options["dateformat"] = dateformat
-    if timestampformat is not None:
-        raw_options["timestampformat"] = timestampformat
-    if decimal_separator is not None:
-        raw_options["decimal_separator"] = decimal_separator
-    if columns is not None:
-        raw_options["columns"] = columns
-    if all_varchar is not None:
-        raw_options["all_varchar"] = all_varchar
-    if parallel is not None:
-        raw_options["parallel"] = parallel
-    if allow_quoted_nulls is not None:
-        raw_options["allow_quoted_nulls"] = allow_quoted_nulls
-    if null_padding is not None:
-        raw_options["null_padding"] = null_padding
-    if normalize_names is not None:
-        raw_options["normalize_names"] = normalize_names
-    if union_by_name is not None:
-        raw_options["union_by_name"] = union_by_name
-    if filename is not None:
-        raw_options["filename"] = filename
-    if hive_partitioning is not None:
-        raw_options["hive_partitioning"] = hive_partitioning
-    if hive_types_autocast is not None:
-        raw_options["hive_types_autocast"] = hive_types_autocast
-    if hive_types is not None:
-        raw_options["hive_types"] = hive_types
-    if files_to_sniff is not None:
-        raw_options["files_to_sniff"] = files_to_sniff
-    if compression is not None:
-        raw_options["compression"] = compression
-    if thousands is not None:
-        raw_options["thousands"] = thousands
-
-    reader = _CSVReader.from_paths(
+    reader = _CSVReader.from_connection(
         conn,
         paths,
-        options=raw_options,
         encoding=encoding,
         header=header,
+        delimiter=delimiter,
+        quote=quote,
+        escape=escape,
+        nullstr=nullstr,
+        sample_size=sample_size,
+        auto_detect=auto_detect,
+        ignore_errors=ignore_errors,
+        dateformat=dateformat,
+        timestampformat=timestampformat,
+        decimal_separator=decimal_separator,
+        columns=columns,
+        all_varchar=all_varchar,
+        parallel=parallel,
+        allow_quoted_nulls=allow_quoted_nulls,
+        null_padding=null_padding,
+        normalize_names=normalize_names,
+        union_by_name=union_by_name,
+        filename=filename,
+        hive_partitioning=hive_partitioning,
+        hive_types_autocast=hive_types_autocast,
+        hive_types=hive_types,
+        files_to_sniff=files_to_sniff,
+        compression=compression,
+        thousands=thousands,
     )
-    return reader.relation()
+    return reader.run()
 
 
 def read_json(
@@ -1287,51 +1467,31 @@ def read_json(
     ...
     """
 
-    raw_options: JSONReadOptions = {}
-
-    if columns is not None:
-        raw_options["columns"] = columns
-    if sample_size is not None:
-        raw_options["sample_size"] = sample_size
-    if maximum_depth is not None:
-        raw_options["maximum_depth"] = maximum_depth
-    if records is not None:
-        raw_options["records"] = records
-    if format is not None:
-        raw_options["format"] = format
-    if dateformat is not None:
-        raw_options["dateformat"] = dateformat
-    if timestampformat is not None:
-        raw_options["timestampformat"] = timestampformat
-    if compression is not None:
-        raw_options["compression"] = compression
-    if maximum_object_size is not None:
-        raw_options["maximum_object_size"] = maximum_object_size
-    if ignore_errors is not None:
-        raw_options["ignore_errors"] = ignore_errors
-    if convert_strings_to_integers is not None:
-        raw_options["convert_strings_to_integers"] = convert_strings_to_integers
-    if field_appearance_threshold is not None:
-        raw_options["field_appearance_threshold"] = field_appearance_threshold
-    if map_inference_threshold is not None:
-        raw_options["map_inference_threshold"] = map_inference_threshold
-    if maximum_sample_files is not None:
-        raw_options["maximum_sample_files"] = maximum_sample_files
-    if filename is not None:
-        raw_options["filename"] = filename
-    if hive_partitioning is not None:
-        raw_options["hive_partitioning"] = hive_partitioning
-    if union_by_name is not None:
-        raw_options["union_by_name"] = union_by_name
-    if hive_types is not None:
-        raw_options["hive_types"] = hive_types
-    if hive_types_autocast is not None:
-        raw_options["hive_types_autocast"] = hive_types_autocast
-    if auto_detect is not None:
-        raw_options["auto_detect"] = auto_detect
-
-    reader = _JSONReader.from_paths(conn, paths, raw_options)
-    return reader.relation()
+    reader = _JSONReader.from_connection(
+        conn,
+        paths,
+        columns=columns,
+        sample_size=sample_size,
+        maximum_depth=maximum_depth,
+        records=records,
+        format=format,
+        dateformat=dateformat,
+        timestampformat=timestampformat,
+        compression=compression,
+        maximum_object_size=maximum_object_size,
+        ignore_errors=ignore_errors,
+        convert_strings_to_integers=convert_strings_to_integers,
+        field_appearance_threshold=field_appearance_threshold,
+        map_inference_threshold=map_inference_threshold,
+        maximum_sample_files=maximum_sample_files,
+        filename=filename,
+        hive_partitioning=hive_partitioning,
+        union_by_name=union_by_name,
+        hive_types=hive_types,
+        hive_types_autocast=hive_types_autocast,
+        auto_detect=auto_detect,
+    )
+    return reader.run()
 
 
 def _write_with_temporary(

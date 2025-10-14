@@ -1,7 +1,12 @@
 from __future__ import annotations
 
 from importlib import import_module
+from pathlib import Path
 from typing import Any, Sequence
+import os
+import subprocess
+import sys
+import textwrap
 
 import duckplus
 import duckplus.io  # noqa: F401  # ensure submodule is available for patching
@@ -12,21 +17,247 @@ import duckdb
 connect_mod = import_module("duckplus.connect")
 
 
-def test_connection_read_parquet_filters_none(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_connection_read_parquet_delegates_to_strategy(monkeypatch: pytest.MonkeyPatch) -> None:
     with duckplus.connect() as conn:
         captured: dict[str, object] = {}
 
-        def fake_read_parquet(connection: duckplus.DuckConnection, paths: object, **kwargs: object) -> duckplus.DuckRel:
+        class DummyReader:
+            def __init__(self, relation: duckplus.DuckRel) -> None:
+                self._relation = relation
+
+            def run(self) -> duckplus.DuckRel:
+                return self._relation
+
+        def fake_for_connection(
+            cls: type[object],
+            connection: duckplus.DuckConnection,
+            paths: object,
+            **kwargs: object,
+        ) -> DummyReader:
+            captured["cls"] = cls
+            captured["connection"] = connection
             captured["paths"] = paths
             captured["kwargs"] = kwargs
-            return duckplus.DuckRel(conn.raw.sql("SELECT 1 AS marker"))
+            relation = duckplus.DuckRel(connection.raw.sql("SELECT 1 AS marker"))
+            captured["relation"] = relation
+            return DummyReader(relation)
 
-        monkeypatch.setattr(duckplus.io, "read_parquet", fake_read_parquet)
+        monkeypatch.setattr(
+            duckplus.io._ParquetReader,
+            "from_connection",
+            classmethod(fake_for_connection),
+        )
 
-        conn.read_parquet("/tmp/input.parquet", union_by_name=True)
+        rel = conn.read_parquet("/tmp/input.parquet", union_by_name=True)
 
+        assert rel is captured["relation"]
         assert captured["paths"] == "/tmp/input.parquet"
-        assert captured["kwargs"] == {"union_by_name": True}
+        assert set(captured["kwargs"]) == {
+            "binary_as_string",
+            "file_row_number",
+            "filename",
+            "hive_partitioning",
+            "union_by_name",
+            "can_have_nan",
+            "compression",
+            "parquet_version",
+            "debug_use_openssl",
+            "explicit_cardinality",
+        }
+        assert captured["kwargs"]["union_by_name"] is True
+        assert captured["kwargs"]["binary_as_string"] is None
+
+
+def test_connection_read_csv_delegates_to_strategy(monkeypatch: pytest.MonkeyPatch) -> None:
+    with duckplus.connect() as conn:
+        captured: dict[str, object] = {}
+
+        class DummyReader:
+            def __init__(self, relation: duckplus.DuckRel) -> None:
+                self._relation = relation
+
+            def run(self) -> duckplus.DuckRel:
+                return self._relation
+
+        def fake_for_connection(
+            cls: type[object],
+            connection: duckplus.DuckConnection,
+            paths: object,
+            **kwargs: object,
+        ) -> DummyReader:
+            captured["paths"] = paths
+            captured["kwargs"] = kwargs
+            relation = duckplus.DuckRel(connection.raw.sql("SELECT 2 AS marker"))
+            captured["relation"] = relation
+            return DummyReader(relation)
+
+        monkeypatch.setattr(
+            duckplus.io._CSVReader,
+            "from_connection",
+            classmethod(fake_for_connection),
+        )
+
+        rel = conn.read_csv(
+            "/tmp/input.csv",
+            encoding="latin-1",
+            header=False,
+            delimiter="|",
+        )
+
+        assert rel is captured["relation"]
+        assert captured["paths"] == "/tmp/input.csv"
+        expected_keys = {
+            "encoding",
+            "header",
+            "delimiter",
+            "quote",
+            "escape",
+            "nullstr",
+            "sample_size",
+            "auto_detect",
+            "ignore_errors",
+            "dateformat",
+            "timestampformat",
+            "decimal_separator",
+            "columns",
+            "all_varchar",
+            "parallel",
+            "allow_quoted_nulls",
+            "null_padding",
+            "normalize_names",
+            "union_by_name",
+            "filename",
+            "hive_partitioning",
+            "hive_types_autocast",
+            "hive_types",
+            "files_to_sniff",
+            "compression",
+            "thousands",
+        }
+        assert set(captured["kwargs"]) == expected_keys
+        assert captured["kwargs"]["encoding"] == "latin-1"
+        assert captured["kwargs"]["header"] is False
+        assert captured["kwargs"]["delimiter"] == "|"
+        assert captured["kwargs"]["compression"] is None
+
+
+def test_connection_read_json_delegates_to_strategy(monkeypatch: pytest.MonkeyPatch) -> None:
+    with duckplus.connect() as conn:
+        captured: dict[str, object] = {}
+
+        class DummyReader:
+            def __init__(self, relation: duckplus.DuckRel) -> None:
+                self._relation = relation
+
+            def run(self) -> duckplus.DuckRel:
+                return self._relation
+
+        def fake_for_connection(
+            cls: type[object],
+            connection: duckplus.DuckConnection,
+            paths: object,
+            **kwargs: object,
+        ) -> DummyReader:
+            captured["paths"] = paths
+            captured["kwargs"] = kwargs
+            relation = duckplus.DuckRel(connection.raw.sql("SELECT 3 AS marker"))
+            captured["relation"] = relation
+            return DummyReader(relation)
+
+        monkeypatch.setattr(
+            duckplus.io._JSONReader,
+            "from_connection",
+            classmethod(fake_for_connection),
+        )
+
+        rel = conn.read_json(
+            "/tmp/input.json",
+            records="records",
+            auto_detect=False,
+        )
+
+        assert rel is captured["relation"]
+        assert captured["paths"] == "/tmp/input.json"
+        expected_keys = {
+            "columns",
+            "sample_size",
+            "maximum_depth",
+            "records",
+            "format",
+            "dateformat",
+            "timestampformat",
+            "compression",
+            "maximum_object_size",
+            "ignore_errors",
+            "convert_strings_to_integers",
+            "field_appearance_threshold",
+            "map_inference_threshold",
+            "maximum_sample_files",
+            "filename",
+            "hive_partitioning",
+            "union_by_name",
+            "hive_types",
+            "hive_types_autocast",
+            "auto_detect",
+        }
+        assert set(captured["kwargs"]) == expected_keys
+        assert captured["kwargs"]["records"] == "records"
+        assert captured["kwargs"]["auto_detect"] is False
+        assert captured["kwargs"]["compression"] is None
+
+
+def test_connection_read_helpers_preserve_mypy_signatures(tmp_path: Path) -> None:
+    snippet = textwrap.dedent(
+        """
+        from duckplus import DuckConnection, connect
+
+
+        def check(conn: DuckConnection) -> None:
+            conn.read_parquet("data.parquet", union_by_name=True)
+            conn.read_csv("data.csv", encoding="utf-8", header=True, delimiter=",")
+            conn.read_json("data.json", records="records")
+
+
+        def misuse(conn: DuckConnection) -> None:
+            conn.read_parquet("data.parquet", binary_as_string="oops")
+
+
+        def main() -> None:
+            with connect() as conn:
+                check(conn)
+                misuse(conn)
+        """
+    )
+
+    script = tmp_path / "signature_check.py"
+    script.write_text(snippet)
+
+    project_root = Path(__file__).resolve().parent.parent
+    config = project_root / "pyproject.toml"
+    src_dir = project_root / "src"
+    env = os.environ.copy()
+    existing_path = env.get("PYTHONPATH", "")
+    new_path = str(src_dir)
+    if existing_path:
+        new_path = f"{new_path}{os.pathsep}{existing_path}"
+    env["PYTHONPATH"] = new_path
+
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "mypy",
+            "--config-file",
+            str(config),
+            str(script),
+        ],
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+
+    assert proc.returncode == 1
+    assert "error: Argument \"binary_as_string\"" in proc.stdout
 
 
 def test_connect_executes_simple_query() -> None:
