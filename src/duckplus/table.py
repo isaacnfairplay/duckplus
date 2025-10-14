@@ -8,6 +8,7 @@ from typing import Any, Optional, Tuple
 from . import util
 from .connect import DuckConnection
 from .core import DuckRel
+from .schema import AnyRow
 
 
 def _quote_identifier(identifier: str) -> str:
@@ -86,7 +87,7 @@ class DuckTable:
 
         return self._name
 
-    def append(self, rel: DuckRel, *, by_name: bool = True) -> None:
+    def append(self, rel: DuckRel[AnyRow], *, by_name: bool = True) -> None:
         """Append rows from *rel* into the table."""
 
         table_columns = self._table_columns()
@@ -105,7 +106,7 @@ class DuckTable:
 
         relation.relation.insert_into(self._name)
 
-    def insert_antijoin(self, rel: DuckRel, *, keys: Sequence[str]) -> int:
+    def insert_antijoin(self, rel: DuckRel[AnyRow], *, keys: Sequence[str]) -> int:
         """Insert rows from *rel* missing in the table based on *keys*."""
 
         if not keys:
@@ -116,7 +117,7 @@ class DuckTable:
         table_columns = self._table_columns()
         resolved_keys = util.resolve_columns(keys, table_columns)
 
-        table_rel = DuckRel(self._connection.raw.table(self._name))
+        table_rel: DuckRel[AnyRow] = DuckRel(self._connection.raw.table(self._name))
         existing = table_rel.project_columns(*resolved_keys)
         filtered = rel.anti_join(existing)
         count = filtered.row_count()
@@ -128,7 +129,7 @@ class DuckTable:
 
     def insert_by_continuous_id(
         self,
-        rel: DuckRel,
+        rel: DuckRel[AnyRow],
         *,
         id_column: str,
         inclusive: bool = False,

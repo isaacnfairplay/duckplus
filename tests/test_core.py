@@ -6,12 +6,15 @@ import pytest
 
 from datetime import date, datetime
 from pathlib import Path
+from typing import NamedTuple
 
 from duckplus.core import (
     AggregateExpression,
     AsofOrder,
     AsofSpec,
+    ColumnDefinition,
     DuckRel,
+    DuckSchema,
     FilterExpression,
     ExpressionPredicate,
     JoinProjection,
@@ -21,8 +24,10 @@ from duckplus.core import (
     column,
     equals,
 )
+from duckplus import ducktypes
 import duckplus.util as util_module
 from duckplus.materialize import ParquetMaterializeStrategy
+from typing_extensions import assert_type
 
 
 def table_rows(table: pa.Table) -> list[tuple[object, ...]]:
@@ -83,6 +88,73 @@ def test_column_types_metadata(sample_rel: DuckRel) -> None:
     assert sample_rel.column_types == ["INTEGER", "VARCHAR", "INTEGER"]
 
 
+def test_schema_exposes_column_definitions(sample_rel: DuckRel) -> None:
+    schema = sample_rel.schema
+    assert isinstance(schema, DuckSchema)
+    assert schema.column_names == ("id", "Name", "score")
+
+    name_def = schema.column("Name")
+    assert isinstance(name_def, ColumnDefinition)
+    assert name_def.name == "Name"
+    assert name_def.duckdb_type == "VARCHAR"
+    assert schema.duckdb_type("id") == "INTEGER"
+    assert schema.marker("score") is schema.column("score").duck_type
+
+
+def test_schema_declared_marker_validation(sample_rel: DuckRel) -> None:
+    with pytest.raises(TypeError):
+        sample_rel.project({"bad": column("Name", duck_type=ducktypes.Integer)})
+
+
+def test_schema_declared_marker_supports_custom_subclasses() -> None:
+    class CustomInteger(ducktypes.Integer):
+        """Custom duck type used to verify subclass compatibility."""
+
+    schema = DuckSchema.from_components(
+        ["value"],
+        ["INTEGER"],
+        duck_types=[CustomInteger],
+    )
+
+    schema.ensure_declared_marker(
+        column="value",
+        declared=CustomInteger,
+        context="custom",
+    )
+
+
+def test_schema_declared_marker_falls_back_to_lookup() -> None:
+    schema = DuckSchema.from_components(["value"], ["INTEGER"])
+
+    schema.ensure_declared_marker(
+        column="value",
+        declared=ducktypes.Integer,
+        context="lookup",
+    )
+
+
+def test_schema_declared_marker_returns_declared_type(sample_rel: DuckRel) -> None:
+    marker = sample_rel.schema.ensure_declared_marker(
+        column="id",
+        declared=ducktypes.Integer,
+        context="test",
+    )
+
+    assert marker is ducktypes.Integer
+    assert_type(marker, type[ducktypes.Integer])
+
+
+def test_schema_declared_marker_unknown_preserves_runtime_marker(sample_rel: DuckRel) -> None:
+    marker = sample_rel.schema.ensure_declared_marker(
+        column="id",
+        declared=ducktypes.Unknown,
+        context="test",
+    )
+
+    assert marker is ducktypes.Integer
+    assert_type(marker, type[ducktypes.DuckType])
+
+
 def test_row_count_returns_int(sample_rel: DuckRel) -> None:
     count = sample_rel.row_count()
     assert isinstance(count, int)
@@ -119,6 +191,52 @@ def test_project_columns_case_insensitive(sample_rel: DuckRel) -> None:
 def test_project_columns_missing_ok_returns_original(sample_rel: DuckRel) -> None:
     rel = sample_rel.project_columns("missing", missing_ok=True)
     assert rel is sample_rel
+
+
+def test_column_python_annotations_use_schema(sample_rel: DuckRel) -> None:
+    typed = sample_rel.project(
+        {
+            "id": col("id", duck_type=ducktypes.Integer),
+            "score": col("score", duck_type=ducktypes.Integer),
+        }
+    )
+
+    assert typed.column_python_annotations == [int, int]
+
+
+def test_schema_row_type_alias_uses_python_annotations(sample_rel: DuckRel) -> None:
+    typed = sample_rel.project(
+        {
+            "id": col("id", duck_type=ducktypes.Integer),
+            "name": col("Name", duck_type=ducktypes.Varchar),
+            "score": col("score", duck_type=ducktypes.Integer),
+        }
+    )
+
+    row_alias = typed.schema.row_type
+    assert issubclass(row_alias, tuple)
+    assert row_alias.__annotations__ == {"id": int, "name": str, "score": int}
+
+
+class SampleRow(NamedTuple):
+    id: int
+    name: str
+    score: int
+
+
+def test_duckrel_typed_returns_namedtuple_rows(sample_rel: DuckRel) -> None:
+    typed = sample_rel.project(
+        {
+            "id": col("id", duck_type=ducktypes.Integer),
+            "name": col("Name", duck_type=ducktypes.Varchar),
+            "score": col("score", duck_type=ducktypes.Integer),
+        }
+    )
+
+    typed_rel = typed.typed(SampleRow)
+    rows = typed_rel.fetch_typed()
+    assert_type(rows, list[SampleRow])
+    assert rows[0] == SampleRow(1, "Alpha", 10)
 
 
 def test_drop_columns_excludes_requested(sample_rel: DuckRel) -> None:

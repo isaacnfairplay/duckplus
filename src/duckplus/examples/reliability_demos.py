@@ -20,6 +20,7 @@ from duckplus import (
     col,
     ducktypes,
 )
+from duckplus.schema import AnyRow
 from duckplus.examples import typed_pipeline_demos
 
 __all__ = [
@@ -32,7 +33,7 @@ __all__ = [
 ]
 
 
-def _typed_orders(conn: DuckConnection) -> DuckRel:
+def _typed_orders(conn: DuckConnection) -> DuckRel[AnyRow]:
     """Return the shared typed orders relation for the demos."""
 
     return typed_pipeline_demos.typed_orders_demo_relation(conn.raw)

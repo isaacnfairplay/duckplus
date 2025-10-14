@@ -90,6 +90,22 @@ def test_typed_orders_demo_relation_markers(orders_rel: DuckRel) -> None:
     ]
 
 
+def test_describe_schema_reports_metadata(orders_rel: DuckRel) -> None:
+    report = typed_pipeline_demos.describe_schema(orders_rel)
+    assert report[0] == {
+        "name": "order_id",
+        "duckdb_type": "INTEGER",
+        "marker": "INTEGER",
+        "python": "int",
+    }
+    assert report[-1] == {
+        "name": "priority",
+        "duckdb_type": "BOOLEAN",
+        "marker": "BOOLEAN",
+        "python": "bool",
+    }
+
+
 def test_priority_order_snapshot(orders_rel: DuckRel) -> None:
     rows = typed_pipeline_demos.priority_order_snapshot(orders_rel)
     assert rows == [
@@ -119,6 +135,68 @@ def test_apply_manual_tax_projection_marks_unknown(orders_rel: DuckRel) -> None:
         "INTEGER",
         "DATE",
         "BOOLEAN",
+    ]
+    schema_report = typed_pipeline_demos.describe_schema(adjusted)
+    assert schema_report[3] == {
+        "name": "order_total",
+        "duckdb_type": "DECIMAL(13,2)",
+        "marker": "UNKNOWN",
+        "python": "Any",
+    }
+
+
+def test_schema_driven_projection(orders_rel: DuckRel) -> None:
+    rows = typed_pipeline_demos.schema_driven_projection(orders_rel)
+    assert rows == [
+        (1, "north", True),
+        (2, "north", False),
+        (3, "south", True),
+        (4, "west", True),
+        (5, "east", False),
+        (6, "north", True),
+    ]
+
+
+def test_priority_region_rollup(orders_rel: DuckRel) -> None:
+    rows = typed_pipeline_demos.priority_region_rollup(orders_rel)
+    assert rows == [
+        ("east", 0, 0, 1),
+        ("north", 2, 1, 10),
+        ("south", 1, 0, 3),
+        ("west", 1, 1, 2),
+    ]
+
+
+def test_customer_priority_profile(orders_rel: DuckRel) -> None:
+    rows = typed_pipeline_demos.customer_priority_profile(orders_rel)
+    assert rows == [
+        ("Alice", date(2024, 1, 1), 218, 2),
+        ("Bob", date(2024, 1, 2), 45, 0),
+        ("Cathy", date(2024, 1, 4), 155, 1),
+        ("Dan", date(2024, 1, 5), 15, 0),
+        ("Eve", date(2024, 1, 6), 200, 1),
+    ]
+
+
+def test_regional_customer_diversity(orders_rel: DuckRel) -> None:
+    rows = typed_pipeline_demos.regional_customer_diversity(orders_rel)
+    assert rows == [
+        ("east", 1, 0),
+        ("north", 3, 2),
+        ("south", 1, 1),
+        ("west", 1, 1),
+    ]
+
+
+def test_daily_priority_summary(orders_rel: DuckRel) -> None:
+    rows = typed_pipeline_demos.daily_priority_summary(orders_rel)
+    assert rows == [
+        (date(2024, 1, 1), 120, 1),
+        (date(2024, 1, 2), 45, 0),
+        (date(2024, 1, 3), 98, 1),
+        (date(2024, 1, 4), 155, 1),
+        (date(2024, 1, 5), 15, 0),
+        (date(2024, 1, 6), 200, 1),
     ]
 
 

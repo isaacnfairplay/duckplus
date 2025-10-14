@@ -26,17 +26,20 @@ from .filters import (
     not_equals,
 )
 from .duckrel import DuckRel
+from .schema import ColumnDefinition, DuckSchema
 
 __all__ = [
     "AsofOrder",
     "AsofSpec",
     "ColumnPredicate",
     "ColumnExpression",
+    "ColumnDefinition",
     "AggregateArgument",
     "AggregateExpression",
     "AggregateOrder",
     "FilterExpression",
     "DuckRel",
+    "DuckSchema",
     "ExpressionPredicate",
     "JoinPredicate",
     "JoinProjection",

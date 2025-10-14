@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, Any, Literal, NamedTuple, cast
+from typing import TYPE_CHECKING, Any, Generic, Literal, NamedTuple, TypeVar, cast
 
 import duckdb
 
@@ -22,6 +22,7 @@ from .materialize import (
     MaterializeStrategy,
     Materialized,
 )
+from .schema import AnyRow, ColumnDefinition, DuckSchema
 
 if TYPE_CHECKING:
     from pandas import DataFrame as PandasDataFrame
@@ -31,6 +32,12 @@ if TYPE_CHECKING:
 else:  # pragma: no cover - runtime aliases
     PandasDataFrame = object
     PolarsDataFrame = object
+
+
+RowType_co = TypeVar("RowType_co", bound=tuple[Any, ...], covariant=True)
+RowType = TypeVar("RowType", bound=tuple[Any, ...])
+MarkerT = TypeVar("MarkerT", bound=DuckType, covariant=True)
+PythonT = TypeVar("PythonT")
 
 
 def _quote_identifier(identifier: str) -> str:
@@ -69,32 +76,6 @@ def _relation_types(relation: duckdb.DuckDBPyRelation) -> list[str]:
     """Return the DuckDB type names for *relation* columns."""
 
     return [str(type_name) for type_name in relation.types]
-
-
-def _ensure_declared_marker(
-    *,
-    column: str,
-    declared: type[DuckType],
-    actual: str,
-    context: str,
-) -> None:
-    """Validate that a declared :class:`DuckType` matches the relation schema."""
-
-    if declared is Unknown:
-        return
-    actual_marker = lookup(actual)
-    if actual_marker is Unknown:
-        return
-    if issubclass(actual_marker, declared):
-        return
-    raise TypeError(
-        "{context} column {column!r} is typed as {actual_type} but was declared as {declared_type}.".format(
-            context=context,
-            column=column,
-            actual_type=actual_marker.describe(),
-            declared_type=declared.describe(),
-        )
-    )
 
 
 def _format_projection(columns: Sequence[str], *, alias: str | None = None) -> list[str]:
@@ -245,7 +226,7 @@ def _resolve_duckdb_connection(
     )
 
 
-class DuckRel:
+class DuckRel(Generic[RowType_co]):
     """Immutable wrapper around :class:`duckdb.DuckDBPyRelation` with typed helpers.
 
     Besides exposing the underlying relation via :attr:`relation`, DuckRel provides
@@ -253,18 +234,9 @@ class DuckRel:
     :meth:`row_count` to efficiently compute the number of rows.
     """
 
-    __slots__ = (
-        "_relation",
-        "_columns",
-        "_lookup",
-        "_types",
-        "_duck_types",
-    )
+    __slots__ = ("_relation", "_schema")
     _relation: duckdb.DuckDBPyRelation
-    _columns: tuple[str, ...]
-    _lookup: dict[str, int]
-    _types: tuple[str, ...]
-    _duck_types: tuple[type[DuckType], ...]
+    _schema: DuckSchema[AnyRow]
 
     def __setattr__(self, name: str, value: Any) -> None:  # pragma: no cover - defensive
         if name in self.__slots__ and hasattr(self, name):
@@ -275,32 +247,64 @@ class DuckRel:
         self,
         relation: duckdb.DuckDBPyRelation,
         *,
-        columns: Sequence[str] | None = None,
-        types: Sequence[str] | None = None,
         duck_types: Sequence[type[DuckType]] | None = None,
+        schema: DuckSchema[AnyRow] | None = None,
     ) -> None:
         super().__setattr__("_relation", relation)
-        raw_columns = list(relation.columns if columns is None else columns)
-        normalized, lookup = util.normalize_columns(raw_columns)
-        super().__setattr__("_columns", tuple(normalized))
-        super().__setattr__("_lookup", dict(lookup))
-        raw_types = list(_relation_types(relation) if types is None else types)
-        if len(raw_types) != len(normalized):
-            raise ValueError(
-                "Number of column types does not match the projected columns; "
-                f"expected {len(normalized)} types but received {len(raw_types)}."
-            )
-        super().__setattr__("_types", tuple(raw_types))
-        if duck_types is None:
-            resolved_duck_types: list[type[DuckType]] = [Unknown for _ in normalized]
-        else:
-            resolved_duck_types = list(duck_types)
-            if len(resolved_duck_types) != len(normalized):
+        if schema is not None:
+            if duck_types is not None:
                 raise ValueError(
-                    "Number of column type markers does not match the projected columns; "
-                    f"expected {len(normalized)} markers but received {len(resolved_duck_types)}."
+                    "DuckRel() received both a schema and explicit type markers; "
+                    "pass only one or the other."
                 )
-        super().__setattr__("_duck_types", tuple(resolved_duck_types))
+            super().__setattr__("_schema", schema)
+            return
+
+        raw_columns = list(relation.columns)
+        raw_types = list(_relation_types(relation))
+        schema_obj = DuckSchema.from_components(
+            raw_columns,
+            raw_types,
+            duck_types=duck_types,
+        )
+        super().__setattr__("_schema", schema_obj)
+
+    @property
+    def schema(self) -> DuckSchema[RowType_co]:
+        """Return the structured schema metadata for the relation."""
+
+        return cast(DuckSchema[RowType_co], self._schema)
+
+    @property
+    def row_type(self) -> type[RowType_co]:
+        """Return the stored tuple annotation for typed row materialization."""
+
+        return self.schema.row_type
+
+    def typed(
+        self: "DuckRel[AnyRow]",
+        row_type: type[RowType],
+    ) -> "DuckRel[RowType]":
+        """Return a wrapper that advertises the provided row tuple annotation."""
+
+        typed_schema = self._schema.typed(row_type)
+        return cast("DuckRel[RowType]", type(self)(self._relation, schema=typed_schema))
+
+    @property
+    def _columns(self) -> tuple[str, ...]:
+        return self._schema.column_names
+
+    @property
+    def _types(self) -> tuple[str, ...]:
+        return self._schema.duckdb_types
+
+    @property
+    def _duck_types(self) -> tuple[type[DuckType], ...]:
+        return self._schema.duck_types
+
+    @property
+    def _lookup(self) -> Mapping[str, int]:
+        return self._schema.lookup
 
 
     @property
@@ -343,9 +347,9 @@ class DuckRel:
     def column_python_annotations(self) -> list[Any]:
         """Return the stored Python annotations for each projected column."""
 
-        return [marker.python_annotation for marker in self._duck_types]
+        return list(self._schema.python_types)
 
-    def fetch_typed(self) -> list[tuple[Any, ...]]:
+    def fetch_typed(self) -> list[RowType_co]:
         """Fetch every row as a typed tuple based on stored column metadata.
 
         The returned tuples always include the relation's full projection. To
@@ -354,13 +358,14 @@ class DuckRel:
         """
 
         rows: list[tuple[Any, ...]] = self._relation.fetchall()
-        annotations = tuple(marker.python_annotation for marker in self._duck_types)
-        row_type: Any
-        if TYPE_CHECKING:
-            row_type = tuple[Any, ...]
-        else:
-            row_type = tuple[annotations]
-        return cast(list[row_type], rows)
+        row_annotation = self._schema.row_type
+        try:
+            typed_rows = [
+                cast(RowType_co, row_annotation(*row)) for row in rows
+            ]
+        except TypeError:  # pragma: no cover - defensive
+            return cast(list[RowType_co], rows)
+        return typed_rows
 
     def _column_index(self, name: str) -> int:
         """Return the index for *name* in the projected column list."""
@@ -380,7 +385,7 @@ class DuckRel:
     def _annotation_for_column(self, name: str) -> Any:
         """Return the stored Python annotation for *name*."""
 
-        return self._marker_for_column(name).python_annotation
+        return self._schema.python_type(name)
 
     def _markers_for_columns(self, columns: Sequence[str]) -> list[type[DuckType]]:
         """Return markers aligned with *columns* in projection order."""
@@ -390,37 +395,32 @@ class DuckRel:
     def _annotations_for_columns(self, columns: Sequence[str]) -> list[Any]:
         """Return Python annotations aligned with *columns* in projection order."""
 
-        return [self._annotation_for_column(column) for column in columns]
+        return [self._schema.python_type(column) for column in columns]
 
     def _metadata_from_expression(
-        self, expression: AnyColumnExpression, *, context: str
-    ) -> tuple[type[DuckType], Any]:
+        self, expression: ColumnExpression[MarkerT, PythonT], *, context: str
+    ) -> tuple[type[MarkerT], PythonT]:
         """Return ``(marker, annotation)`` for *expression* validating declared types."""
 
         resolved = expression.resolve(self._columns)
-        declared = expression.duck_type
-        _ensure_declared_marker(
+        declared: type[MarkerT] = expression.duck_type
+        marker_any: type[DuckType] = self._schema.ensure_declared_marker(
             column=resolved,
             declared=declared,
-            actual=self._type_for_column(resolved),
             context=context,
         )
-        if declared is Unknown:
-            marker = self._marker_for_column(resolved)
-        else:
-            marker = declared
+        if marker_any is Unknown:
+            marker_any = self._marker_for_column(resolved)
 
-        return marker, marker.python_annotation
+        typed_marker = cast(type[MarkerT], marker_any)
+        return typed_marker, cast(PythonT, typed_marker.python_annotation)
 
-    def _wrap_same_schema(self, relation: duckdb.DuckDBPyRelation) -> DuckRel:
+    def _wrap_same_schema(
+        self, relation: duckdb.DuckDBPyRelation
+    ) -> "DuckRel[RowType_co]":
         """Return a :class:`DuckRel` for *relation* preserving schema metadata."""
 
-        return type(self)(
-            relation,
-            columns=self._columns,
-            types=self._types,
-            duck_types=self._duck_types,
-        )
+        return type(self)(relation, schema=self._schema)
 
     def row_count(self) -> int:
         """Return the total number of rows in the relation as an :class:`int`."""
@@ -448,13 +448,15 @@ class DuckRel:
         )
         return self._relation.pl()
 
-    def show(self) -> DuckRel:
+    def show(self) -> "DuckRel[RowType_co]":
         """Render the relation using DuckDB's pretty printer and return ``self``."""
 
         self._relation.show()
         return self
 
-    def project_columns(self, *columns: str, missing_ok: bool = False) -> DuckRel:
+    def project_columns(
+        self, *columns: str, missing_ok: bool = False
+    ) -> "DuckRel[AnyRow]":
         """Return a relation containing only the requested *columns*."""
 
         if not columns:
@@ -471,16 +473,10 @@ class DuckRel:
             )
         projection = _format_projection(resolved)
         relation = self._relation.project(", ".join(projection))
-        types = [self._types[self._lookup[name.casefold()]] for name in resolved]
-        duck_types = self._markers_for_columns(resolved)
-        return type(self)(
-            relation,
-            columns=resolved,
-            types=types,
-            duck_types=duck_types,
-        )
+        schema: DuckSchema[AnyRow] = self._schema.select(resolved)
+        return type(self)(relation, schema=schema)
 
-    def drop(self, *columns: str, missing_ok: bool = False) -> DuckRel:
+    def drop(self, *columns: str, missing_ok: bool = False) -> "DuckRel[AnyRow]":
         """Return a relation excluding the specified *columns*."""
 
         if not columns:
@@ -504,16 +500,12 @@ class DuckRel:
 
         projection = _format_projection(remaining)
         relation = self._relation.project(", ".join(projection))
-        types = [self._types[self._lookup[name.casefold()]] for name in remaining]
-        duck_types = self._markers_for_columns(remaining)
-        return type(self)(
-            relation,
-            columns=remaining,
-            types=types,
-            duck_types=duck_types,
-        )
+        schema: DuckSchema[AnyRow] = self._schema.select(remaining)
+        return type(self)(relation, schema=schema)
 
-    def project(self, expressions: Mapping[str, str | AnyColumnExpression]) -> DuckRel:
+    def project(
+        self, expressions: Mapping[str, str | AnyColumnExpression]
+    ) -> "DuckRel[AnyRow]":
         """Project explicit *expressions* keyed by output column name."""
 
         if not expressions:
@@ -546,14 +538,13 @@ class DuckRel:
             compiled.append(_alias(expression_sql, alias))
             alias_markers.append(marker)
         relation = self._relation.project(", ".join(compiled))
-        return type(self)(
-            relation,
-            columns=aliases,
-            types=_relation_types(relation),
-            duck_types=alias_markers,
+        types = _relation_types(relation)
+        schema: DuckSchema[AnyRow] = DuckSchema.from_components(
+            aliases, types, duck_types=alias_markers
         )
+        return type(self)(relation, schema=schema)
 
-    def rename_columns(self, **mappings: str) -> DuckRel:
+    def rename_columns(self, **mappings: str) -> "DuckRel[AnyRow]":
         """Rename columns using DuckDB's ``RENAME`` star modifier."""
 
         if not mappings:
@@ -589,7 +580,9 @@ class DuckRel:
 
         return self._apply_star_projection(rename_entries=resolved)
 
-    def transform_columns(self, **expressions: str | AnyColumnExpression) -> DuckRel:
+    def transform_columns(
+        self, **expressions: str | AnyColumnExpression
+    ) -> "DuckRel[AnyRow]":
         """Replace columns using DuckDB's ``REPLACE`` star modifier."""
 
         if not expressions:
@@ -629,7 +622,9 @@ class DuckRel:
 
         return self._apply_star_projection(transform_entries=resolved)
 
-    def add_columns(self, **expressions: str | AnyColumnExpression) -> DuckRel:
+    def add_columns(
+        self, **expressions: str | AnyColumnExpression
+    ) -> "DuckRel[AnyRow]":
         """Add computed columns to the relation using ``*`` projection syntax."""
 
         if not expressions:
@@ -684,7 +679,9 @@ class DuckRel:
         parameters = [util.coerce_scalar(arg) for arg in args]
         return _inject_parameters(expression, parameters)
 
-    def filter(self, expression: str | FilterExpression, /, *args: Any) -> DuckRel:
+    def filter(
+        self, expression: str | FilterExpression, /, *args: Any
+    ) -> "DuckRel[AnyRow]":
         """Filter the relation using a SQL *expression* with optional parameters."""
 
         rendered = self._render_filter_expression(expression, args)
@@ -697,7 +694,7 @@ class DuckRel:
         aggregates: Mapping[str, str | AnyColumnExpression | AggregateExpression] | None = None,
         having_expressions: Sequence[str | FilterExpression] | None = None,
         **aggregate_columns: str | AnyColumnExpression | AggregateExpression,
-    ) -> DuckRel:
+    ) -> "DuckRel[AnyRow]":
         """Return a grouped aggregate relation.
 
         Parameters
@@ -765,6 +762,8 @@ class DuckRel:
                 final_markers.append(marker)
 
         final_columns = list(resolved_groups)
+        final_sources: list[str | None] = []
+        final_sources.extend(resolved_groups)
         selection_parts = list(group_expressions)
         seen_aliases = {name.casefold() for name in resolved_groups}
 
@@ -810,6 +809,7 @@ class DuckRel:
             final_columns.append(alias)
             seen_aliases.add(key)
             final_markers.append(marker)
+            final_sources.append(None)
 
         util.ensure_unique_names(final_columns)
 
@@ -848,16 +848,39 @@ class DuckRel:
 
         relation = self._relation.query(source_alias, query_sql)
         types = _relation_types(relation)
-        return type(self)(
-            relation,
-            columns=final_columns,
-            types=types,
-            duck_types=final_markers,
-        )
+        definitions: list[ColumnDefinition] = []
+        for name, type_name, marker, source in zip(
+            final_columns,
+            types,
+            final_markers,
+            final_sources,
+            strict=True,
+        ):
+            if source is not None:
+                base = self._schema.column(source)
+                if base.name != name:
+                    base = base.renamed(name)
+                if base.duck_type is not marker:
+                    base = base.with_duck_type(marker)
+                if base.duckdb_type != type_name:
+                    base = base.with_duckdb_type(type_name)
+                definitions.append(base)
+            else:
+                definitions.append(
+                    ColumnDefinition(
+                        name=name,
+                        duck_type=marker,
+                        duckdb_type=type_name,
+                        python_type=marker.python_annotation,
+                    )
+                )
+
+        schema: DuckSchema[AnyRow] = DuckSchema(definitions)
+        return type(self)(relation, schema=schema)
 
     def split(
         self, expression: str | FilterExpression, /, *args: Any
-    ) -> tuple[DuckRel, DuckRel]:
+    ) -> tuple[DuckRel[AnyRow], DuckRel[AnyRow]]:
         """Split the relation into matching and non-matching partitions.
 
         Returns a ``(matching, remainder)`` tuple where the first relation
@@ -873,14 +896,14 @@ class DuckRel:
 
     def natural_inner(
         self,
-        other: DuckRel,
+        other: DuckRel[AnyRow],
         /,
         *,
         strict: bool = True,
         allow_collisions: bool = False,
         suffixes: tuple[str, str] | None = None,
         **key_aliases: str,
-    ) -> DuckRel:
+    ) -> "DuckRel[AnyRow]":
         """Perform a natural inner join using shared columns and optional aliases."""
 
         projection = self._build_projection(allow_collisions=allow_collisions, suffixes=suffixes)
@@ -889,14 +912,14 @@ class DuckRel:
 
     def natural_left(
         self,
-        other: DuckRel,
+        other: DuckRel[AnyRow],
         /,
         *,
         strict: bool = True,
         allow_collisions: bool = False,
         suffixes: tuple[str, str] | None = None,
         **key_aliases: str,
-    ) -> DuckRel:
+    ) -> "DuckRel[AnyRow]":
         """Perform a natural left join using shared columns and optional aliases."""
 
         projection = self._build_projection(allow_collisions=allow_collisions, suffixes=suffixes)
@@ -905,14 +928,14 @@ class DuckRel:
 
     def natural_right(
         self,
-        other: DuckRel,
+        other: DuckRel[AnyRow],
         /,
         *,
         strict: bool = True,
         allow_collisions: bool = False,
         suffixes: tuple[str, str] | None = None,
         **key_aliases: str,
-    ) -> DuckRel:
+    ) -> "DuckRel[AnyRow]":
         """Perform a natural right join using shared columns and optional aliases."""
 
         projection = self._build_projection(allow_collisions=allow_collisions, suffixes=suffixes)
@@ -921,14 +944,14 @@ class DuckRel:
 
     def natural_full(
         self,
-        other: DuckRel,
+        other: DuckRel[AnyRow],
         /,
         *,
         strict: bool = True,
         allow_collisions: bool = False,
         suffixes: tuple[str, str] | None = None,
         **key_aliases: str,
-    ) -> DuckRel:
+    ) -> "DuckRel[AnyRow]":
         """Perform a natural full join using shared columns and optional aliases."""
 
         projection = self._build_projection(allow_collisions=allow_collisions, suffixes=suffixes)
@@ -937,7 +960,7 @@ class DuckRel:
 
     def natural_asof(
         self,
-        other: DuckRel,
+        other: DuckRel[AnyRow],
         /,
         *,
         order: AsofOrder,
@@ -947,7 +970,7 @@ class DuckRel:
         allow_collisions: bool = False,
         suffixes: tuple[str, str] | None = None,
         **key_aliases: str,
-    ) -> DuckRel:
+    ) -> "DuckRel[AnyRow]":
         """Perform a natural ASOF join with explicit ordering."""
 
         projection = self._build_projection(allow_collisions=allow_collisions, suffixes=suffixes)
@@ -960,9 +983,9 @@ class DuckRel:
 
     def inspect_partitions(
         self,
-        other: DuckRel,
+        other: DuckRel[AnyRow],
         partition: PartitionSpec | Mapping[str, str] | Sequence[tuple[str, str]],
-    ) -> DuckRel:
+    ) -> "DuckRel[AnyRow]":
         """Return per-partition row counts for *self* and *other*."""
 
         partition_spec = self._normalize_partition_spec(partition)
@@ -1023,14 +1046,14 @@ class DuckRel:
 
     def partitioned_join(
         self,
-        other: DuckRel,
+        other: DuckRel[AnyRow],
         partition: PartitionSpec | Mapping[str, str] | Sequence[tuple[str, str]],
         spec: JoinSpec,
         /,
         *,
         how: Literal["inner", "left", "right", "outer"],
         project: JoinProjection | None = None,
-    ) -> DuckRel:
+    ) -> "DuckRel[AnyRow]":
         """Join *other* using *spec* while constraining matches to partition columns."""
 
         partition_spec = self._normalize_partition_spec(partition)
@@ -1041,64 +1064,64 @@ class DuckRel:
 
     def partitioned_inner(
         self,
-        other: DuckRel,
+        other: DuckRel[AnyRow],
         partition: PartitionSpec | Mapping[str, str] | Sequence[tuple[str, str]],
         spec: JoinSpec,
         /,
         *,
         project: JoinProjection | None = None,
-    ) -> DuckRel:
+    ) -> "DuckRel[AnyRow]":
         """Perform an inner join constrained by *partition* columns."""
 
         return self.partitioned_join(other, partition, spec, how="inner", project=project)
 
     def partitioned_left(
         self,
-        other: DuckRel,
+        other: DuckRel[AnyRow],
         partition: PartitionSpec | Mapping[str, str] | Sequence[tuple[str, str]],
         spec: JoinSpec,
         /,
         *,
         project: JoinProjection | None = None,
-    ) -> DuckRel:
+    ) -> "DuckRel[AnyRow]":
         """Perform a left outer join constrained by *partition* columns."""
 
         return self.partitioned_join(other, partition, spec, how="left", project=project)
 
     def partitioned_right(
         self,
-        other: DuckRel,
+        other: DuckRel[AnyRow],
         partition: PartitionSpec | Mapping[str, str] | Sequence[tuple[str, str]],
         spec: JoinSpec,
         /,
         *,
         project: JoinProjection | None = None,
-    ) -> DuckRel:
+    ) -> "DuckRel[AnyRow]":
         """Perform a right outer join constrained by *partition* columns."""
 
         return self.partitioned_join(other, partition, spec, how="right", project=project)
 
     def partitioned_full(
         self,
-        other: DuckRel,
+        other: DuckRel[AnyRow],
         partition: PartitionSpec | Mapping[str, str] | Sequence[tuple[str, str]],
         spec: JoinSpec,
         /,
         *,
         project: JoinProjection | None = None,
-    ) -> DuckRel:
+    ) -> "DuckRel[AnyRow]":
         """Perform a full outer join constrained by *partition* columns."""
 
         return self.partitioned_join(other, partition, spec, how="outer", project=project)
 
     def left_inner(
         self,
-        other: DuckRel,
+        other: DuckRel[AnyRow],
         spec: JoinSpec,
         /,
         *,
         project: JoinProjection | None = None,
-    ) -> DuckRel:
+    ) -> "DuckRel[AnyRow]":
         """Perform an inner join against *other* using an explicit :class:`JoinSpec`."""
 
         resolved = self._resolve_join_spec(other, spec)
@@ -1106,12 +1129,12 @@ class DuckRel:
 
     def left_outer(
         self,
-        other: DuckRel,
+        other: DuckRel[AnyRow],
         spec: JoinSpec,
         /,
         *,
         project: JoinProjection | None = None,
-    ) -> DuckRel:
+    ) -> "DuckRel[AnyRow]":
         """Perform a left outer join against *other* using an explicit :class:`JoinSpec`."""
 
         resolved = self._resolve_join_spec(other, spec)
@@ -1119,12 +1142,12 @@ class DuckRel:
 
     def left_right(
         self,
-        other: DuckRel,
+        other: DuckRel[AnyRow],
         spec: JoinSpec,
         /,
         *,
         project: JoinProjection | None = None,
-    ) -> DuckRel:
+    ) -> "DuckRel[AnyRow]":
         """Perform a right join against *other* using an explicit :class:`JoinSpec`."""
 
         resolved = self._resolve_join_spec(other, spec)
@@ -1132,12 +1155,12 @@ class DuckRel:
 
     def inner_join(
         self,
-        other: DuckRel,
+        other: DuckRel[AnyRow],
         spec: JoinSpec,
         /,
         *,
         project: JoinProjection | None = None,
-    ) -> DuckRel:
+    ) -> "DuckRel[AnyRow]":
         """Perform a symmetric inner join using *spec*."""
 
         resolved = self._resolve_join_spec(other, spec)
@@ -1145,12 +1168,12 @@ class DuckRel:
 
     def outer_join(
         self,
-        other: DuckRel,
+        other: DuckRel[AnyRow],
         spec: JoinSpec,
         /,
         *,
         project: JoinProjection | None = None,
-    ) -> DuckRel:
+    ) -> "DuckRel[AnyRow]":
         """Perform a full outer join using *spec*."""
 
         resolved = self._resolve_join_spec(other, spec)
@@ -1158,12 +1181,12 @@ class DuckRel:
 
     def asof_join(
         self,
-        other: DuckRel,
+        other: DuckRel[AnyRow],
         spec: AsofSpec,
         /,
         *,
         project: JoinProjection | None = None,
-    ) -> DuckRel:
+    ) -> "DuckRel[AnyRow]":
         """Perform an ASOF join using the provided :class:`AsofSpec`."""
 
         resolved = self._resolve_asof_spec(other, spec)
@@ -1171,12 +1194,12 @@ class DuckRel:
 
     def semi_join(
         self,
-        other: DuckRel,
+        other: DuckRel[AnyRow],
         /,
         *,
         strict: bool = True,
         **key_aliases: str,
-    ) -> DuckRel:
+    ) -> "DuckRel[AnyRow]":
         """Perform a semi join preserving left rows that match *other*."""
 
         resolved = self._build_natural_join_spec(other, strict=strict, key_aliases=key_aliases)
@@ -1184,12 +1207,12 @@ class DuckRel:
 
     def anti_join(
         self,
-        other: DuckRel,
+        other: DuckRel[AnyRow],
         /,
         *,
         strict: bool = True,
         **key_aliases: str,
-    ) -> DuckRel:
+    ) -> "DuckRel[AnyRow]":
         """Perform an anti join preserving left rows that do not match *other*."""
 
         resolved = self._build_natural_join_spec(other, strict=strict, key_aliases=key_aliases)
@@ -1200,7 +1223,7 @@ class DuckRel:
         *orderings: Mapping[str | AnyColumnExpression, str]
         | tuple[str | AnyColumnExpression, str],
         **orders: str,
-    ) -> DuckRel:
+    ) -> "DuckRel[AnyRow]":
         """Return a relation ordered by the specified *orders* mapping.
 
         Accepts keyword pairs, ``(column, direction)`` tuples, or mappings where
@@ -1277,7 +1300,7 @@ class DuckRel:
         relation = self._relation.order(", ".join(order_clauses))
         return self._wrap_same_schema(relation)
 
-    def limit(self, count: int) -> DuckRel:
+    def limit(self, count: int) -> "DuckRel[AnyRow]":
         """Limit the relation to *count* rows."""
 
         if not isinstance(count, int):
@@ -1295,7 +1318,7 @@ class DuckRel:
         mapping: Mapping[str, util.DuckDBType] | None = None,
         /,
         **casts: util.DuckDBType,
-    ) -> DuckRel:
+    ) -> "DuckRel[AnyRow]":
         """Return a relation with specified columns ``CAST`` to DuckDB types."""
 
         return self._cast_columns("CAST", mapping, casts)
@@ -1305,7 +1328,7 @@ class DuckRel:
         mapping: Mapping[str, util.DuckDBType] | None = None,
         /,
         **casts: util.DuckDBType,
-    ) -> DuckRel:
+    ) -> "DuckRel[AnyRow]":
         """Return a relation with specified columns ``TRY_CAST`` to DuckDB types."""
 
         return self._cast_columns("TRY_CAST", mapping, casts)
@@ -1339,19 +1362,23 @@ class DuckRel:
                 f"strategy={type(runner).__name__}."
             )
 
-        wrapped: DuckRel | None = None
+        wrapped: DuckRel[AnyRow] | None = None
         if result.relation is not None:
             resolved_columns = (
                 tuple(result.columns)
                 if result.columns is not None
                 else tuple(result.relation.columns)
             )
-            wrapped = type(self)(
-                result.relation,
-                columns=resolved_columns,
-                types=_relation_types(result.relation),
-                duck_types=self._duck_types,
-            )
+            types = _relation_types(result.relation)
+            subset = self._schema.select(resolved_columns)
+            definitions: list[ColumnDefinition] = []
+            for definition, type_name in zip(subset.definitions, types, strict=True):
+                updated = definition
+                if updated.duckdb_type != type_name:
+                    updated = updated.with_duckdb_type(type_name)
+                definitions.append(updated)
+            schema: DuckSchema[AnyRow] = DuckSchema(definitions)
+            wrapped = type(self)(result.relation, schema=schema)
 
         return Materialized(
             table=result.table,
@@ -1366,7 +1393,7 @@ class DuckRel:
         function: Literal["CAST", "TRY_CAST"],
         mapping: Mapping[str, util.DuckDBType] | None,
         casts: Mapping[str, util.DuckDBType],
-    ) -> DuckRel:
+    ) -> "DuckRel[AnyRow]":
         provided: dict[str, util.DuckDBType] = {}
         if mapping:
             provided.update(mapping)
@@ -1376,36 +1403,43 @@ class DuckRel:
             raise ValueError("cast_columns()/try_cast_columns() require at least one column mapping.")
 
         resolved: dict[str, str] = {}
-        for requested, type_name in provided.items():
-            if type_name not in util.DUCKDB_TYPE_SET:
-                raise ValueError(f"Unsupported DuckDB type: {type_name!r}")
+        for requested, provided_type in provided.items():
+            if provided_type not in util.DUCKDB_TYPE_SET:
+                raise ValueError(f"Unsupported DuckDB type: {provided_type!r}")
             resolved_name = util.resolve_columns([requested], self._columns)[0]
-            resolved[resolved_name] = str(type_name)
+            resolved[resolved_name] = str(provided_type)
 
         expressions: list[str] = []
-        updated_types: list[str] = []
         updated_markers: list[type[DuckType]] = []
-        for column, current_type in zip(self._columns, self._types, strict=True):
+        for column in self._columns:
             if column not in resolved:
                 expressions.append(_alias(_quote_identifier(column), column))
-                updated_types.append(current_type)
                 updated_markers.append(self._marker_for_column(column))
                 continue
 
             cast_type = resolved[column]
             expression = f"{function}({_quote_identifier(column)} AS {cast_type})"
             expressions.append(_alias(expression, column))
-            updated_types.append(cast_type)
             marker = lookup(cast_type)
             updated_markers.append(marker)
 
         relation = self._relation.project(", ".join(expressions))
-        return type(self)(
-            relation,
-            columns=self._columns,
-            types=updated_types,
-            duck_types=updated_markers,
-        )
+        types = _relation_types(relation)
+        definitions: list[ColumnDefinition] = []
+        for definition, type_name, marker in zip(
+            self._schema.definitions,
+            types,
+            updated_markers,
+            strict=True,
+        ):
+            updated = definition
+            if updated.duck_type is not marker:
+                updated = updated.with_duck_type(marker)
+            if updated.duckdb_type != type_name:
+                updated = updated.with_duckdb_type(type_name)
+            definitions.append(updated)
+        schema: DuckSchema[AnyRow] = DuckSchema(definitions)
+        return type(self)(relation, schema=schema)
 
     def _apply_star_projection(
         self,
@@ -1413,7 +1447,7 @@ class DuckRel:
         rename_entries: Sequence[tuple[str, str]] | None = None,
         transform_entries: Sequence[tuple[str, str, type[DuckType]]] | None = None,
         add_entries: Sequence[tuple[str, str, type[DuckType]]] | None = None,
-    ) -> DuckRel:
+    ) -> "DuckRel[AnyRow]":
         rename_entries = list(rename_entries or [])
         transform_entries = list(transform_entries or [])
         add_entries = list(add_entries or [])
@@ -1422,6 +1456,8 @@ class DuckRel:
             raise ValueError("Star projection requires at least one modification.")
 
         final_columns = list(self._columns)
+        final_sources: list[str | None] = []
+        final_sources.extend(self._columns)
         final_markers = list(self._duck_types)
         for original, new in rename_entries:
             index = self._lookup[original.casefold()]
@@ -1450,7 +1486,7 @@ class DuckRel:
 
         seen = {name.casefold() for name in final_columns}
         add_sql: list[str] = []
-        for name, expression, _ in add_entries:
+        for name, expression, marker in add_entries:
             key = name.casefold()
             if key in seen:
                 raise ValueError(
@@ -1460,6 +1496,8 @@ class DuckRel:
             seen.add(key)
             add_sql.append(f"({expression}) AS {_quote_identifier(name)}")
             final_columns.append(name)
+            final_sources.append(None)
+            final_markers.append(marker)
 
         star_parts = ["*"]
         if rename_sql:
@@ -1474,9 +1512,37 @@ class DuckRel:
         for original, _, marker in transform_entries:
             index = self._lookup[original.casefold()]
             final_markers[index] = marker
-        for _, _, marker in add_entries:
-            final_markers.append(marker)
-        return type(self)(relation, duck_types=final_markers)
+
+        types = _relation_types(relation)
+        definitions: list[ColumnDefinition] = []
+        for name, type_name, marker, source in zip(
+            final_columns,
+            types,
+            final_markers,
+            final_sources,
+            strict=True,
+        ):
+            if source is not None:
+                base = self._schema.column(source)
+                if base.name != name:
+                    base = base.renamed(name)
+                if base.duck_type is not marker:
+                    base = base.with_duck_type(marker)
+                if base.duckdb_type != type_name:
+                    base = base.with_duckdb_type(type_name)
+                definitions.append(base)
+            else:
+                definitions.append(
+                    ColumnDefinition(
+                        name=name,
+                        duck_type=marker,
+                        duckdb_type=type_name,
+                        python_type=marker.python_annotation,
+                    )
+                )
+
+        schema: DuckSchema[AnyRow] = DuckSchema(definitions)
+        return type(self)(relation, schema=schema)
 
     def _build_projection(
         self,
@@ -1491,7 +1557,7 @@ class DuckRel:
 
     def _compile_projection(
         self,
-        other: DuckRel,
+        other: DuckRel[AnyRow],
         *,
         resolved: _ResolvedJoinSpec,
         projection: JoinProjection | None,
@@ -1501,6 +1567,7 @@ class DuckRel:
         list[str],
         list[str],
         list[type[DuckType]],
+        list[tuple[Literal["left", "right"], str]],
     ]:
         """Compile projection expressions for join outputs."""
 
@@ -1542,6 +1609,7 @@ class DuckRel:
         columns: list[str] = []
         types: list[str] = []
         duck_types: list[type[DuckType]] = []
+        sources: list[tuple[Literal["left", "right"], str]] = []
         seen: set[str] = set()
 
         for column, type_name in zip(self._columns, self._types, strict=True):
@@ -1562,6 +1630,7 @@ class DuckRel:
             columns.append(output)
             types.append(type_name)
             duck_types.append(self._duck_types[self._lookup[key]])
+            sources.append(("left", column))
 
         for column, type_name in zip(other._columns, other._types, strict=True):
             key = column.casefold()
@@ -1582,12 +1651,13 @@ class DuckRel:
             columns.append(output)
             types.append(type_name)
             duck_types.append(other._duck_types[other._lookup[key]])
+            sources.append(("right", column))
 
-        return expressions, columns, types, duck_types
+        return expressions, columns, types, duck_types, sources
 
     def _build_natural_join_spec(
         self,
-        other: DuckRel,
+        other: DuckRel[AnyRow],
         *,
         strict: bool,
         key_aliases: Mapping[str, str],
@@ -1724,7 +1794,9 @@ class DuckRel:
         right_keys = frozenset(name.casefold() for _, name in pairs)
         return _ResolvedJoinSpec(pairs=pairs, left_keys=left_keys, right_keys=right_keys, predicates=list(join.predicates))
 
-    def _resolve_join_spec(self, other: DuckRel, spec: JoinSpec) -> _ResolvedJoinSpec:
+    def _resolve_join_spec(
+        self, other: DuckRel[AnyRow], spec: JoinSpec
+    ) -> _ResolvedJoinSpec:
         """Resolve a :class:`JoinSpec` against the current relation metadata."""
 
         pairs: list[tuple[str, str]] = []
@@ -1769,12 +1841,12 @@ class DuckRel:
 
     def _execute_join(
         self,
-        other: DuckRel,
+        other: DuckRel[AnyRow],
         *,
         how: str,
         resolved: _ResolvedJoinSpec,
         projection: JoinProjection | None,
-    ) -> DuckRel:
+    ) -> "DuckRel[AnyRow]":
         clauses: list[str] = []
         if resolved.pairs:
             clauses.append(_format_join_condition(resolved.pairs, left_alias="l", right_alias="r"))
@@ -1795,21 +1867,44 @@ class DuckRel:
             relation = joined.project(", ".join(projection_exprs))
             return self._wrap_same_schema(relation)
 
-        expressions, columns, types, duck_types = self._compile_projection(
+        (
+            expressions,
+            columns,
+            types,
+            duck_types,
+            sources,
+        ) = self._compile_projection(
             other,
             resolved=resolved,
             projection=projection,
             include_right_keys=how in {"right", "outer"},
         )
         relation = joined.project(", ".join(expressions))
-        return type(self)(
-            relation,
-            columns=columns,
-            types=types,
-            duck_types=duck_types,
-        )
+        actual_types = _relation_types(relation)
+        definitions: list[ColumnDefinition] = []
+        for name, type_name, marker, (side, source_name) in zip(
+            columns,
+            actual_types,
+            duck_types,
+            sources,
+            strict=True,
+        ):
+            base_schema = self._schema if side == "left" else other._schema
+            base = base_schema.column(source_name)
+            if base.name != name:
+                base = base.renamed(name)
+            if base.duck_type is not marker:
+                base = base.with_duck_type(marker)
+            if base.duckdb_type != type_name:
+                base = base.with_duckdb_type(type_name)
+            definitions.append(base)
 
-    def _resolve_asof_spec(self, other: DuckRel, spec: AsofSpec) -> _ResolvedAsofSpec:
+        schema: DuckSchema[AnyRow] = DuckSchema(definitions)
+        return type(self)(relation, schema=schema)
+
+    def _resolve_asof_spec(
+        self, other: DuckRel[AnyRow], spec: AsofSpec
+    ) -> _ResolvedAsofSpec:
         """Resolve an :class:`AsofSpec` against relation metadata."""
 
         base = self._resolve_join_spec(
@@ -1879,12 +1974,18 @@ class DuckRel:
 
     def _execute_asof_join(
         self,
-        other: DuckRel,
+        other: DuckRel[AnyRow],
         *,
         resolved: _ResolvedAsofSpec,
         projection: JoinProjection | None,
-    ) -> DuckRel:
-        expressions, columns, types, duck_types = self._compile_projection(
+    ) -> "DuckRel[AnyRow]":
+        (
+            expressions,
+            columns,
+            types,
+            duck_types,
+            sources,
+        ) = self._compile_projection(
             other,
             resolved=resolved.join,
             projection=projection,
@@ -1960,12 +2061,27 @@ ORDER BY __duckplus_row_id
 """
 
         relation = self._relation.query("left_input", query)
-        return type(self)(
-            relation,
-            columns=columns,
-            types=types,
-            duck_types=duck_types,
-        )
+        actual_types = _relation_types(relation)
+        definitions: list[ColumnDefinition] = []
+        for name, type_name, marker, (side, source_name) in zip(
+            columns,
+            actual_types,
+            duck_types,
+            sources,
+            strict=True,
+        ):
+            base_schema = self._schema if side == "left" else other._schema
+            base = base_schema.column(source_name)
+            if base.name != name:
+                base = base.renamed(name)
+            if base.duck_type is not marker:
+                base = base.with_duck_type(marker)
+            if base.duckdb_type != type_name:
+                base = base.with_duckdb_type(type_name)
+            definitions.append(base)
+
+        schema: DuckSchema[AnyRow] = DuckSchema(definitions)
+        return type(self)(relation, schema=schema)
 
     @classmethod
     def from_pandas(
@@ -1973,7 +2089,7 @@ ORDER BY __duckplus_row_id
         frame: PandasDataFrame,
         *,
         connection: duckdb.DuckDBPyConnection | "DuckConnection" | None = None,
-    ) -> DuckRel:
+    ) -> "DuckRel[AnyRow]":
         """Create a :class:`DuckRel` from a pandas DataFrame."""
 
         util.require_optional_dependency(
@@ -1995,7 +2111,7 @@ ORDER BY __duckplus_row_id
         frame: PolarsDataFrame,
         *,
         connection: duckdb.DuckDBPyConnection | "DuckConnection" | None = None,
-    ) -> DuckRel:
+    ) -> "DuckRel[AnyRow]":
         """Create a :class:`DuckRel` from a Polars DataFrame."""
 
         util.require_optional_dependency(

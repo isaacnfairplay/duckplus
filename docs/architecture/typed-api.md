@@ -8,14 +8,15 @@ that unlocks richer static typing and more reliable chaining semantics.
 
 ### Relation construction
 
-* `DuckRel.__init__` accepts parallel sequences of column names, raw DuckDB type
-  strings, and optional `DuckType` markers. It normalizes column casing, asserts
-  matching lengths, and stores the metadata as tuples so that every relation
-  carries a complete schema snapshot.【F:src/duckplus/duckrel.py†L256-L303】
-* Helper accessors (e.g., `_column_index`, `_column_marker`,
-  `_metadata_from_expression`) resolve column names and annotate expressions with
-  the recorded marker and Python annotation, validating that declared builders
-  still match the underlying DuckDB schema.【F:src/duckplus/duckrel.py†L318-L413】
+* `DuckRel.__init__` now stores a single :class:`DuckSchema` instance. Callers
+  may provide an explicit schema or a sequence of marker overrides; otherwise
+  the constructor introspects DuckDB for column names and physical types before
+  delegating to :meth:`DuckSchema.from_components`. The relation keeps that
+  schema snapshot immutable for the lifetime of the wrapper.【F:src/duckplus/duckrel.py†L240-L320】
+* Metadata accessors (`_column_index`, `_metadata_from_expression`,
+  :meth:`DuckRel.column_type_markers`, etc.) resolve column names and annotate
+  expressions by consulting the stored schema, so runtime validation and static
+  typing share a single source of truth.【F:src/duckplus/duckrel.py†L360-L403】
 
 ### Column expression builders
 
@@ -26,38 +27,34 @@ that unlocks richer static typing and more reliable chaining semantics.
 
 ### Projection and star modifiers
 
-* `project_columns`, `drop`, and `project` rebuild `DuckRel` instances with
-  sliced names, DuckDB types, and propagated markers, defaulting to `Unknown`
-  when a raw SQL string omits typing metadata.【F:src/duckplus/duckrel.py†L457-L555】
-* Star modifiers (`rename_columns`, `transform_columns`, `add_columns`) share
-  `_apply_star_projection`, which rewrites column lists, injects new expressions,
-  and updates the parallel metadata tuples before instantiating a new
-  `DuckRel`.【F:src/duckplus/duckrel.py†L592-L666】【F:src/duckplus/duckrel.py†L1410-L1479】
+* `project_columns` and `drop` derive new relations by selecting from the stored
+  schema, so column casing, DuckDB types, and markers remain consistent without
+  rebuilding parallel tuples.【F:src/duckplus/duckrel.py†L436-L503】
+* `project` compiles explicit SQL expressions then emits a new schema via
+  :meth:`DuckSchema.from_components`, keeping declared markers aligned with
+  DuckDB's reported physical types.【F:src/duckplus/duckrel.py†L495-L516】
+* Star modifiers (`rename_columns`, `transform_columns`, `add_columns`) call a
+  shared helper that rewrites :class:`ColumnDefinition` objects in-place. The
+  helper preserves metadata for untouched columns, updates markers when
+  expressions declare them, and records fresh definitions for appended
+  projections before building a replacement schema.【F:src/duckplus/duckrel.py†L535-L644】【F:src/duckplus/duckrel.py†L1388-L1423】
 
 ### Aggregations
 
 * `aggregate` coordinates grouping keys, aggregate builders, and projection
-  aliases. It resolves markers from expressions, collects the resulting DuckDB
-  types, and constructs a new relation whose metadata reflects both grouping and
-  aggregated columns.【F:src/duckplus/duckrel.py†L694-L855】
+  aliases. It resolves markers from expressions, materializes the query once,
+  and then stitches together `ColumnDefinition` objects so grouping columns keep
+  their original metadata while aggregates record new types and markers.【F:src/duckplus/duckrel.py†L680-L843】
 
 ### Joins and casts
 
 * Join helpers compile explicit select lists that detect name collisions, apply
-  suffixes, and interleave left/right metadata to describe the combined
-  schema.【F:src/duckplus/duckrel.py†L1481-L1586】
-* Casting helpers rebuild select lists with `CAST`/`TRY_CAST` SQL and update the
-  stored markers by mapping requested DuckDB types through the `DuckType`
-  registry.【F:src/duckplus/duckrel.py†L1364-L1408】
-
-### Observed pain points
-
-* Metadata is duplicated across multiple tuples, making it easy for future
-  changes to forget updating one of the synchronized structures.
-* Marker validation logic is scattered between the relation constructor and
-  helper utilities, complicating efforts to add richer typing semantics.
-* Callers cannot easily introspect the current schema beyond bespoke accessors,
-  limiting how we expose typed column objects to IDEs or static analyzers.
+  suffixes, and merge left/right schema definitions so the resulting
+  `DuckSchema` reuses metadata from both relations without duplication.【F:src/duckplus/duckrel.py†L1471-L1886】
+* ASOF joins follow the same pattern while layering temporal validation on the
+  ordering columns. Casting helpers rebuild select lists with `CAST`/`TRY_CAST`
+  SQL and update existing definitions by mapping requested DuckDB types through
+  the :func:`duckplus.ducktypes.lookup` registry.【F:src/duckplus/duckrel.py†L1289-L1406】
 
 ## Lessons from typed SQL DSLs
 
@@ -90,12 +87,12 @@ that unlocks richer static typing and more reliable chaining semantics.
   and lineage tooling—highlighting the ecosystem benefits of a unified metadata
   source.
 
-## Proposed DuckSchema architecture
+## DuckSchema architecture
 
 ### Core objects
 
-* Introduce a `DuckSchema` value object that owns an ordered mapping of column
-  names to `ColumnDefinition` instances.
+* `DuckSchema` is implemented in ``duckplus.schema`` and owns an ordered mapping
+  of column names to `ColumnDefinition` instances.
 * `ColumnDefinition` fields:
   * `name`: canonical column identifier (normalized casing).
   * `duck_type`: `type[DuckType]` marker describing logical capabilities.
@@ -105,37 +102,34 @@ that unlocks richer static typing and more reliable chaining semantics.
     expression description) for debugging and docs generation.
 * `DuckSchema` responsibilities:
   * Normalize column casing and maintain deterministic order.
-  * Provide case-insensitive lookups and helper methods for deriving new schemas
-    (`select`, `rename`, `append`, `concat`, `replace`).
+  * Provide case-insensitive lookups and helpers such as `resolve()` and
+    `select()` for composing derived schemas.
   * Centralize marker validation (`_ensure_declared_marker`) and expose typed
     iterators for integration with static typing utilities.
+  * Prefer stored column markers during validation, falling back to DuckDB type
+    lookups only when metadata is undeclared so custom subclasses stay
+    compatible.
+  * Follow-up work will add higher level transforms (`rename`, `append`,
+    `concat`, `replace`) once the new interface is exercised in more call sites.
 
 ### DuckRel integration
 
 * `DuckRel` stores a single `DuckSchema` instead of parallel tuples. The
-  constructor delegates to `DuckSchema.from_relation(...)` to consolidate
-  normalization, validation, and caching.
+  constructor delegates to `DuckSchema.from_components(...)` to consolidate
+  normalization, validation, and caching. Callers can inspect the metadata via
+  the ``DuckRel.schema`` property.
 * Expression helpers (column builders, `AggregateExpression`, star modifiers)
   request services from the schema (e.g., `schema.resolve(name)`,
   `schema.marker(name)`) instead of duplicating lookup logic.
 * Schema-deriving operations:
-  * `project_columns` / `drop`: call `schema.select(resolved_columns)` to get a
-    narrowed schema.
-  * `project`: combine rendered expressions with metadata from expressions or
-    defaults (`Unknown`) and call `schema.replace(columns)` to produce new
-    definitions.
-  * Star modifiers: `schema.rename`, `schema.replace`, and `schema.add` update
-    definitions while preserving ordering and suffix logic.
-  * `aggregate`: `schema.grouped(...)` builds grouped definitions, optionally
-    tracking grouping keys separately for `.col()` ergonomics. Builders should
-    infer whether each expression is an aggregate or grouping key based on
-    whether any aggregate functions were applied, so callers do not need to
-    pre-classify arguments. The helper should also encourage callers to reuse
-    the relation instance that is being aggregated (e.g., passing expressions
-    that reference `rel.col("name")`) so column metadata always originates from
-    the same schema snapshot, rather than from chained intermediate objects.
-  * `join`: compose schemas via `DuckSchema.join(left, right, projection_config)`
-    returning merged definitions and collision suffix metadata.
+  * `project_columns` / `drop`: continue to resolve columns with `DuckSchema`
+    metadata to ensure marker propagation is consistent.
+  * `project`: combines rendered expressions with metadata from expressions or
+    defaults (`Unknown`) and relies on schema-driven marker validation.
+  * Star modifiers and aggregation will migrate to higher-level schema helpers
+    (e.g., rename, grouped views) as the interface expands.
+  * `join`: still composes schemas manually today; future work will surface a
+    `DuckSchema` helper so join projections can reuse the shared metadata.
   * `cast_columns`: update definitions by mapping requested DuckDB types through
     `DuckType.lookup` once, avoiding duplicate loops.
 * Expose typed column accessors (`DuckRel.schema.column("name")`) that return a
@@ -210,8 +204,8 @@ that unlocks richer static typing and more reliable chaining semantics.
 * Continue accepting raw `duck_types` sequences in the constructor and convert
   them into a schema internally to avoid breaking advanced users.
 * Offer transitional accessors (`DuckRel.column_type_markers`,
-  `DuckRel.column_python_annotations`) that proxy to the schema, maintaining
-  compatibility with any downstream tooling that relies on those methods.
+  `DuckRel.column_python_annotations`) that proxy to the schema while docs and
+  demos highlight `DuckRel.schema` utilities such as `describe_schema`.
 * Introduce `DuckSchema` privately first, add targeted regression tests to prove
   parity with current metadata outputs, and publish migration guides explaining
   how `.project()`, joins, and star modifiers map onto the new schema helpers.

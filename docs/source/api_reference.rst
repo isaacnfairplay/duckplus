@@ -91,15 +91,18 @@ optional ``duck_type=duckplus.ducktypes.*`` keyword to opt into type-aware
 validation; Duck+ will surface meaningful errors when aggregates or ordering
 operations are incompatible with the declared column types.
 
-Typed expressions also update :attr:`duckplus.duckrel.DuckRel.column_type_markers`
-and :attr:`duckplus.duckrel.DuckRel.column_python_annotations`, which report the
-declared DuckDB logical type and the projected Python annotation for each column.
-Columns start with :class:`duckplus.ducktypes.Unknown` markers and become more
-specific as you annotate projections, casts, transforms, and aggregates. Use the
-metadata to verify pipelines ahead of time or to feed static analyzers with the
-declared types. Once markers are in place, :meth:`duckplus.duckrel.DuckRel.fetch_typed`
-returns Python tuples for *every* projected column, letting static type checkers
-track the shape of query results. The Python hints are derived from the DuckDB
+Typed expressions update the relation's :attr:`duckplus.duckrel.DuckRel.schema`
+property, which returns a :class:`duckplus.schema.DuckSchema` containing
+canonical column definitions, DuckDB logical markers, and cached Python
+annotations. Iterate over :attr:`~duckplus.schema.DuckSchema.definitions` when you
+need structured metadata or call :meth:`~duckplus.schema.DuckSchema.resolve` to
+canonicalise user input. Legacy accessors such as
+:attr:`duckplus.duckrel.DuckRel.column_type_markers` and
+:attr:`duckplus.duckrel.DuckRel.column_python_annotations` remain available for
+quick checks while existing code transitions to the richer schema interface.
+Once markers are in place, :meth:`duckplus.duckrel.DuckRel.fetch_typed` returns
+Python tuples for *every* projected column, letting static type checkers track
+the shape of query results. The Python hints are derived from the DuckDB
 markers, keeping a single source of truth for both SQL validation and type
 checking. To narrow the output, project first and then call
 :meth:`~duckplus.duckrel.DuckRel.fetch_typed`; untyped columns fall back to

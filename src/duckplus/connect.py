@@ -12,6 +12,7 @@ import duckdb
 
 from . import util
 from .core import DuckRel
+from .schema import AnyRow
 
 if TYPE_CHECKING:
     from . import io as io_module
@@ -114,7 +115,7 @@ class DuckConnection(AbstractContextManager["DuckConnection"]):
         parquet_version: "io_module.ParquetVersion" | None = None,
         debug_use_openssl: bool | None = None,
         explicit_cardinality: int | None = None,
-    ) -> DuckRel:
+    ) -> DuckRel[AnyRow]:
         """Read Parquet data via :mod:`duckplus.io`.
 
         Parameters mirror :func:`duckplus.io.read_parquet`; see that function for
@@ -178,7 +179,7 @@ class DuckConnection(AbstractContextManager["DuckConnection"]):
         files_to_sniff: int | None = None,
         compression: "io_module.CSVCompression" | None = None,
         thousands: str | None = None,
-    ) -> DuckRel:
+    ) -> DuckRel[AnyRow]:
         """Read CSV data via :mod:`duckplus.io`.
 
         Parameters mirror :func:`duckplus.io.read_csv`; see that function for the
@@ -270,7 +271,7 @@ class DuckConnection(AbstractContextManager["DuckConnection"]):
         hive_types: Mapping[str, util.DuckDBType] | None = None,
         hive_types_autocast: bool | None = None,
         auto_detect: bool | None = None,
-    ) -> DuckRel:
+    ) -> DuckRel[AnyRow]:
         """Read JSON or NDJSON data via :mod:`duckplus.io`.
 
         Parameters mirror :func:`duckplus.io.read_json`; see that function for
@@ -323,12 +324,12 @@ class DuckConnection(AbstractContextManager["DuckConnection"]):
 
         return io_module.read_json(self, paths, **forward)
 
-    def from_pandas(self, frame: PandasDataFrame) -> DuckRel:
+    def from_pandas(self, frame: PandasDataFrame) -> DuckRel[AnyRow]:
         """Return a relation constructed from a pandas DataFrame."""
 
         return DuckRel.from_pandas(frame, connection=self)
 
-    def from_polars(self, frame: PolarsDataFrame) -> DuckRel:
+    def from_polars(self, frame: PolarsDataFrame) -> DuckRel[AnyRow]:
         """Return a relation constructed from a Polars DataFrame."""
 
         return DuckRel.from_polars(frame, connection=self)
@@ -427,7 +428,7 @@ def query_nanodbc(
     connection_string: str,
     query: str,
     load_extension: bool = True,
-) -> DuckRel:
+) -> DuckRel[AnyRow]:
     """Execute a remote query via the ``nanodbc`` extension.
 
     Parameters
