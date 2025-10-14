@@ -8,6 +8,13 @@ Answer these before starting any TODO item to confirm the work is understood and
 4. What success criteria, edge cases, and failure behaviours must be exercised to consider the task complete?
 5. How will this change be validated (tests, linters, examples), and are new fixtures or sample data required?
 
+### Notes for "Transformation helpers"
+1. We need a `Relation.transform` helper that issues `SELECT * REPLACE` statements so callers can rewrite existing columns while preserving immutability.
+2. The behaviour naturally belongs on `duckplus.relation.Relation`, building on the stored `DuckCon` and underlying `DuckDBPyRelation` metadata.
+3. Review DuckDB's `SELECT * REPLACE` syntax and existing relation tests in `tests/test_relation.py` to align expectations.
+4. The helper must validate requested columns exist, surface clear errors for bad references, support ergonomic casting, and leave other columns untouched.
+5. We'll extend unit tests to cover replacement logic, casting shortcuts, error handling, and run mypy/pylint/pytest per project policy.
+
 ---
 
 - [x] Add a DuckCon class with a context manager that will be easy to extend for io operations
@@ -15,8 +22,8 @@ Answer these before starting any TODO item to confirm the work is understood and
 
 ## Column Manipulation Utilities
 - [ ] Transformation helpers
-  - [ ] Implement `Relation.transform(**replacements)` that issues a `SELECT * REPLACE` statement and validates referenced columns.
-  - [ ] Provide ergonomic overloads for simple casts, e.g. `relation.transform(column="column::INTEGER")`.
+  - [x] Implement `Relation.transform(**replacements)` that issues a `SELECT * REPLACE` statement and validates referenced columns.
+  - [x] Provide ergonomic overloads for simple casts, e.g. `relation.transform(column="column::INTEGER")`.
 - [ ] Rename helpers
   - [ ] Implement `Relation.rename(**renames)` backed by `SELECT * RENAME` and ensure conflicting names raise clear errors.
   - [ ] Add `rename_if_exists` soft variant that skips missing columns with warnings/logging.

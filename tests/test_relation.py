@@ -49,3 +49,88 @@ def test_relation_from_sql_requires_active_connection() -> None:
 
     with pytest.raises(RuntimeError):
         Relation.from_sql(manager, "SELECT 1")
+
+
+def test_transform_replaces_column_values() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 1::INTEGER AS value, 2::INTEGER AS other"),
+        )
+
+        transformed = relation.transform(value="value + other")
+
+        assert transformed.columns == ("value", "other")
+        assert transformed.types == ("INTEGER", "INTEGER")
+        assert transformed.relation.fetchall() == [(3, 2)]
+
+
+def test_transform_supports_simple_casts() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 1::INTEGER AS value"),
+        )
+
+        transformed = relation.transform(value=str)
+
+        assert transformed.types == ("VARCHAR",)
+        assert transformed.relation.fetchall() == [("1",)]
+
+
+def test_transform_rejects_unknown_columns() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 1::INTEGER AS value"),
+        )
+
+        with pytest.raises(KeyError):
+            relation.transform(other="value")
+
+
+def test_transform_validates_expression_references() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 1::INTEGER AS value"),
+        )
+
+        with pytest.raises(ValueError, match="unknown columns"):
+            relation.transform(value="missing + 1")
+
+
+def test_transform_requires_replacements() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 1::INTEGER AS value"),
+        )
+
+        with pytest.raises(ValueError):
+            relation.transform()
+
+
+def test_transform_rejects_unsupported_casts() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 1::INTEGER AS value"),
+        )
+
+        with pytest.raises(TypeError):
+            relation.transform(value=complex)
+
+
+def test_transform_requires_open_connection() -> None:
+    manager = DuckCon()
+    relation = _make_relation(manager, "SELECT 1::INTEGER AS value")
+
+    with pytest.raises(RuntimeError):
+        relation.transform(value="value + 1")
