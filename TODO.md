@@ -1,110 +1,51 @@
+# Implementation Roadmap
+
+## Preflight Discovery Questions
+Answer these before starting any TODO item to confirm the work is understood and scoped.
+1. What specific behaviour or feature does the TODO item request, and how does it fit into the existing API surface?
+2. Which modules, classes, or utilities appear to own this responsibility today, and where should changes likely live?
+3. What supporting documentation, tests, or historical implementations (including Git history) should be reviewed first?
+4. What success criteria, edge cases, and failure behaviours must be exercised to consider the task complete?
+5. How will this change be validated (tests, linters, examples), and are new fixtures or sample data required?
+
+---
+
 - [x] Add a DuckCon class with a context manager that will be easy to extend for io operations
 - [x] Add a relation class that is immutable and has the DuckCon and a duckdbpy connection under the hood with some metadata stored like columns and Duckdb types (as varchar for now)
 
-- [ ] Add column manipulations
-```python
-# transforming a column(s)
+## Column Manipulation Utilities
+- [ ] Transformation helpers
+  - [ ] Implement `Relation.transform(**replacements)` that issues a `SELECT * REPLACE` statement and validates referenced columns.
+  - [ ] Provide ergonomic overloads for simple casts, e.g. `relation.transform(column="column::INTEGER")`.
+- [ ] Rename helpers
+  - [ ] Implement `Relation.rename(**renames)` backed by `SELECT * RENAME` and ensure conflicting names raise clear errors.
+  - [ ] Add `rename_if_exists` soft variant that skips missing columns with warnings/logging.
+- [ ] Column addition helpers
+  - [ ] Implement `Relation.add(**expressions)` using `SELECT *, <expr> AS <alias>`.
+  - [ ] Support dependent expressions (new columns referencing existing ones) with validation.
+- [ ] Column subset helpers
+  - [ ] Implement `Relation.keep(*columns)` to project only requested columns, raising on unknown names by default.
+  - [ ] Provide `keep_if_exists` variant that tolerates absent columns.
+- [ ] Column drop helpers
+  - [ ] Implement `Relation.drop(*columns)` using `SELECT * EXCLUDE` semantics with strict validation.
+  - [ ] Provide `drop_if_exists` soft variant mirroring `keep_if_exists` behaviour.
 
-# uses REPLACE in SQL under the hood
-duckdb_relation.select("* REPLACE(column::INTEGER as column)")
-relation = (
-    relation
-    .transform(
-        column="{column}::INTEGER" # we can also pass a 
-    )
-)
-# uses REPLACE in SQL under the hood
-duckdb_relation.select("* rename(column as column_new)")
-relation = (
-    relation
-    .rename(
-        column_new="column"
-    )
-)
-# adding a column(s)
+## Typed Expression API
+- [ ] Design fluent `ducktype` factory with concrete types (e.g. `Numeric`, `Varchar`, `Blob`).
+- [ ] Surface aggregation helpers, e.g. `ducktype.Numeric.Aggregate.sum("sales") -> "sum(sales)"`.
+- [ ] Enable expression comparisons (`ducktype.Varchar("customer") == "prime"`) and joins between differently named columns.
+- [ ] Support aliasing and renaming via methods like `.alias("my_customer")` with dict/str serialization.
+- [ ] Add window function construction helpers on typed expressions.
 
-# uses REPLACE in SQL under the hood
-duckdb_relation.select(f"*, {expression} as column_new)")
-relation = (
-    relation
-    .add(
-        column_new="expression"
-    )
-)
+## Aggregation and Filtering
+- [ ] Implement `Relation.aggregate(group_by, **named_aggs, *filters)` with validation of group columns.
+- [ ] Implement `Relation.filter(*conditions)` compatible with typed expressions and raw SQL snippets.
 
-# keeping a subset of columns
+## Advanced Joins
+- [ ] Implement "error on column conflict" joins (inner/left/right/outer/semi) that auto-join shared columns and allow explicit conditions.
+- [ ] Implement "asof" join leveraging the expression API for ordering and tolerance configuration.
 
-#duckdb_relation.select(','.join(columns))
-relation = (
-    relation
-    .keep(
-        'column_one',
-        'column_two'
-    )
-)
-# Raises if columns are missing, by default
-# alias keep_if_exists for the soft version
-
-## dropping columns
-python
-# duckdb_relation.select("* exclude({','.join(columns)}))
-relation = (
-    relation
-    .drop(
-        'column_three
-    )
-)
-# Raises if columns are missing
-# drop_if_exists as the soft version
-```
-
-- [ ] Add static Typed expression api to allow easier api discovery
-
-Aggregation spec that can be used to make filters that can be used anywhere
-for the purposes of accessing the api easily
-ducktype.Numeric.Aggregate.sum("sales") will return "sum(sales)"
-
-this does not provide runtime type checking but it does allow us to explore the duckdb api in our IDE
-
-this should allow us to include ALL column types
-ducktype.Any.Aggregate.max_by("customer",ducktype.Blob("customer_id")) may raise a Type Error depending on if you can sort by blob in maxby or not
-
-this can also be used to make a filter condition 
-ducktype.Varchar('customer') == 'prime'
-and join conditions in the same way when column names are not the same
-ducktype.varchar('customer') == ducktype.varchar('sales_customer')
-and renames and various other transforms
-ducktype('customer').alias('my_customer')
-by default will resolve to a str or a dict depending on which helper you use on them but we will also want to have support for all column operations in this api
-having expressions too should have this option 
-add window function support to this api
-
-- [ ] aggregation support
-
-```python
-relation = (
-    relation
-    .aggregate(
-        "customer",
-        sum_sales = "sum(sales)",
-        "count(distinct transactions) > 1
-    )
-)
-```
-- [ ] filter support
-
-```python
-relation = (
-    filter(
-        "sum_sales > 10"
-    )
-)
-```
-
-- [ ] "Error on column conflict" joins standard [inner, left, right, outer and also semi join] automatically joins on shared columns, allows forign join conditions to be specified
-- [ ] "Asof" join implementatin using the expression api
-- [ ] "io helpers for csv parquet and so on"
-- [ ] appenders for csv and ndjson and specialized insert tooling too (you can check long term git history for inspiration)
-- [ ] table interfacing api for inserts to tables
-
-
+## IO and Appenders
+- [ ] Provide IO helpers for CSV, Parquet, and other common formats, reusing `DuckCon` where possible.
+- [ ] Add appenders for CSV and NDJSON plus specialised insert tooling (consult long-term Git history for reference patterns).
+- [ ] Create a table interfacing API for managed inserts into DuckDB tables.
