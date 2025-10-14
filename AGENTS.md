@@ -7,7 +7,8 @@
 5. add any tests that are needed
 6. make sure they past
 
-# Users will develop the api surface requests in issues
+# Users will develop the api surface requests in TODO.md
 
 1. harmonously work to implement the new feature
 2. Ensure it has no unexpected behaviour and does not regress
+3. hide it in TODO.md
