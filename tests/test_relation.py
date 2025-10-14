@@ -136,6 +136,77 @@ def test_transform_requires_open_connection() -> None:
         relation.transform(value="value + 1")
 
 
+def test_add_appends_new_columns() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 2::INTEGER AS value"),
+        )
+
+        extended = relation.add(double="value * 2", triple="value * 3")
+
+        assert extended.columns == ("value", "double", "triple")
+        assert extended.types == ("INTEGER", "INTEGER", "INTEGER")
+        assert extended.relation.fetchall() == [(2, 4, 6)]
+
+
+def test_add_rejects_existing_columns() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 1::INTEGER AS value"),
+        )
+
+        with pytest.raises(ValueError, match="already exist"):
+            relation.add(value="value + 1")
+
+
+def test_add_rejects_invalid_expression_types() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 1::INTEGER AS value"),
+        )
+
+        with pytest.raises(TypeError, match="SQL strings"):
+            relation.add(double=123)
+
+
+def test_add_rejects_blank_expressions() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 1::INTEGER AS value"),
+        )
+
+        with pytest.raises(ValueError, match="cannot be empty"):
+            relation.add(double="   ")
+
+
+def test_add_requires_open_connection() -> None:
+    manager = DuckCon()
+    relation = _make_relation(manager, "SELECT 1::INTEGER AS value")
+
+    with pytest.raises(RuntimeError):
+        relation.add(double="value * 2")
+
+
+def test_add_validates_expression_references() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 1::INTEGER AS value"),
+        )
+
+        with pytest.raises(ValueError, match="unknown columns"):
+            relation.add(double="missing + 1")
+
+
 def test_rename_updates_column_names() -> None:
     manager = DuckCon()
     with manager as connection:

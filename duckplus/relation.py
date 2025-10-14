@@ -119,6 +119,60 @@ class Relation:
 
         return type(self).from_relation(self.duckcon, relation)
 
+    def add(self, **expressions: str) -> "Relation":
+        """Return a new relation with additional computed columns."""
+
+        if not expressions:
+            msg = "add requires at least one expression"
+            raise ValueError(msg)
+
+        if not self.duckcon.is_open:
+            msg = (
+                "DuckCon connection must be open to call add. "
+                "Use DuckCon as a context manager."
+            )
+            raise RuntimeError(msg)
+
+        duplicates = sorted(set(self.columns) & set(expressions))
+        if duplicates:
+            msg = f"Columns already exist on relation: {', '.join(duplicates)}"
+            raise ValueError(msg)
+
+        clauses = []
+        for alias, expression in expressions.items():
+            if not isinstance(alias, str):
+                msg = "Column names must be strings"
+                raise TypeError(msg)
+
+            if not alias.strip():
+                msg = "Column name for new column cannot be empty"
+                raise ValueError(msg)
+
+            if not isinstance(expression, str):
+                msg = (
+                    "add expressions must be SQL strings representing the new "
+                    f"column definition (got {type(expression)!r})"
+                )
+                raise TypeError(msg)
+
+            expression_sql = expression.strip()
+            if not expression_sql:
+                msg = f"Expression for column '{alias}' cannot be empty"
+                raise ValueError(msg)
+
+            quoted_alias = self._quote_identifier(alias)
+            clauses.append(f"{expression_sql} AS {quoted_alias}")
+
+        select_list = f"*, {', '.join(clauses)}"
+
+        try:
+            relation = self._relation.project(select_list)
+        except duckdb.BinderException as error:
+            msg = "add expression references unknown columns"
+            raise ValueError(msg) from error
+
+        return type(self).from_relation(self.duckcon, relation)
+
     def rename(self, **renames: str) -> "Relation":
         """Return a new relation with selected columns renamed."""
 
