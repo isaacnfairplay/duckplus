@@ -5,7 +5,7 @@ from typing import Any, List, cast
 
 import duckdb
 
-from duckplus import AggregateExpression, DuckRel, col, ducktypes
+from duckplus import AggregateExpression, Relation, col, ducktypes
 from duckplus.schema import AnyRow
 from duckplus.filters import ColumnDuckType
 
@@ -24,7 +24,7 @@ __all__ = [
 ]
 
 
-def _schema_expression(orders: DuckRel[AnyRow], name: str) -> Any:
+def _schema_expression(orders: Relation[AnyRow], name: str) -> Any:
     """Return a column expression derived from the relation's schema."""
 
     definition = orders.schema.column(name)
@@ -45,10 +45,10 @@ def _python_type_repr(value: object) -> str:
 
 def typed_orders_demo_relation(
     connection: duckdb.DuckDBPyConnection,
-) -> DuckRel[AnyRow]:
+) -> Relation[AnyRow]:
     """Return a sample relation with column typing metadata applied."""
 
-    base: DuckRel[AnyRow] = DuckRel(
+    base: Relation[AnyRow] = Relation(
         connection.sql(
             """
             SELECT *
@@ -64,39 +64,31 @@ def typed_orders_demo_relation(
         )
     )
 
-    return base.project(
-        {
-            "order_id": col("order_id", duck_type=ducktypes.Integer),
-            "region": col("region", duck_type=ducktypes.Varchar),
-            "customer": col("customer", duck_type=ducktypes.Varchar),
-            "order_total": col("order_total", duck_type=ducktypes.Integer),
-            "items": col("items", duck_type=ducktypes.Integer),
-            "placed_at": col("placed_at", duck_type=ducktypes.Date),
-            "priority": col("priority", duck_type=ducktypes.Boolean),
-        }
+    return base.select(
+        order_id=col("order_id", duck_type=ducktypes.Integer),
+        region=col("region", duck_type=ducktypes.Varchar),
+        customer=col("customer", duck_type=ducktypes.Varchar),
+        order_total=col("order_total", duck_type=ducktypes.Integer),
+        items=col("items", duck_type=ducktypes.Integer),
+        placed_at=col("placed_at", duck_type=ducktypes.Date),
+        priority=col("priority", duck_type=ducktypes.Boolean),
     )
 
 
 def priority_order_snapshot(
-    orders: DuckRel[AnyRow],
+    orders: Relation[AnyRow],
 ) -> List[tuple[int, str, str, int, int, date, bool]]:
     """Return high-value priority orders using typed fetch semantics."""
 
-    priority_expression = _schema_expression(orders, "priority")
-    total_expression = _schema_expression(orders, "order_total")
-    filtered = orders.filter(
-        (priority_expression == True)  # noqa: E712
-        & (total_expression >= 100)
+    filtered = orders.where(
+        lambda c: (c["priority"] == True) & (c["order_total"] >= 100)  # noqa: E712
     )
-    ordered = filtered.order_by((
-        _schema_expression(filtered, "placed_at"),
-        "asc",
-    ))
+    ordered = filtered.order_by(lambda c: c["placed_at"].asc())
     return ordered.fetch_typed()
 
 
 def regional_revenue_summary(
-    orders: DuckRel[AnyRow],
+    orders: Relation[AnyRow],
 ) -> List[tuple[str, int, int]]:
     """Return typed grouped revenue statistics by region."""
 
@@ -112,7 +104,7 @@ def regional_revenue_summary(
 
 
 def priority_region_rollup(
-    orders: DuckRel[AnyRow],
+    orders: Relation[AnyRow],
 ) -> List[tuple[str, int, int, int]]:
     """Return typed metrics that highlight regional priority order behavior."""
 
@@ -121,14 +113,7 @@ def priority_region_rollup(
     items = _schema_expression(orders, "items")
     priority = _schema_expression(orders, "priority")
 
-    prepared = orders.project(
-        {
-            "region": region,
-            "order_total": total,
-            "items": items,
-            "priority": priority,
-        }
-    )
+    prepared = orders.select("region", order_total=total, items=items, priority=priority)
 
     summary = prepared.aggregate(
         region,
@@ -141,7 +126,7 @@ def priority_region_rollup(
 
 
 def customer_priority_profile(
-    orders: DuckRel[AnyRow],
+    orders: Relation[AnyRow],
 ) -> List[tuple[str, date, int, int]]:
     """Summarise customer behaviour including first purchase and priority counts."""
 
@@ -161,7 +146,7 @@ def customer_priority_profile(
 
 
 def regional_customer_diversity(
-    orders: DuckRel[AnyRow],
+    orders: Relation[AnyRow],
 ) -> List[tuple[str, int, int]]:
     """Report distinct and priority customers per region with typed results."""
 
@@ -181,7 +166,7 @@ def regional_customer_diversity(
 
 
 def daily_priority_summary(
-    orders: DuckRel[AnyRow],
+    orders: Relation[AnyRow],
 ) -> List[tuple[date, int, int]]:
     """Track daily revenue alongside the number of flagged priority orders."""
 
@@ -199,7 +184,7 @@ def daily_priority_summary(
 
 
 def schema_driven_projection(
-    orders: DuckRel[AnyRow],
+    orders: Relation[AnyRow],
 ) -> List[tuple[int, str, bool]]:
     """Return a typed projection driven entirely by the stored schema metadata."""
 
@@ -208,17 +193,17 @@ def schema_driven_projection(
         definition.name: _schema_expression(orders, definition.name)
         for definition in subset.definitions
     }
-    projected = orders.project(projection)
+    projected = orders.select(**projection)
     return projected.fetch_typed()
 
 
-def apply_manual_tax_projection(orders: DuckRel[AnyRow]) -> DuckRel[AnyRow]:
-    """Adjust order totals using raw SQL, demonstrating Unknown typing fallback."""
+def apply_manual_tax_projection(orders: Relation[AnyRow]) -> Relation[AnyRow]:
+    """Adjust order totals using a computed expression with Unknown typing fallback."""
 
-    return orders.transform_columns(order_total="({column}) * 1.08")
+    return orders.mutate(order_total=lambda c: c["order_total"] * 1.08)
 
 
-def describe_schema(orders: DuckRel[AnyRow]) -> List[dict[str, str]]:
+def describe_schema(orders: Relation[AnyRow]) -> List[dict[str, str]]:
     """Return a human-readable view of the relation's column type metadata."""
 
     schema = orders.schema
@@ -235,7 +220,7 @@ def describe_schema(orders: DuckRel[AnyRow]) -> List[dict[str, str]]:
     return report
 
 
-def describe_markers(orders: DuckRel[AnyRow]) -> List[str]:
+def describe_markers(orders: Relation[AnyRow]) -> List[str]:
     """Return DuckDB marker descriptions for backward-compatible demos."""
 
     return [entry["marker"] for entry in describe_schema(orders)]

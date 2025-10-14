@@ -8,7 +8,7 @@ directly into tooling or orchestration code with minimal adjustments.
 
 from __future__ import annotations
 
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, Iterable, List, Tuple, cast
 
 from duckplus import (
     AggregateExpression,
@@ -17,6 +17,7 @@ from duckplus import (
     DuckConnection,
     DuckRel,
     DuckTable,
+    Relation,
     col,
     ducktypes,
 )
@@ -33,7 +34,7 @@ __all__ = [
 ]
 
 
-def _typed_orders(conn: DuckConnection) -> DuckRel[AnyRow]:
+def _typed_orders(conn: DuckConnection) -> Relation[AnyRow]:
     """Return the shared typed orders relation for the demos."""
 
     return typed_pipeline_demos.typed_orders_demo_relation(conn.raw)
@@ -77,7 +78,7 @@ def incremental_fact_ingest(
 
     typed = _typed_columns(["order_id", "region", "order_total"])
     orders = _typed_orders(conn)
-    fact_payload = orders.project({key: typed[key] for key in typed})
+    fact_payload = cast(Relation[AnyRow], orders.project({key: typed[key] for key in typed}))
 
     conn.raw.execute("DROP TABLE IF EXISTS analytics_orders_fact")
     conn.raw.execute(
@@ -91,12 +92,12 @@ def incremental_fact_ingest(
     )
 
     table = DuckTable(conn, "analytics_orders_fact")
-    primer = fact_payload.filter(typed["order_id"] <= 3)
+    primer = cast(Relation[AnyRow], fact_payload.filter(typed["order_id"] <= 3))
     table.append(primer)
 
     inserted = table.insert_antijoin(fact_payload, keys=["order_id"])
 
-    stored = DuckRel(conn.raw.table("analytics_orders_fact")).project(
+    stored = Relation(conn.raw.table("analytics_orders_fact")).project(
         {key: typed[key] for key in typed}
     )
     ordered = stored.order_by((typed["order_id"], "asc"))

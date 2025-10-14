@@ -11,7 +11,7 @@ import pyarrow as pa  # type: ignore[import-untyped]
 import pyarrow.parquet as pq  # type: ignore[import-untyped]
 
 if TYPE_CHECKING:
-    from .core import DuckRel
+    from .relation.core import Relation
     from .schema import AnyRow
 
 
@@ -121,7 +121,7 @@ class Materialized:
     """Result of :meth:`duckplus.core.DuckRel.materialize`."""
 
     table: pa.Table | None
-    relation: DuckRel[AnyRow] | None
+    relation: Relation[AnyRow] | None
     path: Path | None
 
     def require_table(self) -> pa.Table:
@@ -134,7 +134,7 @@ class Materialized:
             )
         return self.table
 
-    def require_relation(self) -> DuckRel[AnyRow]:
+    def require_relation(self) -> "Relation[AnyRow]":
         """Return the materialized :class:`duckplus.DuckRel` or raise if unavailable."""
 
         if self.relation is None:

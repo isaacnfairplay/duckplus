@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, Optional, Tuple
+from typing import Any, Optional, Tuple, cast
 
 from . import util
 from .connect import DuckConnection
 from .core import DuckRel
+from .relation.core import Relation
 from .schema import AnyRow
 
 
@@ -87,7 +88,7 @@ class DuckTable:
 
         return self._name
 
-    def append(self, rel: DuckRel[AnyRow], *, by_name: bool = True) -> None:
+    def append(self, rel: Relation[AnyRow], *, by_name: bool = True) -> None:
         """Append rows from *rel* into the table."""
 
         table_columns = self._table_columns()
@@ -95,7 +96,7 @@ class DuckTable:
 
         if by_name:
             ordered = util.resolve_columns(table_columns, rel.columns)
-            relation = rel.project_columns(*ordered)
+            relation = cast(Relation[AnyRow], rel.project_columns(*ordered))
         else:
             if len(rel.columns) != len(table_columns):
                 raise ValueError(
@@ -106,7 +107,7 @@ class DuckTable:
 
         relation.relation.insert_into(self._name)
 
-    def insert_antijoin(self, rel: DuckRel[AnyRow], *, keys: Sequence[str]) -> int:
+    def insert_antijoin(self, rel: Relation[AnyRow], *, keys: Sequence[str]) -> int:
         """Insert rows from *rel* missing in the table based on *keys*."""
 
         if not keys:
@@ -117,9 +118,9 @@ class DuckTable:
         table_columns = self._table_columns()
         resolved_keys = util.resolve_columns(keys, table_columns)
 
-        table_rel: DuckRel[AnyRow] = DuckRel(self._connection.raw.table(self._name))
-        existing = table_rel.project_columns(*resolved_keys)
-        filtered = rel.anti_join(existing)
+        table_rel: Relation[AnyRow] = Relation(self._connection.raw.table(self._name))
+        existing = cast(Relation[AnyRow], table_rel.project_columns(*resolved_keys))
+        filtered = cast(Relation[AnyRow], rel.anti_join(existing))
         count = filtered.row_count()
 
         if count > 0:
@@ -129,7 +130,7 @@ class DuckTable:
 
     def insert_by_continuous_id(
         self,
-        rel: DuckRel[AnyRow],
+        rel: Relation[AnyRow],
         *,
         id_column: str,
         inclusive: bool = False,
@@ -144,12 +145,16 @@ class DuckTable:
         max_row: Optional[Tuple[Any, ...]] = raw.execute(query).fetchone()
         current_max = None if max_row is None else max_row[0]
 
+        candidate: Relation[AnyRow]
         if current_max is None:
             candidate = rel
         else:
             rel_id = util.resolve_columns([resolved_id], rel.columns)[0]
             op = ">=" if inclusive else ">"
-            candidate = rel.filter(f"{_quote_identifier(rel_id)} {op} ?", current_max)
+            candidate = cast(
+                Relation[AnyRow],
+                rel.filter(f"{_quote_identifier(rel_id)} {op} ?", current_max),
+            )
 
         return self.insert_antijoin(candidate, keys=[resolved_id])
 
