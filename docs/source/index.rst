@@ -1,5 +1,5 @@
-Duck+ documentation
-===================
+Duck+ documentation (v |release|)
+=================================
 
 Welcome to the Duck+ documentation set. Duck+ offers typed, immutable wrappers
 around DuckDB so you can compose analytics pipelines with predictable joins,
