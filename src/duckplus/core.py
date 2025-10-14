@@ -25,7 +25,7 @@ from .filters import (
     less_than_or_equal,
     not_equals,
 )
-from .duckrel import DuckRel
+from .relation.core import Relation
 from .schema import ColumnDefinition, DuckSchema
 
 __all__ = [
@@ -55,4 +55,6 @@ __all__ = [
     "not_equals",
     "ducktypes",
 ]
+
+DuckRel = Relation
 

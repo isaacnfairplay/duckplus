@@ -13,6 +13,7 @@ import duckdb
 from . import util
 from .connect import DuckConnection
 from .core import DuckRel
+from .relation.core import Relation
 from .schema import AnyRow
 from .table import DuckTable
 
@@ -827,7 +828,7 @@ def read_parquet(
     relation = _execute_duckdb_reader(
         conn.raw.read_parquet, "read Parquet data", normalized.for_duckdb, options=read_options
     )
-    return DuckRel(relation)
+    return Relation(relation)
 
 
 def read_csv(
@@ -1004,7 +1005,7 @@ def read_csv(
     relation = _execute_duckdb_reader(
         conn.raw.read_csv, "read CSV data", normalized.for_duckdb, options=read_options
     )
-    return DuckRel(relation)
+    return Relation(relation)
 
 
 def read_json(
@@ -1146,7 +1147,7 @@ def read_json(
     relation = _execute_duckdb_reader(
         conn.raw.read_json, "read JSON data", normalized.for_duckdb, options=read_options
     )
-    return DuckRel(relation)
+    return Relation(relation)
 
 
 def _write_with_temporary(

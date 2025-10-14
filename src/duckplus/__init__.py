@@ -33,6 +33,7 @@ from .core import (
     not_equals,
     PartitionSpec,
 )
+from .relation.core import Relation
 from .html import to_html
 from .io import (
     append_csv,
@@ -103,6 +104,7 @@ __all__ = [
     "CustomODBCStrategy",
     "DuckConnection",
     "DuckRel",
+    "Relation",
     "DuckSchema",
     "DuckDBDsnStrategy",
     "DuckTable",

@@ -7,14 +7,14 @@ from typing import List, Sequence
 
 import duckdb
 
-from duckplus import AggregateExpression, DuckRel, FilterExpression, col
+from duckplus import AggregateExpression, DuckRel, FilterExpression, Relation, col
 from duckplus.schema import AnyRow
 
 
 def sales_demo_relation(connection: duckdb.DuckDBPyConnection) -> DuckRel[AnyRow]:
     """Return a sample sales relation used across aggregate demonstrations."""
 
-    return DuckRel(
+    return Relation(
         connection.sql(
             """
             SELECT *

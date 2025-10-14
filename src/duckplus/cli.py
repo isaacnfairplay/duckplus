@@ -12,6 +12,7 @@ import pyarrow as pa  # type: ignore[import-untyped]
 
 from .connect import DuckConnection, connect
 from .core import DuckRel
+from .relation.core import Relation
 from .schema import AnyRow
 
 
@@ -116,7 +117,7 @@ def _handle_schema(args: argparse.Namespace, conn: DuckConnection) -> int:
         print("error: SQL statement cannot be empty", file=sys.stderr)
         return 1
     try:
-        relation: DuckRel[AnyRow] = DuckRel(conn.raw.sql(statement))
+        relation: DuckRel[AnyRow] = Relation(conn.raw.sql(statement))
     except duckdb.Error as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
@@ -140,7 +141,7 @@ def _run_statement(
     stderr: TextIO,
 ) -> int:
     try:
-        relation: DuckRel[AnyRow] = DuckRel(conn.raw.sql(statement))
+        relation: DuckRel[AnyRow] = Relation(conn.raw.sql(statement))
     except duckdb.Error as exc:
         stderr.write(f"error: {exc}\n")
         return 1

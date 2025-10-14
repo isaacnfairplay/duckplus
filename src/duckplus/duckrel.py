@@ -29,6 +29,7 @@ if TYPE_CHECKING:
     from polars import DataFrame as PolarsDataFrame
 
     from .connect import DuckConnection
+    from .relation.core import Relation
 else:  # pragma: no cover - runtime aliases
     PandasDataFrame = object
     PolarsDataFrame = object
@@ -1382,7 +1383,7 @@ class DuckRel(Generic[RowType_co]):
 
         return Materialized(
             table=result.table,
-            relation=wrapped,
+            relation=cast("Relation[AnyRow] | None", wrapped),
             path=result.path,
         )
 

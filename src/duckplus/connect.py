@@ -6,12 +6,13 @@ from collections.abc import Mapping, Sequence
 from contextlib import AbstractContextManager
 from os import PathLike, fspath
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, Literal, Optional, Self
+from typing import TYPE_CHECKING, Any, Literal, Optional, Self, cast
 
 import duckdb
 
 from . import util
 from .core import DuckRel
+from .relation.core import Relation
 from .schema import AnyRow
 
 if TYPE_CHECKING:
@@ -327,12 +328,12 @@ class DuckConnection(AbstractContextManager["DuckConnection"]):
     def from_pandas(self, frame: PandasDataFrame) -> DuckRel[AnyRow]:
         """Return a relation constructed from a pandas DataFrame."""
 
-        return DuckRel.from_pandas(frame, connection=self)
+        return cast(Relation[AnyRow], Relation.from_pandas(frame, connection=self))
 
     def from_polars(self, frame: PolarsDataFrame) -> DuckRel[AnyRow]:
         """Return a relation constructed from a Polars DataFrame."""
 
-        return DuckRel.from_polars(frame, connection=self)
+        return cast(Relation[AnyRow], Relation.from_polars(frame, connection=self))
 
     def table(self, name: str) -> "DuckTable":
         """Return a :class:`duckplus.DuckTable` wrapper for *name* on this connection."""
@@ -455,7 +456,7 @@ def query_nanodbc(
         "SELECT * FROM odbc_query(?, ?)",
         params=(normalized_connection_string, normalized_query),
     )
-    return DuckRel(relation)
+    return Relation(relation)
 
 
 def __getattr__(name: str) -> Any:

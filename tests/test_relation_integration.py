@@ -16,6 +16,7 @@ from duckplus import (
     ExpressionPredicate,
     JoinSpec,
     ParquetMaterializeStrategy,
+    Relation,
     col,
     column,
     connect,
@@ -85,6 +86,37 @@ def test_column_expression_end_to_end(connection: DuckConnection) -> None:
         ducktypes.Unknown,
         ducktypes.Varchar,
     ]
+
+
+def test_relation_fluent_pipeline(connection: DuckConnection) -> None:
+    rel = Relation(
+        connection.raw.sql(
+            """
+            SELECT *
+            FROM (VALUES
+                ('a', 2),
+                ('b', 4),
+                ('b', 2)
+            ) AS t(category, score)
+            """
+        )
+    )
+
+    result = (
+        rel
+        .select("category", doubled=lambda c: c["score"] * 2)
+        .where(lambda c: c.doubled >= 4)
+        .mutate(doubled=lambda c: c.doubled + 1, flagged=lambda c: c.doubled > 4)
+        .aggregate(
+            "category",
+            total=lambda agg: agg.sum("doubled"),
+            observed=lambda agg: agg.count("doubled", distinct=True),
+        )
+        .order_by(lambda c: c.total.desc())
+    )
+
+    assert result.columns == ["category", "total", "observed"]
+    assert result.relation.fetchall() == [("b", 14, 2), ("a", 5, 1)]
 
 
 def test_fetch_typed_uses_column_markers(connection: DuckConnection) -> None:
