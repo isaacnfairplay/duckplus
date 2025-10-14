@@ -1,0 +1,2 @@
+- [ ] Add a DuckCon class with a context manager that will be easy to extend for io operations
+- [ ] Add a relation class that is immutable and has the DuckCon and a duckdbpy connection under the hood with some metadata stored like columns and Duckdb types (as varchar for now)
