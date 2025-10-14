@@ -39,6 +39,7 @@ Answer these before starting any TODO item to confirm the work is understood and
 
 ## Typed Expression API
 - [ ] Design fluent `ducktype` factory with concrete types (e.g. `Numeric`, `Varchar`, `Blob`).
+  - [ ] Ensure concrete types remain composable so future composed/aggregated types (structs, lists) can wrap them without loss of metadata.
 - [ ] Surface aggregation helpers, e.g. `ducktype.Numeric.Aggregate.sum("sales") -> "sum(sales)"`.
 - [ ] Enable expression comparisons (`ducktype.Varchar("customer") == "prime"`) and joins between differently named columns.
 - [ ] Support aliasing and renaming via methods like `.alias("my_customer")` with dict/str serialization.
