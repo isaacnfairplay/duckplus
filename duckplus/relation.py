@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass, field
+import warnings
 from typing import Mapping, overload
 
 import duckdb
@@ -116,6 +118,98 @@ class Relation:
             raise ValueError(msg) from error
 
         return type(self).from_relation(self.duckcon, relation)
+
+    def rename(self, **renames: str) -> "Relation":
+        """Return a new relation with selected columns renamed."""
+
+        if not renames:
+            msg = "rename requires at least one column to rename"
+            raise ValueError(msg)
+
+        return self._rename(renames, skip_missing=False)
+
+    def rename_if_exists(self, **renames: str) -> "Relation":
+        """Return a new relation renaming columns and skipping missing ones."""
+
+        if not renames:
+            return self
+
+        return self._rename(renames, skip_missing=True)
+
+    def _rename(self, renames: Mapping[str, str], *, skip_missing: bool) -> "Relation":
+        validated = self._prepare_renames(renames, skip_missing=skip_missing)
+        if not validated:
+            return self
+
+        if not self.duckcon.is_open:
+            msg = (
+                "DuckCon connection must be open to call rename helpers. "
+                "Use DuckCon as a context manager."
+            )
+            raise RuntimeError(msg)
+
+        self._assert_no_conflicts(validated)
+        select_list = f"* RENAME ({', '.join(self._build_rename_clauses(validated))})"
+        relation = self._relation.project(select_list)
+        return type(self).from_relation(self.duckcon, relation)
+
+    def _prepare_renames(
+        self, renames: Mapping[str, str], *, skip_missing: bool
+    ) -> dict[str, str]:
+        if skip_missing:
+            missing = sorted(column for column in renames if column not in self.columns)
+            if missing:
+                warnings.warn(
+                    "Columns do not exist on relation and were skipped: "
+                    + ", ".join(missing),
+                    stacklevel=2,
+                )
+            relevant = {
+                column: name for column, name in renames.items() if column in self.columns
+            }
+        else:
+            missing = sorted(set(renames) - set(self.columns))
+            if missing:
+                msg = f"Columns do not exist on relation: {', '.join(missing)}"
+                raise KeyError(msg)
+            relevant = dict(renames)
+
+        validated: dict[str, str] = {}
+        for column, new_name in relevant.items():
+            if not isinstance(new_name, str):
+                msg = (
+                    "rename targets must be strings representing the new column name "
+                    f"(got {type(new_name)!r} for column '{column}')"
+                )
+                raise TypeError(msg)
+
+            if not new_name.strip():
+                msg = f"New column name for '{column}' cannot be empty"
+                raise ValueError(msg)
+
+            validated[column] = new_name
+
+        return validated
+
+    def _assert_no_conflicts(self, renames: Mapping[str, str]) -> None:
+        final_names = list(self.columns)
+        for index, column in enumerate(final_names):
+            if column in renames:
+                final_names[index] = renames[column]
+
+        duplicate_names = [name for name, count in Counter(final_names).items() if count > 1]
+        if duplicate_names:
+            duplicates = ", ".join(sorted(duplicate_names))
+            msg = f"Renaming results in duplicate column names: {duplicates}"
+            raise ValueError(msg)
+
+    def _build_rename_clauses(self, renames: Mapping[str, str]) -> list[str]:
+        clauses = []
+        for column, new_name in renames.items():
+            source = self._quote_identifier(column)
+            target = self._quote_identifier(new_name)
+            clauses.append(f"{source} AS {target}")
+        return clauses
 
     @staticmethod
     def _quote_identifier(identifier: str) -> str:
