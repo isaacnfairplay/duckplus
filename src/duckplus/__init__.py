@@ -33,7 +33,7 @@ from .core import (
     not_equals,
     PartitionSpec,
 )
-from .relation.core import Relation
+from .relation.core import Relation, RelationColumnSet
 from .html import to_html
 from .io import (
     append_csv,
@@ -105,6 +105,7 @@ __all__ = [
     "DuckConnection",
     "DuckRel",
     "Relation",
+    "RelationColumnSet",
     "DuckSchema",
     "DuckDBDsnStrategy",
     "DuckTable",

@@ -315,7 +315,7 @@ class DuckRel(Generic[RowType_co]):
         return self._relation
 
     @property
-    def columns(self) -> list[str]:
+    def columns(self) -> Sequence[str]:
         """Return the projected column names preserving case."""
 
         return list(self._columns)

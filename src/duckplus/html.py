@@ -1,6 +1,7 @@
 """HTML rendering helpers for Duck+."""
 from __future__ import annotations
 
+from collections.abc import Sequence
 from html import escape as html_escape
 from typing import Any
 
@@ -36,7 +37,7 @@ def _validate_attributes(style: dict[str, Any]) -> str:
     return "".join(fragments)
 
 
-def _build_row_expression(columns: list[str], null_literal: str) -> str:
+def _build_row_expression(columns: Sequence[str], null_literal: str) -> str:
     """Return the SQL expression that renders a table row."""
 
     if not columns:
