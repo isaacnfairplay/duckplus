@@ -38,10 +38,10 @@ with `uv run sphinx-build -b html docs/source docs/_build/html`, then open
 ## Quickstart
 
 ```python
-from duckplus import DuckRel, col, connect
+from duckplus import Relation, connect
 
 with connect() as conn:
-    rel = DuckRel(
+    rel = Relation(
         conn.raw.sql(
             """
             SELECT *
@@ -54,18 +54,21 @@ with connect() as conn:
         )
     )
 
+    columns = rel.columns
+
     top_scores = (
         rel
-        .filter(col("score") >= 8)
-        .project({"id": col("id"), "name": col("name"), "score": col("score")})
-        .order_by((col("score"), "desc"))
+        .where(columns.score >= 8)
+        .select({"id": columns.id, "name": columns.name, "score": columns.score})
+        .order_by(columns.score.desc())
     )
 
     print(top_scores.materialize().require_table().to_pylist())
 ```
 
-This snippet opens an in-memory DuckDB connection, builds a relation, filters
-rows with fluent column expressions, and materializes results safely.
+This snippet opens an in-memory DuckDB connection, projects typed column
+expressions through ``Relation.columns``, and materializes the chained result
+safely.
 
 ---
 

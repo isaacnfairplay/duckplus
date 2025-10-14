@@ -42,6 +42,16 @@ PythonT_co = TypeVar("PythonT_co", covariant=True)
 
 
 class Expression(Generic[PythonT_co]):
+    """Typed SQL fragment bound to a :class:`duckplus.Relation` schema.
+
+    Expressions originate from :attr:`duckplus.Relation.columns`, fluent chaining
+    helpers, or literal coercion. Each instance tracks its DuckDB marker and
+    Python annotation so downstream operations can align runtime validation
+    with static typing. Expressions can only be combined with other values
+    derived from the same relation schema; mixing contexts raises
+    ``TypeError`` to keep pipelines type-safe.
+    """
+
     __slots__ = ("_sql", "_column", "_marker", "_annotation", "_schema")
 
     def __init__(
@@ -451,7 +461,16 @@ RowT = TypeVar("RowT", bound=AnyRow, covariant=True)
 
 
 class Relation(DuckRel[RowT], Generic[RowT]):
-    """Immutable relational wrapper with fluent expression helpers."""
+    """Immutable relational wrapper with typed, fluent expression helpers.
+
+    The :attr:`duckplus.Relation.columns` accessor returns a
+    :class:`RelationColumnSet` scoped to the current schema, ensuring callables
+    passed to helpers such as :meth:`duckplus.Relation.where`,
+    :meth:`duckplus.Relation.select`, and :meth:`duckplus.Relation.order_by`
+    operate on validated column expressions. Each method returns a new
+    :class:`duckplus.Relation`, preserving immutability while propagating column
+    markers so IDEs and type checkers can infer precise result types.
+    """
 
     def _column_context(self) -> RelationColumnSet[RowT]:
         return RelationColumnSet(self.schema)
