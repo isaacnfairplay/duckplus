@@ -31,11 +31,11 @@ Answer these before starting any TODO item to confirm the work is understood and
   - [x] Implement `Relation.add(**expressions)` using `SELECT *, <expr> AS <alias>`.
   - [ ] Support dependent expressions (new columns referencing existing ones) with validation (blocked by typed expression API; see notes below).
 - [ ] Column subset helpers
-  - [ ] Implement `Relation.keep(*columns)` to project only requested columns, raising on unknown names by default.
-  - [ ] Provide `keep_if_exists` variant that tolerates absent columns.
+  - [x] Implement `Relation.keep(*columns)` to project only requested columns, raising on unknown names by default.
+  - [x] Provide `keep_if_exists` variant that tolerates absent columns.
 - [ ] Column drop helpers
-  - [ ] Implement `Relation.drop(*columns)` using `SELECT * EXCLUDE` semantics with strict validation.
-  - [ ] Provide `drop_if_exists` soft variant mirroring `keep_if_exists` behaviour.
+  - [x] Implement `Relation.drop(*columns)` using `SELECT * EXCLUDE` semantics with strict validation.
+  - [x] Provide `drop_if_exists` soft variant mirroring `keep_if_exists` behaviour.
 
 ## Typed Expression API
 - [ ] Design fluent `ducktype` factory with concrete types (e.g. `Numeric`, `Varchar`, `Blob`).

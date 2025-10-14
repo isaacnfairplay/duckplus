@@ -80,6 +80,19 @@ def test_transform_supports_simple_casts() -> None:
         assert transformed.relation.fetchall() == [("1",)]
 
 
+def test_transform_matches_columns_case_insensitively() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 1::INTEGER AS value"),
+        )
+
+        transformed = relation.transform(VALUE="value + 1")
+
+        assert transformed.relation.fetchall() == [(2,)]
+
+
 def test_transform_rejects_unknown_columns() -> None:
     manager = DuckCon()
     with manager as connection:
@@ -149,6 +162,18 @@ def test_add_appends_new_columns() -> None:
         assert extended.columns == ("value", "double", "triple")
         assert extended.types == ("INTEGER", "INTEGER", "INTEGER")
         assert extended.relation.fetchall() == [(2, 4, 6)]
+
+
+def test_add_rejects_existing_columns_case_insensitively() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 1::INTEGER AS value"),
+        )
+
+        with pytest.raises(ValueError, match="already exist"):
+            relation.add(VALUE="value + 1")
 
 
 def test_add_rejects_existing_columns() -> None:
@@ -222,6 +247,19 @@ def test_rename_updates_column_names() -> None:
         assert renamed.relation.fetchall() == [(1, 2)]
 
 
+def test_rename_matches_columns_case_insensitively() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 1::INTEGER AS value"),
+        )
+
+        renamed = relation.rename(VALUE="first")
+
+        assert renamed.columns == ("first",)
+
+
 def test_rename_rejects_unknown_columns() -> None:
     manager = DuckCon()
     with manager as connection:
@@ -290,5 +328,154 @@ def test_rename_if_exists_returns_original_when_nothing_to_rename() -> None:
 
     with pytest.warns(UserWarning):
         result = relation.rename_if_exists(other="second")
+
+    assert result is relation
+
+
+def test_keep_projects_requested_columns() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(
+                "SELECT 1::INTEGER AS value, 2::INTEGER AS other, 3::INTEGER AS extra"
+            ),
+        )
+
+        subset = relation.keep("OTHER", "value")
+
+        assert subset.columns == ("other", "value")
+        assert subset.relation.fetchall() == [(2, 1)]
+
+
+def test_keep_rejects_unknown_columns() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 1::INTEGER AS value"),
+        )
+
+        with pytest.raises(KeyError):
+            relation.keep("missing")
+
+
+def test_keep_requires_columns() -> None:
+    manager = DuckCon()
+    relation = _make_relation(
+        manager,
+        "SELECT 1::INTEGER AS value, 2::INTEGER AS other",
+    )
+
+    with pytest.raises(ValueError):
+        relation.keep()
+
+
+def test_keep_requires_open_connection() -> None:
+    manager = DuckCon()
+    relation = _make_relation(
+        manager,
+        "SELECT 1::INTEGER AS value, 2::INTEGER AS other",
+    )
+
+    with pytest.raises(RuntimeError):
+        relation.keep("value")
+
+
+def test_keep_if_exists_skips_missing_columns() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 1::INTEGER AS value, 2::INTEGER AS other"),
+        )
+
+        with pytest.warns(UserWarning, match="skipped"):
+            subset = relation.keep_if_exists("value", "missing")
+
+        assert subset.columns == ("value",)
+        assert subset.relation.fetchall() == [(1,)]
+
+
+def test_keep_if_exists_returns_original_when_nothing_to_keep() -> None:
+    manager = DuckCon()
+    relation = _make_relation(manager, "SELECT 1::INTEGER AS value")
+
+    with pytest.warns(UserWarning):
+        result = relation.keep_if_exists("missing")
+
+    assert result is relation
+
+
+def test_drop_removes_requested_columns() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(
+                "SELECT 1::INTEGER AS value, 2::INTEGER AS other, 3::INTEGER AS extra"
+            ),
+        )
+
+        reduced = relation.drop("OTHER")
+
+        assert reduced.columns == ("value", "extra")
+        assert reduced.relation.fetchall() == [(1, 3)]
+
+
+def test_drop_rejects_unknown_columns() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 1::INTEGER AS value"),
+        )
+
+        with pytest.raises(KeyError):
+            relation.drop("missing")
+
+
+def test_drop_requires_columns() -> None:
+    manager = DuckCon()
+    relation = _make_relation(manager, "SELECT 1::INTEGER AS value")
+
+    with pytest.raises(ValueError):
+        relation.drop()
+
+
+def test_drop_requires_open_connection() -> None:
+    manager = DuckCon()
+    relation = _make_relation(
+        manager,
+        "SELECT 1::INTEGER AS value, 2::INTEGER AS other",
+    )
+
+    with pytest.raises(RuntimeError):
+        relation.drop("value")
+
+
+def test_drop_if_exists_skips_missing_columns() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(
+                "SELECT 1::INTEGER AS value, 2::INTEGER AS other, 3::INTEGER AS extra"
+            ),
+        )
+
+        with pytest.warns(UserWarning, match="skipped"):
+            reduced = relation.drop_if_exists("missing", "other")
+
+        assert reduced.columns == ("value", "extra")
+        assert reduced.relation.fetchall() == [(1, 3)]
+
+
+def test_drop_if_exists_returns_original_when_nothing_to_drop() -> None:
+    manager = DuckCon()
+    relation = _make_relation(manager, "SELECT 1::INTEGER AS value")
+
+    with pytest.warns(UserWarning):
+        result = relation.drop_if_exists("missing")
 
     assert result is relation

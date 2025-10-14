@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
-from collections import Counter
 from dataclasses import dataclass, field
 import warnings
-from typing import Mapping, overload
+from typing import Iterable, Mapping, TypeVar, overload
 
 import duckdb
 
 from .duckcon import DuckCon
+
+
+T = TypeVar("T")
 
 
 @dataclass(frozen=True)
@@ -25,14 +27,22 @@ class Relation:
     _relation: duckdb.DuckDBPyRelation
     _columns: tuple[str, ...] = field(init=False, repr=False)
     _types: tuple[str, ...] = field(init=False, repr=False)
+    _casefolded_columns: dict[str, tuple[str, ...]] = field(init=False, repr=False)
 
     def __post_init__(self) -> None:
         columns = tuple(self._relation.columns)
         # DuckDB returns custom type objects in ``relation.types`` so we cast
         # them to their string representation for stable comparison.
         types = tuple(str(type_) for type_ in self._relation.types)
+        casefolded: dict[str, list[str]] = {}
+        for column in columns:
+            key = column.casefold()
+            casefolded.setdefault(key, []).append(column)
         object.__setattr__(self, "_columns", columns)
         object.__setattr__(self, "_types", types)
+        object.__setattr__(self, "_casefolded_columns", {
+            key: tuple(values) for key, values in casefolded.items()
+        })
 
     @property
     def columns(self) -> tuple[str, ...]:
@@ -98,13 +108,14 @@ class Relation:
             )
             raise RuntimeError(msg)
 
-        missing = sorted(set(replacements) - set(self.columns))
+        resolved_items, missing = self._resolve_column_items(replacements.items())
         if missing:
-            msg = f"Columns do not exist on relation: {', '.join(missing)}"
+            formatted = self._format_column_list(missing)
+            msg = f"Columns do not exist on relation: {formatted}"
             raise KeyError(msg)
 
         replace_clauses = []
-        for column, value in replacements.items():
+        for column, value in resolved_items:
             expression = self._normalise_transform_value(column, value)
             alias = self._quote_identifier(column)
             replace_clauses.append(f"{expression} AS {alias}")
@@ -133,12 +144,18 @@ class Relation:
             )
             raise RuntimeError(msg)
 
-        duplicates = sorted(set(self.columns) & set(expressions))
-        if duplicates:
-            msg = f"Columns already exist on relation: {', '.join(duplicates)}"
+        existing_matches = {
+            column
+            for alias in expressions
+            for column in self._casefolded_columns.get(alias.casefold(), ())
+        }
+        if existing_matches:
+            formatted = self._format_column_list(existing_matches)
+            msg = f"Columns already exist on relation: {formatted}"
             raise ValueError(msg)
 
         clauses = []
+        seen_aliases: set[str] = set()
         for alias, expression in expressions.items():
             if not isinstance(alias, str):
                 msg = "Column names must be strings"
@@ -147,6 +164,12 @@ class Relation:
             if not alias.strip():
                 msg = "Column name for new column cannot be empty"
                 raise ValueError(msg)
+
+            alias_key = alias.casefold()
+            if alias_key in seen_aliases:
+                msg = f"Column '{alias}' specified multiple times"
+                raise ValueError(msg)
+            seen_aliases.add(alias_key)
 
             if not isinstance(expression, str):
                 msg = (
@@ -190,6 +213,98 @@ class Relation:
 
         return self._rename(renames, skip_missing=True)
 
+    def keep(self, *columns: str) -> "Relation":
+        """Return a new relation containing only the requested columns."""
+
+        if not columns:
+            msg = "keep requires at least one column to retain"
+            raise ValueError(msg)
+
+        resolved = self._resolve_subset(columns, skip_missing=False, operation="keep")
+
+        if not self.duckcon.is_open:
+            msg = (
+                "DuckCon connection must be open to call keep. "
+                "Use DuckCon as a context manager."
+            )
+            raise RuntimeError(msg)
+
+        select_list = ", ".join(self._quote_identifier(column) for column in resolved)
+        relation = self._relation.project(select_list)
+        return type(self).from_relation(self.duckcon, relation)
+
+    def keep_if_exists(self, *columns: str) -> "Relation":
+        """Return a new relation keeping available columns and skipping missing ones."""
+
+        if not columns:
+            return self
+
+        resolved = self._resolve_subset(
+            columns,
+            skip_missing=True,
+            operation="keep_if_exists",
+        )
+        if not resolved:
+            return self
+
+        if not self.duckcon.is_open:
+            msg = (
+                "DuckCon connection must be open to call keep_if_exists. "
+                "Use DuckCon as a context manager."
+            )
+            raise RuntimeError(msg)
+
+        select_list = ", ".join(self._quote_identifier(column) for column in resolved)
+        relation = self._relation.project(select_list)
+        return type(self).from_relation(self.duckcon, relation)
+
+    def drop(self, *columns: str) -> "Relation":
+        """Return a new relation without the specified columns."""
+
+        if not columns:
+            msg = "drop requires at least one column to remove"
+            raise ValueError(msg)
+
+        resolved = self._resolve_subset(columns, skip_missing=False, operation="drop")
+
+        if not self.duckcon.is_open:
+            msg = (
+                "DuckCon connection must be open to call drop. "
+                "Use DuckCon as a context manager."
+            )
+            raise RuntimeError(msg)
+
+        exclude_list = ", ".join(self._quote_identifier(column) for column in resolved)
+        select_list = f"* EXCLUDE ({exclude_list})"
+        relation = self._relation.project(select_list)
+        return type(self).from_relation(self.duckcon, relation)
+
+    def drop_if_exists(self, *columns: str) -> "Relation":
+        """Return a new relation dropping available columns and skipping missing ones."""
+
+        if not columns:
+            return self
+
+        resolved = self._resolve_subset(
+            columns,
+            skip_missing=True,
+            operation="drop_if_exists",
+        )
+        if not resolved:
+            return self
+
+        if not self.duckcon.is_open:
+            msg = (
+                "DuckCon connection must be open to call drop_if_exists. "
+                "Use DuckCon as a context manager."
+            )
+            raise RuntimeError(msg)
+
+        exclude_list = ", ".join(self._quote_identifier(column) for column in resolved)
+        select_list = f"* EXCLUDE ({exclude_list})"
+        relation = self._relation.project(select_list)
+        return type(self).from_relation(self.duckcon, relation)
+
     def _rename(self, renames: Mapping[str, str], *, skip_missing: bool) -> "Relation":
         validated = self._prepare_renames(renames, skip_missing=skip_missing)
         if not validated:
@@ -210,26 +325,20 @@ class Relation:
     def _prepare_renames(
         self, renames: Mapping[str, str], *, skip_missing: bool
     ) -> dict[str, str]:
-        if skip_missing:
-            missing = sorted(column for column in renames if column not in self.columns)
-            if missing:
+        resolved_items, missing = self._resolve_column_items(renames.items())
+        if missing:
+            formatted = self._format_column_list(missing)
+            if skip_missing:
                 warnings.warn(
-                    "Columns do not exist on relation and were skipped: "
-                    + ", ".join(missing),
+                    "Columns do not exist on relation and were skipped: " + formatted,
                     stacklevel=2,
                 )
-            relevant = {
-                column: name for column, name in renames.items() if column in self.columns
-            }
-        else:
-            missing = sorted(set(renames) - set(self.columns))
-            if missing:
-                msg = f"Columns do not exist on relation: {', '.join(missing)}"
+            else:
+                msg = f"Columns do not exist on relation: {formatted}"
                 raise KeyError(msg)
-            relevant = dict(renames)
 
         validated: dict[str, str] = {}
-        for column, new_name in relevant.items():
+        for column, new_name in resolved_items:
             if not isinstance(new_name, str):
                 msg = (
                     "rename targets must be strings representing the new column name "
@@ -246,15 +355,21 @@ class Relation:
         return validated
 
     def _assert_no_conflicts(self, renames: Mapping[str, str]) -> None:
-        final_names = list(self.columns)
-        for index, column in enumerate(final_names):
-            if column in renames:
-                final_names[index] = renames[column]
+        final_names = [renames.get(column, column) for column in self.columns]
 
-        duplicate_names = [name for name, count in Counter(final_names).items() if count > 1]
-        if duplicate_names:
-            duplicates = ", ".join(sorted(duplicate_names))
-            msg = f"Renaming results in duplicate column names: {duplicates}"
+        seen: dict[str, str] = {}
+        duplicates: set[str] = set()
+        for name in final_names:
+            key = name.casefold()
+            if key in seen:
+                duplicates.add(seen[key])
+                duplicates.add(name)
+            else:
+                seen[key] = name
+
+        if duplicates:
+            formatted = self._format_column_list(duplicates)
+            msg = f"Renaming results in duplicate column names: {formatted}"
             raise ValueError(msg)
 
     def _build_rename_clauses(self, renames: Mapping[str, str]) -> list[str]:
@@ -264,6 +379,78 @@ class Relation:
             target = self._quote_identifier(new_name)
             clauses.append(f"{source} AS {target}")
         return clauses
+
+    def _resolve_subset(
+        self,
+        columns: tuple[str, ...],
+        *,
+        skip_missing: bool,
+        operation: str,
+    ) -> list[str]:
+        entries: list[tuple[str, None]] = []
+        for column in columns:
+            if not isinstance(column, str):
+                msg = f"{operation} column names must be strings"
+                raise TypeError(msg)
+            if not column.strip():
+                msg = f"Column name for {operation} cannot be empty"
+                raise ValueError(msg)
+            entries.append((column, None))
+
+        resolved_items, missing = self._resolve_column_items(entries)
+        resolved = [column for column, _ in resolved_items]
+
+        if missing:
+            formatted = self._format_column_list(missing)
+            if skip_missing:
+                warnings.warn(
+                    "Columns do not exist on relation and were skipped: " + formatted,
+                    stacklevel=2,
+                )
+            else:
+                msg = f"Columns do not exist on relation: {formatted}"
+                raise KeyError(msg)
+
+        return resolved
+
+    def _resolve_column(self, column: str) -> str | None:
+        matches = self._casefolded_columns.get(column.casefold())
+        if matches is None:
+            return None
+        if len(matches) > 1:
+            formatted = self._format_column_list(matches)
+            msg = (
+                f"Column reference '{column}' is ambiguous; multiple columns match ignoring "
+                f"case: {formatted}"
+            )
+            raise ValueError(msg)
+        return matches[0]
+
+    def _resolve_column_items(
+        self, items: Iterable[tuple[str, T]]
+    ) -> tuple[list[tuple[str, T]], list[str]]:
+        resolved: list[tuple[str, T]] = []
+        missing: list[str] = []
+        seen: set[str] = set()
+
+        for column, payload in items:
+            resolved_name = self._resolve_column(column)
+            if resolved_name is None:
+                missing.append(column)
+                continue
+
+            if resolved_name in seen:
+                msg = f"Column '{resolved_name}' referenced multiple times"
+                raise ValueError(msg)
+            seen.add(resolved_name)
+            resolved.append((resolved_name, payload))
+
+        return resolved, missing
+
+    @staticmethod
+    def _format_column_list(columns: Iterable[str]) -> str:
+        unique = sorted(set(columns), key=str.casefold)
+        return ", ".join(unique)
 
     @staticmethod
     def _quote_identifier(identifier: str) -> str:
