@@ -227,17 +227,34 @@ class _StaticFunctionNamespace:
         return self._SYMBOLIC_FUNCTIONS
 
 
+def _validate_function_operand_type(
+    operand: TypedExpression,
+    expected_type: DuckDBType | None,
+) -> TypedExpression:
+    if expected_type is None:
+        return operand
+    operand_type = operand.duck_type
+    if isinstance(operand_type, DuckDBType) and not expected_type.accepts(operand_type):
+        msg = (
+            "DuckDB function arguments must match expected types: "
+            f"expected {expected_type.render()}, got {operand_type.render()}"
+        )
+        raise TypeError(msg)
+    return operand
+
+
 def _coerce_function_operand(
     value: object,
     expected_type: DuckDBType | None = None,
 ) -> TypedExpression:
     if isinstance(value, TypedExpression):
-        return value
+        return _validate_function_operand_type(value, expected_type)
     if expected_type is not None:
         coerced = _coerce_by_duck_type(value, expected_type)
         if coerced is not None:
-            return coerced
-    return _coerce_function_operand_default(value)
+            return _validate_function_operand_type(coerced, expected_type)
+    coerced_default = _coerce_function_operand_default(value)
+    return _validate_function_operand_type(coerced_default, expected_type)
 
 
 def _coerce_function_operand_default(value: object) -> TypedExpression:

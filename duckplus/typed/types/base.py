@@ -28,6 +28,11 @@ class DuckDBType(ABC):
     def _key(self) -> Tuple[object, ...]:
         raise NotImplementedError
 
+    def accepts(self, candidate: "DuckDBType") -> bool:
+        """Return whether ``candidate`` can be used where this type is expected."""
+
+        return type(self) is type(candidate) and self._key() == candidate._key()
+
     def __eq__(self, other: object) -> bool:  # pragma: no cover - trivial wrapper
         if not isinstance(other, DuckDBType):
             return False
@@ -63,6 +68,9 @@ class GenericType(SimpleType):
 
     __slots__ = ()
 
+    def accepts(self, candidate: DuckDBType) -> bool:
+        return True
+
 
 class BooleanType(SimpleType):
     __slots__ = ()
@@ -83,9 +91,28 @@ class NumericType(SimpleType):
     __slots__ = ()
     category = "numeric"
 
+    def accepts(self, candidate: DuckDBType) -> bool:
+        if isinstance(candidate, NumericType):
+            if self.name == "NUMERIC":
+                return True
+        return super().accepts(candidate)
+
 
 class IntegerType(NumericType):
     __slots__ = ()
+
+    def accepts(self, candidate: DuckDBType) -> bool:
+        if isinstance(candidate, NumericType) and getattr(candidate, "name", None) == "NUMERIC":
+            return True
+        if isinstance(candidate, IntegerType):
+            if _integer_family(self.name) == _integer_family(candidate.name):
+                candidate_rank = _integer_rank(candidate.name)
+                expected_rank = _integer_rank(self.name)
+                if candidate_rank is not None and expected_rank is not None:
+                    return candidate_rank <= expected_rank
+        if isinstance(candidate, UnknownType):
+            return True
+        return super().accepts(candidate)
 
 
 class FloatingType(NumericType):
@@ -122,6 +149,28 @@ class DecimalType(NumericType):
         return (self.precision, self.scale)
 
 
+_UNSIGNED_INTEGER_ORDER = ("UTINYINT", "USMALLINT", "UINTEGER", "UBIGINT", "UHUGEINT")
+_SIGNED_INTEGER_ORDER = ("TINYINT", "SMALLINT", "INTEGER", "BIGINT", "HUGEINT")
+_UNSIGNED_INTEGER_RANK = {name: index for index, name in enumerate(_UNSIGNED_INTEGER_ORDER)}
+_SIGNED_INTEGER_RANK = {name: index for index, name in enumerate(_SIGNED_INTEGER_ORDER)}
+
+
+def _integer_family(name: str) -> str | None:
+    if name in _UNSIGNED_INTEGER_RANK:
+        return "unsigned"
+    if name in _SIGNED_INTEGER_RANK:
+        return "signed"
+    return None
+
+
+def _integer_rank(name: str) -> int | None:
+    if name in _UNSIGNED_INTEGER_RANK:
+        return _UNSIGNED_INTEGER_RANK[name]
+    if name in _SIGNED_INTEGER_RANK:
+        return _SIGNED_INTEGER_RANK[name]
+    return None
+
+
 class UnknownType(DuckDBType):
     """Type placeholder when no metadata is available."""
 
@@ -132,6 +181,9 @@ class UnknownType(DuckDBType):
 
     def _key(self) -> Tuple[object, ...]:
         return ("UNKNOWN",)
+
+    def accepts(self, candidate: DuckDBType) -> bool:
+        return True
 
 
 def join_type_arguments(arguments: Iterable[DuckDBType]) -> str:

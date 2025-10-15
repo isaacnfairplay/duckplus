@@ -173,3 +173,5 @@ assert expr.duck_type.render() == "NUMERIC"
 ```
 
 The type objects can be extended for nested types by composing the helpers exposed in `duckplus.typed.types`.
+
+Typed functions validate argument compatibility against the DuckDB type hierarchy. Narrow integer expressions (for example, a `UTINYINT` literal) can satisfy broader parameter slots such as `UINTEGER` or `UBIGINT` thanks to the ordered integer families baked into the type metadata, while incompatible widths raise clear errors during helper invocation.
