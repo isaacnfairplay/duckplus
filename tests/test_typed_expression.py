@@ -349,3 +349,79 @@ def test_select_builder_build_select_list() -> None:
     assert select_list == "1"
     with pytest.raises(RuntimeError):
         builder.column("2")
+
+
+def test_select_builder_if_exists_requires_dependencies() -> None:
+    builder = ducktype.select()
+    with pytest.raises(TypeError):
+        builder.column("1", if_exists=True)
+
+
+def test_select_builder_if_exists_requires_available_columns() -> None:
+    builder = ducktype.select()
+    builder.column(ducktype.Numeric("value"), if_exists=True)
+    with pytest.raises(RuntimeError):
+        builder.build_select_list()
+
+
+def test_select_builder_if_exists_skips_missing_columns() -> None:
+    builder = ducktype.select()
+    builder.column(ducktype.Numeric("present"))
+    builder.column(ducktype.Numeric("missing"), if_exists=True)
+    included = builder.build_select_list(available_columns=["present"])
+    assert included == '"present"'
+
+
+def test_select_builder_if_exists_includes_available_columns() -> None:
+    builder = ducktype.select()
+    builder.column(ducktype.Numeric("present"))
+    builder.column(ducktype.Numeric("optional"), if_exists=True)
+    included = builder.build_select_list(
+        available_columns=["present", "optional"]
+    )
+    assert included == '"present", "optional"'
+
+
+def test_select_builder_replace_if_exists_respects_dependencies() -> None:
+    def make_builder():
+        return ducktype.select().star(
+            replace_if_exists={"alias": ducktype.Numeric("value")}
+        )
+
+    builder = make_builder()
+    with pytest.raises(RuntimeError):
+        builder.build_select_list()
+
+    present = make_builder().build_select_list(available_columns=["value"])
+    assert present == '* REPLACE ("value" AS "alias")'
+
+    skipped = make_builder().build_select_list(available_columns=["other"])
+    assert skipped == '*'
+
+
+def test_select_builder_exclude_if_exists_skips_missing_columns() -> None:
+    def make_builder():
+        return ducktype.select().star(exclude_if_exists=["value"])
+
+    builder = make_builder()
+    with pytest.raises(RuntimeError):
+        builder.build_select_list()
+
+    present = make_builder().build_select_list(available_columns=["value"])
+    assert present == '* EXCLUDE ("value")'
+
+    skipped = make_builder().build_select_list(available_columns=["other"])
+    assert skipped == '*'
+
+
+def test_select_builder_if_exists_rejects_qualified_dependencies() -> None:
+    builder = ducktype.select()
+    with pytest.raises(ValueError):
+        builder.column(ducktype.Numeric("value", table="orders"), if_exists=True)
+
+
+def test_select_builder_if_exists_requires_column_dependencies() -> None:
+    builder = ducktype.select()
+    expression = ducktype.Numeric.raw("1", dependencies=[])
+    with pytest.raises(ValueError):
+        builder.column(expression, if_exists=True)

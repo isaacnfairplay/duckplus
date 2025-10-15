@@ -143,6 +143,31 @@ as ``SELECT * REPLACE ("value" AS "renamed")``. Call ``build_select_list`` to
 render only the projection list—ideal for feeding into
 ``Relation.project``—or ``build`` to generate the full ``SELECT`` statement.
 
+Column projections and ``star`` modifiers can be marked ``if_exists`` so they
+are only applied when the required columns are available. When optional clauses
+are used, pass the relation's column names to ``build`` or ``build_select_list``
+and the builder will filter out any clauses that reference missing columns:
+
+```python
+def configure_builder():
+    return (
+        ducktype.select()
+        .column(ducktype.Numeric("total"))
+        .column(ducktype.Numeric("discount"), if_exists=True)
+        .star(replace_if_exists={"net": ducktype.Numeric("net_total")})
+    )
+
+# ``discount`` and ``net`` are skipped when those columns are absent.
+projection = configure_builder().build_select_list(available_columns=["total"])
+assert projection == '"total"'
+
+# They are included when the dependencies are available.
+projection = configure_builder().build_select_list(
+    available_columns=["total", "discount", "net_total"]
+)
+assert projection == '"total", "discount", * REPLACE ("net_total" AS "net")'
+```
+
 ## Function Namespaces
 
 The DuckDB function catalog is exposed via `ducktype.Functions` with scalar, aggregate, and window namespaces. Each namespace is grouped by return type for discoverability.
