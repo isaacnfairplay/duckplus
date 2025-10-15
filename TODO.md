@@ -8,6 +8,13 @@ Answer these before starting any TODO item to confirm the work is understood and
 4. What success criteria, edge cases, and failure behaviours must be exercised to consider the task complete?
 5. How will this change be validated (tests, linters, examples), and are new fixtures or sample data required?
 
+### Preflight Answers – Column addition helper dependencies
+1. Extend `Relation.add` so that new columns defined in a single call can reference columns created earlier in that call while still guarding against references to unknown names.
+2. The `duckplus.relation.Relation` class owns column creation helpers today, so changes belong in `duckplus/relation.py`, with tests in `tests/test_relation.py`.
+3. Review the existing `Relation.add` implementation along with its unit tests to mirror validation patterns and understand current error handling.
+4. Verify dependent expressions preserve column order, allow chaining (e.g. `total`, then `discount_total`), and raise clear errors when referencing columns that do not yet exist.
+5. Exercise the behaviour with new pytest coverage and run the mypy, pylint, and pytest suites per the repository policy.
+
 ### Preflight Notes – Window function helpers
 1. Extend typed expressions with an ergonomic `over` helper so windowed aggregates integrate with the fluent API without falling back to raw SQL strings.
 2. The implementation should live alongside existing typed expression logic, primarily in `duckplus/typed/expressions/base.py`, with alias-aware handling in related classes.
@@ -34,9 +41,9 @@ Answer these before starting any TODO item to confirm the work is understood and
 - [ ] Rename helpers
   - [x] Implement `Relation.rename(**renames)` backed by `SELECT * RENAME` and ensure conflicting names raise clear errors.
   - [x] Add `rename_if_exists` soft variant that skips missing columns with warnings/logging.
-- [ ] Column addition helpers
+- [x] Column addition helpers
   - [x] Implement `Relation.add(**expressions)` using `SELECT *, <expr> AS <alias>`.
-  - [ ] Support dependent expressions (new columns referencing existing ones) with validation (blocked by typed expression API; see notes below).
+  - [x] Support dependent expressions (new columns referencing existing ones) with validation (blocked by typed expression API; see notes below).
 - [ ] Column subset helpers
   - [x] Implement `Relation.keep(*columns)` to project only requested columns, raising on unknown names by default.
   - [x] Provide `keep_if_exists` variant that tolerates absent columns.

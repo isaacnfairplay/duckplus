@@ -156,8 +156,8 @@ class Relation:
             msg = f"Columns already exist on relation: {formatted}"
             raise ValueError(msg)
 
-        clauses = []
         seen_aliases: set[str] = set()
+        relation = self._relation
         for alias, expression in expressions.items():
             if not isinstance(alias, str):
                 msg = "Column names must be strings"
@@ -186,15 +186,16 @@ class Relation:
                 raise ValueError(msg)
 
             quoted_alias = self._quote_identifier(alias)
-            clauses.append(f"{expression_sql} AS {quoted_alias}")
+            select_list = f"*, {expression_sql} AS {quoted_alias}"
 
-        select_list = f"*, {', '.join(clauses)}"
-
-        try:
-            relation = self._relation.project(select_list)
-        except duckdb.BinderException as error:
-            msg = "add expression references unknown columns"
-            raise ValueError(msg) from error
+            try:
+                relation = relation.project(select_list)
+            except duckdb.BinderException as error:
+                msg = (
+                    "add expression for column "
+                    f"'{alias}' references unknown columns"
+                )
+                raise ValueError(msg) from error
 
         return type(self).from_relation(self.duckcon, relation)
 
