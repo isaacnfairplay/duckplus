@@ -11,6 +11,7 @@ from typing import Iterable, Mapping, TypeVar, overload
 import duckdb  # type: ignore[import-not-found]
 
 from .duckcon import DuckCon
+from .typed.select import SelectStatementBuilder
 
 
 T = TypeVar("T")
@@ -157,7 +158,7 @@ class Relation:
             raise ValueError(msg)
 
         seen_aliases: set[str] = set()
-        relation = self._relation
+        prepared: list[tuple[str, str]] = []
         for alias, expression in expressions.items():
             if not isinstance(alias, str):
                 msg = "Column names must be strings"
@@ -185,17 +186,31 @@ class Relation:
                 msg = f"Expression for column '{alias}' cannot be empty"
                 raise ValueError(msg)
 
-            quoted_alias = self._quote_identifier(alias)
-            select_list = f"*, {expression_sql} AS {quoted_alias}"
+            validation_builder = SelectStatementBuilder().star()
+            validation_builder.column(expression_sql, alias=alias)
 
             try:
-                relation = relation.project(select_list)
+                self._relation.project(validation_builder.build_select_list())
             except duckdb.BinderException as error:
                 msg = (
                     "add expression for column "
                     f"'{alias}' references unknown columns"
                 )
                 raise ValueError(msg) from error
+
+            prepared.append((alias, expression_sql))
+
+        builder = SelectStatementBuilder().star()
+        for alias, expression_sql in prepared:
+            builder.column(expression_sql, alias=alias)
+
+        select_list = builder.build_select_list()
+
+        try:
+            relation = self._relation.project(select_list)
+        except duckdb.BinderException as error:
+            msg = "add expressions reference unknown columns"
+            raise ValueError(msg) from error
 
         return type(self).from_relation(self.duckcon, relation)
 
@@ -277,8 +292,8 @@ class Relation:
             )
             raise RuntimeError(msg)
 
-        exclude_list = ", ".join(self._quote_identifier(column) for column in resolved)
-        select_list = f"* EXCLUDE ({exclude_list})"
+        builder = SelectStatementBuilder().star(exclude=resolved)
+        select_list = builder.build_select_list()
         relation = self._relation.project(select_list)
         return type(self).from_relation(self.duckcon, relation)
 
@@ -303,8 +318,8 @@ class Relation:
             )
             raise RuntimeError(msg)
 
-        exclude_list = ", ".join(self._quote_identifier(column) for column in resolved)
-        select_list = f"* EXCLUDE ({exclude_list})"
+        builder = SelectStatementBuilder().star(exclude=resolved)
+        select_list = builder.build_select_list()
         relation = self._relation.project(select_list)
         return type(self).from_relation(self.duckcon, relation)
 
@@ -321,7 +336,15 @@ class Relation:
             raise RuntimeError(msg)
 
         self._assert_no_conflicts(validated)
-        select_list = self._build_explicit_select(validated)
+
+        builder = SelectStatementBuilder()
+        for column in self.columns:
+            quoted = self._quote_identifier(column)
+            if column in validated:
+                builder.column(quoted, alias=validated[column])
+            else:
+                builder.column(quoted)
+        select_list = builder.build_select_list()
         relation = self._relation.project(select_list)
         return type(self).from_relation(self.duckcon, relation)
 
@@ -374,17 +397,6 @@ class Relation:
             formatted = self._format_column_list(duplicates)
             msg = f"Renaming results in duplicate column names: {formatted}"
             raise ValueError(msg)
-
-    def _build_explicit_select(self, renames: Mapping[str, str]) -> str:
-        clauses: list[str] = []
-        for column in self.columns:
-            if column in renames:
-                source = self._quote_identifier(column)
-                target = self._quote_identifier(renames[column])
-                clauses.append(f"{source} AS {target}")
-            else:
-                clauses.append(self._quote_identifier(column))
-        return ", ".join(clauses)
 
     def _resolve_subset(
         self,

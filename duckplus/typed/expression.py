@@ -24,6 +24,7 @@ from .expressions.text import VarcharExpression, VarcharFactory
 from .expressions.utils import format_numeric as _format_numeric
 from .expressions.utils import quote_identifier as _quote_identifier
 from .expressions.utils import quote_string as _quote_string
+from .select import SelectStatementBuilder
 
 
 class DuckTypeNamespace:
@@ -39,6 +40,9 @@ class DuckTypeNamespace:
         self.Boolean = BooleanFactory()
         self.Blob = BlobFactory()
         self.Generic = GenericFactory()
+
+    def select(self) -> SelectStatementBuilder:
+        return SelectStatementBuilder()
 
 
 ducktype = DuckTypeNamespace()
@@ -57,6 +61,7 @@ __all__ = [
     "NumericExpression",
     "NumericFactory",
     "NumericOperand",
+    "SelectStatementBuilder",
     "TypedExpression",
     "VarcharExpression",
     "VarcharFactory",

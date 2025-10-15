@@ -9,10 +9,10 @@ Answer these before starting any TODO item to confirm the work is understood and
 5. How will this change be validated (tests, linters, examples), and are new fixtures or sample data required?
 
 ### Preflight Answers – Column addition helper dependencies
-1. Extend `Relation.add` so that new columns defined in a single call can reference columns created earlier in that call while still guarding against references to unknown names.
+1. Update `Relation.add` to validate each expression against the original relation so columns introduced in the same call can no longer be referenced.
 2. The `duckplus.relation.Relation` class owns column creation helpers today, so changes belong in `duckplus/relation.py`, with tests in `tests/test_relation.py`.
 3. Review the existing `Relation.add` implementation along with its unit tests to mirror validation patterns and understand current error handling.
-4. Verify dependent expressions preserve column order, allow chaining (e.g. `total`, then `discount_total`), and raise clear errors when referencing columns that do not yet exist.
+4. Confirm column order is preserved, that newly introduced aliases are rejected when referenced immediately, and that error messages remain informative.
 5. Exercise the behaviour with new pytest coverage and run the mypy, pylint, and pytest suites per the repository policy.
 
 ### Preflight Notes – Window function helpers
@@ -43,7 +43,7 @@ Answer these before starting any TODO item to confirm the work is understood and
   - [x] Add `rename_if_exists` soft variant that skips missing columns with warnings/logging.
 - [x] Column addition helpers
   - [x] Implement `Relation.add(**expressions)` using `SELECT *, <expr> AS <alias>`.
-  - [x] Support dependent expressions (new columns referencing existing ones) with validation (blocked by typed expression API; see notes below).
+  - [ ] Support dependent expressions (new columns referencing existing ones) with validation (future work if design changes warrant it).
 - [ ] Column subset helpers
   - [x] Implement `Relation.keep(*columns)` to project only requested columns, raising on unknown names by default.
   - [x] Provide `keep_if_exists` variant that tolerates absent columns.
@@ -59,6 +59,7 @@ Answer these before starting any TODO item to confirm the work is understood and
 - [x] Support aliasing and renaming via methods like `.alias("my_customer")` with dict/str serialization.
 - [x] Add window function construction helpers on typed expressions.
 - [x] Introduce a fluent CASE expression builder that composes with typed operands, including nested usage.
+- [x] Provide a fluent SELECT statement builder for assembling projection lists.
 
 ### Notes for "Typed Expression API"
 1. Rich expression objects should expose column dependency metadata so helpers like `Relation.add` can validate references to both existing and newly-created columns.

@@ -111,6 +111,38 @@ typed expressions compose naturally. The builder returns a normal typed
 expression, allowing nested CASE expressions or further chaining such as
 `.alias("segment")`.
 
+## SELECT Statements
+
+The typed namespace also exposes a lightweight SELECT statement builder that
+assembles projection lists and optional ``FROM`` clauses:
+
+```python
+statement = (
+    ducktype.select()
+    .column(ducktype.Numeric("amount"))
+    .column(ducktype.Numeric("amount").sum().alias("total"))
+    .column("CURRENT_DATE", alias="today")
+    .from_("orders")
+    .build()
+)
+assert statement == (
+    'SELECT "amount", sum("amount") AS "total", CURRENT_DATE AS "today" '
+    "FROM orders"
+)
+```
+
+Expressions can be passed positionally or with explicit aliases, and existing
+aliased expressions retain or override their alias depending on whether the
+``alias`` parameter is supplied. The builder validates that the statement
+includes at least one projection and enforces a single ``FROM`` clause before
+rendering the final SQL string.
+
+For convenience a ``star`` helper appends ``*`` projections with DuckDB's
+``REPLACE`` and ``EXCLUDE`` modifiers, making it easy to build statements such
+as ``SELECT * REPLACE ("value" AS "renamed")``. Call ``build_select_list`` to
+render only the projection list—ideal for feeding into
+``Relation.project``—or ``build`` to generate the full ``SELECT`` statement.
+
 ## Function Namespaces
 
 The DuckDB function catalog is exposed via `ducktype.Functions` with scalar, aggregate, and window namespaces. Each namespace is grouped by return type for discoverability.
