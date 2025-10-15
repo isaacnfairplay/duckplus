@@ -91,7 +91,7 @@ Answer these before starting any TODO item to confirm the work is understood and
 - [x] Implement `Relation.filter(*conditions)` compatible with typed expressions and raw SQL snippets.
 
 ## Advanced Joins
-- [ ] Implement "error on column conflict" joins (inner/left/right/outer/semi) that auto-join shared columns and allow explicit conditions.
+- [x] Implement "error on column conflict" joins (inner/left/right/outer/semi) that auto-join shared columns and allow explicit conditions.
 - [ ] Implement "asof" join leveraging the expression API for ordering and tolerance configuration.
 
 ## IO and Appenders
