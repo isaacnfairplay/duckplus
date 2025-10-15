@@ -1,6 +1,6 @@
 """Static DuckDB function catalog to power typed expression helpers."""
 
-# pylint: disable=too-many-arguments,too-few-public-methods,invalid-name
+# pylint: disable=too-many-arguments,too-few-public-methods,invalid-name,too-many-return-statements
 
 from __future__ import annotations
 

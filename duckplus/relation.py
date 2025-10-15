@@ -133,7 +133,7 @@ class Relation:
 
         return type(self).from_relation(self.duckcon, relation)
 
-    def add(self, **expressions: str) -> "Relation":
+    def add(self, **expressions: str) -> "Relation":  # pylint: disable=too-many-locals
         """Return a new relation with additional computed columns."""
 
         if not expressions:

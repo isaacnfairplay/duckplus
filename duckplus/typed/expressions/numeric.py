@@ -102,12 +102,16 @@ class NumericExpression(TypedExpression):
 
     # Aggregation -----------------------------------------------------
     def sum(self) -> "NumericExpression":
-        from ..functions import AGGREGATE_FUNCTIONS
+        from ..functions import (  # pylint: disable=import-outside-toplevel
+            AGGREGATE_FUNCTIONS,
+        )
 
         return AGGREGATE_FUNCTIONS.Numeric.sum(self)
 
     def avg(self) -> "NumericExpression":
-        from ..functions import AGGREGATE_FUNCTIONS
+        from ..functions import (  # pylint: disable=import-outside-toplevel
+            AGGREGATE_FUNCTIONS,
+        )
 
         return AGGREGATE_FUNCTIONS.Numeric.avg(self)
 
@@ -164,7 +168,7 @@ class NumericFactory:
         )
 
     @property
-    def Aggregate(self) -> "NumericAggregateFactory":
+    def Aggregate(self) -> "NumericAggregateFactory":  # pylint: disable=invalid-name
         return NumericAggregateFactory(
             self,
             function_namespace=self._function_namespace,

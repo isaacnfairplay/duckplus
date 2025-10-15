@@ -317,6 +317,7 @@ class SelectStatementBuilder:
             msg = "SELECT statement has already been built"
             raise RuntimeError(msg)
 
+    # pylint: disable=too-many-locals
     def _normalise_replace_clauses(
         self,
         replace: (
