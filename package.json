@@ -1,0 +1,10 @@
+{
+  "name": "duckplus-lsp-demo",
+  "private": true,
+  "devDependencies": {
+    "pyright": "^1.1.406"
+  },
+  "scripts": {
+    "lsp:demo": "python scripts/demo_language_server.py"
+  }
+}

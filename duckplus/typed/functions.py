@@ -1,13 +1,10 @@
-"""DuckDB function catalog to power typed expression helpers."""
-
-# pylint: disable=missing-function-docstring,too-few-public-methods,invalid-name,import-outside-toplevel,method-cache-max-size-none
+"""Static DuckDB function catalog to power typed expression helpers."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from functools import lru_cache
 from decimal import Decimal
-from typing import Callable, Iterable, Mapping, Sequence
+from typing import ClassVar, Iterable, Mapping, Sequence, Tuple
 
 from .expression import (
     BlobExpression,
@@ -18,10 +15,6 @@ from .expression import (
     VarcharExpression,
 )
 from .expression import _quote_identifier  # pylint: disable=protected-access
-
-
-class DuckDBCatalogUnavailableError(RuntimeError):
-    """Raised when DuckDB function metadata cannot be loaded."""
 
 
 @dataclass(frozen=True)
@@ -36,82 +29,42 @@ class DuckDBFunctionDefinition:
     varargs: str | None
 
     def matches_arity(self, argument_count: int) -> bool:
+        """Return whether this overload accepts the provided argument count."""
+
         required = len(self.parameter_types)
         if self.varargs is None:
             return argument_count == required
         return argument_count >= required
 
 
-class DuckDBFunctionCatalog:
-    """Index of DuckDB functions grouped by type and return category."""
+@dataclass(frozen=True)
+class DuckDBFunctionSignature:
+    """Structured view of a DuckDB function's callable surface."""
 
-    _SCHEMA_PRIORITY = {"main": 0, "duckdb": 1, "pg_catalog": 2}
+    schema_name: str
+    function_name: str
+    function_type: str
+    return_type: str | None
+    parameter_types: tuple[str, ...]
+    varargs: str | None
+    sql_name: str
 
-    def __init__(self, definitions: Sequence[DuckDBFunctionDefinition]):
-        index: dict[str, dict[str, dict[str, list[DuckDBFunctionDefinition]]]] = {}
-        for definition in definitions:
-            category = _categorise_return_type(definition.return_type)
-            type_bucket = index.setdefault(definition.function_type, {})
-            category_bucket = type_bucket.setdefault(category, {})
-            overloads = category_bucket.setdefault(definition.function_name, [])
-            overloads.append(definition)
+    def call_syntax(self) -> str:
+        """Render the SQL call including argument placeholders."""
 
-        for type_bucket in index.values():
-            for category_bucket in type_bucket.values():
-                for variants in category_bucket.values():
-                    variants.sort(key=self._definition_sort_key)
+        arguments = list(self.parameter_types)
+        if self.varargs:
+            arguments.append(f"{self.varargs}...")
+        joined_arguments = ", ".join(arguments)
+        return f"{self.sql_name}({joined_arguments})"
 
-        self._index = index
+    def return_annotation(self) -> str:
+        """Return the upper-cased DuckDB return annotation."""
 
-    @staticmethod
-    def _definition_sort_key(definition: DuckDBFunctionDefinition) -> tuple[int, int]:
-        schema_priority = DuckDBFunctionCatalog._SCHEMA_PRIORITY.get(
-            definition.schema_name, 10
-        )
-        arity = len(definition.parameter_types)
-        return (schema_priority, arity)
+        return (self.return_type or "UNKNOWN").upper()
 
-    @classmethod
-    def load(cls) -> DuckDBFunctionCatalog:
-        try:
-            import duckdb  # type: ignore
-        except ModuleNotFoundError as exc:  # pragma: no cover - depends on env
-            raise DuckDBCatalogUnavailableError(
-                "The 'duckdb' package is required to enumerate DuckDB functions"
-            ) from exc
-
-        connection = duckdb.connect()
-        try:
-            query = connection.execute(
-                """
-                SELECT schema_name, function_name, function_type, return_type,
-                       parameter_types, varargs
-                  FROM duckdb_functions()
-                 WHERE function_type IN ('scalar', 'aggregate', 'window')
-                """
-            )
-            rows = query.fetchall()
-        finally:
-            connection.close()
-
-        definitions = [
-            DuckDBFunctionDefinition(
-                schema_name=row[0],
-                function_name=row[1],
-                function_type=row[2],
-                return_type=row[3],
-                parameter_types=tuple(row[4] or ()),
-                varargs=row[5],
-            )
-            for row in rows
-        ]
-        return cls(definitions)
-
-    def functions_for(
-        self, function_type: str, category: str
-    ) -> Mapping[str, Sequence[DuckDBFunctionDefinition]]:
-        type_bucket = self._index.get(function_type, {})
-        return type_bucket.get(category, {})
+    def __str__(self) -> str:  # pragma: no cover - trivial wrapper
+        return f"{self.call_syntax()} -> {self.return_annotation()}"
 
 
 class _DuckDBFunctionCall:
@@ -123,8 +76,19 @@ class _DuckDBFunctionCall:
         *,
         return_category: str,
     ) -> None:
-        self._overloads = overloads
+        if not overloads:
+            msg = "Function call requires at least one overload"
+            raise ValueError(msg)
+        self._overloads = tuple(overloads)
         self._return_category = return_category
+        self._function_type = overloads[0].function_type
+        self._signatures = tuple(
+            _definition_to_signature(overload) for overload in overloads
+        )
+        self.__doc__ = _format_function_docstring(
+            self._signatures,
+            return_category=self._return_category,
+        )
 
     def __call__(self, *operands: object) -> TypedExpression:
         arguments = [_coerce_function_operand(operand) for operand in operands]
@@ -146,113 +110,62 @@ class _DuckDBFunctionCall:
                 return overload
         return self._overloads[0]
 
+    @property
+    def signatures(self) -> Tuple[DuckDBFunctionSignature, ...]:
+        """Return structured signatures for all overloads."""
 
-class _FunctionAccessor:
-    """Surface area for functions in a given category."""
+        return self._signatures
 
-    def __init__(
-        self,
-        functions: Mapping[str, Sequence[DuckDBFunctionDefinition]],
-        *,
-        return_category: str,
-    ) -> None:
-        self._functions = functions
-        self._return_category = return_category
+    @property
+    def function_type(self) -> str:
+        """Expose the DuckDB function type (scalar/aggregate/window)."""
 
-    def __getattr__(self, name: str) -> _DuckDBFunctionCall:
-        if name not in self._functions:
-            msg = f"Function '{name}' is not available in DuckDB catalog"
-            raise AttributeError(msg) from None
-        return _DuckDBFunctionCall(
-            self._functions[name], return_category=self._return_category
-        )
+        return self._function_type
+
+
+class _StaticFunctionNamespace:
+    """Base class for generated DuckDB function namespaces."""
+
+    __slots__ = ()
+    function_type: ClassVar[str]
+    return_category: ClassVar[str]
+    _IDENTIFIER_FUNCTIONS: ClassVar[Mapping[str, _DuckDBFunctionCall]] = {}
+    _SYMBOLIC_FUNCTIONS: ClassVar[Mapping[str, _DuckDBFunctionCall]] = {}
 
     def __getitem__(self, name: str) -> _DuckDBFunctionCall:
-        if name not in self._functions:
-            raise KeyError(name)
-        return _DuckDBFunctionCall(
-            self._functions[name], return_category=self._return_category
-        )
+        try:
+            return self._IDENTIFIER_FUNCTIONS[name]
+        except KeyError:
+            try:
+                return self._SYMBOLIC_FUNCTIONS[name]
+            except KeyError as error:
+                raise KeyError(name) from error
 
-    def __dir__(self) -> Iterable[str]:
-        return sorted(name for name in self._functions if name.isidentifier())
-
-
-class _FunctionCategoryNamespace:
-    """Expose function categories grouped by return semantics."""
-
-    def __init__(self, catalog: DuckDBFunctionCatalog, function_type: str) -> None:
-        self._catalog = catalog
-        self._function_type = function_type
-
-    @property
-    @lru_cache(maxsize=None)
-    def Numeric(self) -> _FunctionAccessor:  # noqa: N802 - namespace attribute
-        return _FunctionAccessor(
-            self._catalog.functions_for(self._function_type, "numeric"),
-            return_category="numeric",
-        )
-
-    @property
-    @lru_cache(maxsize=None)
-    def Boolean(self) -> _FunctionAccessor:  # noqa: N802
-        return _FunctionAccessor(
-            self._catalog.functions_for(self._function_type, "boolean"),
-            return_category="boolean",
-        )
-
-    @property
-    @lru_cache(maxsize=None)
-    def Varchar(self) -> _FunctionAccessor:  # noqa: N802
-        return _FunctionAccessor(
-            self._catalog.functions_for(self._function_type, "varchar"),
-            return_category="varchar",
-        )
-
-    @property
-    @lru_cache(maxsize=None)
-    def Blob(self) -> _FunctionAccessor:  # noqa: N802
-        return _FunctionAccessor(
-            self._catalog.functions_for(self._function_type, "blob"),
-            return_category="blob",
-        )
-
-    @property
-    @lru_cache(maxsize=None)
-    def Generic(self) -> _FunctionAccessor:  # noqa: N802
-        return _FunctionAccessor(
-            self._catalog.functions_for(self._function_type, "generic"),
-            return_category="generic",
-        )
-
-
-class DuckDBFunctionNamespace:
-    """Lazy loader exposing DuckDB's scalar, aggregate, and window functions."""
-
-    def __init__(
+    def get(
         self,
-        *,
-        loader: Callable[[], DuckDBFunctionCatalog] | None = None,
-    ) -> None:
-        self._loader = loader or DuckDBFunctionCatalog.load
-        self._catalog: DuckDBFunctionCatalog | None = None
+        name: str,
+        default: _DuckDBFunctionCall | None = None,
+    ) -> _DuckDBFunctionCall | None:
+        """Return the function call for ``name`` if present, else ``default``."""
 
-    def _catalogue(self) -> DuckDBFunctionCatalog:
-        if self._catalog is None:
-            self._catalog = self._loader()
-        return self._catalog
+        try:
+            return self[name]
+        except KeyError:
+            return default
+
+    def __contains__(self, name: object) -> bool:
+        if not isinstance(name, str):
+            return False
+        return name in self._IDENTIFIER_FUNCTIONS or name in self._SYMBOLIC_FUNCTIONS
+
+    def __dir__(self) -> list[str]:
+        return sorted(self._IDENTIFIER_FUNCTIONS)
 
     @property
-    def Scalar(self) -> _FunctionCategoryNamespace:  # noqa: N802
-        return _FunctionCategoryNamespace(self._catalogue(), "scalar")
+    def symbols(self) -> Mapping[str, _DuckDBFunctionCall]:
+        """Mapping of non-identifier function names (operators)."""
 
-    @property
-    def Aggregate(self) -> _FunctionCategoryNamespace:  # noqa: N802
-        return _FunctionCategoryNamespace(self._catalogue(), "aggregate")
-
-    @property
-    def Window(self) -> _FunctionCategoryNamespace:  # noqa: N802
-        return _FunctionCategoryNamespace(self._catalogue(), "window")
+        return self._SYMBOLIC_FUNCTIONS
 
 
 def _coerce_function_operand(value: object) -> TypedExpression:
@@ -291,6 +204,36 @@ def _render_function_name(definition: DuckDBFunctionDefinition) -> str:
     return f"{_quote_identifier(schema)}.{_quote_identifier(name)}"
 
 
+def _definition_to_signature(
+    definition: DuckDBFunctionDefinition,
+) -> DuckDBFunctionSignature:
+    return DuckDBFunctionSignature(
+        schema_name=definition.schema_name,
+        function_name=definition.function_name,
+        function_type=definition.function_type,
+        return_type=definition.return_type,
+        parameter_types=definition.parameter_types,
+        varargs=definition.varargs,
+        sql_name=_render_function_name(definition),
+    )
+
+
+def _format_function_docstring(
+    signatures: Sequence[DuckDBFunctionSignature],
+    *,
+    return_category: str,
+) -> str:
+    overload_count = len(signatures)
+    overload_text = "overload" if overload_count == 1 else "overloads"
+    header = (
+        f"DuckDB {signatures[0].function_type} function returning {return_category} "
+        f"results with {overload_count} {overload_text}."
+    )
+    lines = [header, "", "Overloads:"]
+    lines.extend(f"- {signature}" for signature in signatures)
+    return "\n".join(lines)
+
+
 def _construct_expression(
     sql: str,
     *,
@@ -310,37 +253,42 @@ def _construct_expression(
     return GenericExpression(sql, dependencies=dependencies, type_annotation=annotation)
 
 
-def _categorise_return_type(return_type: str | None) -> str:
-    if return_type is None:
-        return "generic"
-    normalized = return_type.upper()
-    if any(
-        normalized.startswith(prefix)
-        for prefix in (
-            "TINYINT",
-            "SMALLINT",
-            "INTEGER",
-            "BIGINT",
-            "HUGEINT",
-            "UTINYINT",
-            "USMALLINT",
-            "UINTEGER",
-            "UBIGINT",
-            "FLOAT",
-            "DOUBLE",
-            "DECIMAL",
-            "REAL",
-            "INTERVAL",
-        )
-    ):
-        return "numeric"
-    if normalized.startswith("BOOLEAN"):
-        return "boolean"
-    if any(
-        normalized.startswith(prefix)
-        for prefix in ("VARCHAR", "STRING", "TEXT", "JSON", "UUID")
-    ):
-        return "varchar"
-    if normalized.startswith("BLOB"):
-        return "blob"
-    return "generic"
+from ._generated_function_namespaces import (  # noqa: E402  pylint: disable=wrong-import-position
+    AggregateFunctionNamespace,
+    ScalarFunctionNamespace,
+    WindowFunctionNamespace,
+)
+
+
+# pylint: disable=invalid-name
+class DuckDBFunctionNamespace:  # pylint: disable=too-few-public-methods
+    """Static access to DuckDB's scalar, aggregate, and window functions."""
+
+    Scalar: ScalarFunctionNamespace  # pylint: disable=invalid-name
+    Aggregate: AggregateFunctionNamespace  # pylint: disable=invalid-name
+    Window: WindowFunctionNamespace  # pylint: disable=invalid-name
+
+    def __init__(self) -> None:
+        self.Scalar = ScalarFunctionNamespace()
+        self.Aggregate = AggregateFunctionNamespace()
+        self.Window = WindowFunctionNamespace()
+
+    def __dir__(self) -> list[str]:
+        return ["Aggregate", "Scalar", "Window"]
+
+
+# pylint: enable=invalid-name
+SCALAR_FUNCTIONS = ScalarFunctionNamespace()
+AGGREGATE_FUNCTIONS = AggregateFunctionNamespace()
+WINDOW_FUNCTIONS = WindowFunctionNamespace()
+
+
+# pylint: disable=duplicate-code
+__all__ = [
+    "DuckDBFunctionDefinition",
+    "DuckDBFunctionNamespace",
+    "DuckDBFunctionSignature",
+    "SCALAR_FUNCTIONS",
+    "AGGREGATE_FUNCTIONS",
+    "WINDOW_FUNCTIONS",
+]
