@@ -116,3 +116,63 @@ assert filtered.relation.fetchall() == [("b", 3)]
 
 Like aggregation filters, blank conditions or references to unknown columns
 raise descriptive errors so mistakes surface quickly.
+
+## Joining relations
+
+`Relation.join`, `left_join`, `right_join`, `outer_join`, and `semi_join` wrap
+DuckDB's join operations while enforcing deterministic column ordering. DuckPlus
+automatically joins on every column shared between the two relations (matching
+names case-insensitively) and prefers the left relation's values when
+duplicates exist. Additional join pairs can be supplied with the `on` keyword
+argument, mapping left column names to right column names for equality
+comparisons.
+
+```python
+from duckplus import DuckCon, Relation
+
+manager = DuckCon()
+with manager as connection:
+    customers = Relation.from_relation(
+        manager,
+        connection.sql(
+            """
+            SELECT * FROM (VALUES
+                (1::INTEGER, 'north'::VARCHAR),
+                (2::INTEGER, 'south'::VARCHAR)
+            ) AS data(customer_id, region)
+            """
+        ),
+    )
+    orders = Relation.from_relation(
+        manager,
+        connection.sql(
+            """
+            SELECT * FROM (VALUES
+                ('north'::VARCHAR, 1::INTEGER, 500::INTEGER),
+                ('south'::VARCHAR, 2::INTEGER, 700::INTEGER)
+            ) AS data(region, order_customer_id, total)
+            """
+        ),
+    )
+
+    joined = customers.join(orders, on={"customer_id": "order_customer_id"})
+
+assert joined.columns == (
+    "customer_id",
+    "region",
+    "order_customer_id",
+    "total",
+)
+assert joined.relation.order("customer_id").fetchall() == [
+    (1, "north", 1, 500),
+    (2, "south", 2, 700),
+]
+```
+
+When no additional columns are provided, DuckPlus joins solely on shared
+column names. Helpers for other join flavours work identically: `left_join`
+retains unmatched rows from the left relation while filling right-side columns
+with `NULL`, and `semi_join` filters rows using the join keys but keeps only the
+left relation's columns. Attempting to join relations originating from different
+`DuckCon` instances or referencing unknown columns raises clear errors so
+callers can rename inputs before running the query.

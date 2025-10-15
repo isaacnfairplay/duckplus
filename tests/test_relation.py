@@ -816,3 +816,201 @@ def test_filter_requires_open_connection() -> None:
 
     with pytest.raises(RuntimeError):
         relation.filter("amount > 1")
+
+
+def test_join_uses_shared_columns() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        left = Relation.from_relation(
+            manager,
+            connection.sql(
+                """
+                SELECT * FROM (VALUES
+                    (1::INTEGER, 'north'::VARCHAR),
+                    (2::INTEGER, 'south'::VARCHAR)
+                ) AS data(id, region)
+                """
+            ),
+        )
+        right = Relation.from_relation(
+            manager,
+            connection.sql(
+                """
+                SELECT * FROM (VALUES
+                    (1::INTEGER, 'north'::VARCHAR, 100::INTEGER),
+                    (1::INTEGER, 'north'::VARCHAR, 200::INTEGER),
+                    (3::INTEGER, 'east'::VARCHAR, 300::INTEGER)
+                ) AS data(id, region, amount)
+                """
+            ),
+        )
+
+        joined = left.join(right)
+
+        assert joined.columns == ("id", "region", "amount")
+        assert joined.relation.order("id").fetchall() == [
+            (1, "north", 100),
+            (1, "north", 200),
+        ]
+
+
+def test_join_supports_explicit_pairs() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        customers = Relation.from_relation(
+            manager,
+            connection.sql(
+                """
+                SELECT * FROM (VALUES
+                    (1::INTEGER, 'north'::VARCHAR),
+                    (2::INTEGER, 'south'::VARCHAR)
+                ) AS data(customer_id, region)
+                """
+            ),
+        )
+        orders = Relation.from_relation(
+            manager,
+            connection.sql(
+                """
+                SELECT * FROM (VALUES
+                    ('north'::VARCHAR, 1::INTEGER, 500::INTEGER),
+                    ('south'::VARCHAR, 2::INTEGER, 700::INTEGER)
+                ) AS data(region, order_customer_id, total)
+                """
+            ),
+        )
+
+        joined = customers.join(orders, on={"customer_id": "order_customer_id"})
+
+        assert joined.columns == (
+            "customer_id",
+            "region",
+            "order_customer_id",
+            "total",
+        )
+        assert joined.relation.order("customer_id").fetchall() == [
+            (1, "north", 1, 500),
+            (2, "south", 2, 700),
+        ]
+
+
+def test_join_requires_join_columns() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        left = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 1::INTEGER AS value"),
+        )
+        right = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 2::INTEGER AS other"),
+        )
+
+        with pytest.raises(ValueError, match="requires at least one"):
+            left.join(right)
+
+
+def test_join_rejects_unknown_explicit_columns() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        left = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 1::INTEGER AS id"),
+        )
+        right = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 1::INTEGER AS other_id"),
+        )
+
+        with pytest.raises(KeyError):
+            left.join(right, on={"missing": "other_id"})
+
+
+def test_join_requires_matching_duckcon() -> None:
+    left_manager = DuckCon()
+    right_manager = DuckCon()
+    left = _make_relation(left_manager, "SELECT 1::INTEGER AS id")
+    right = _make_relation(right_manager, "SELECT 1::INTEGER AS id")
+
+    with left_manager:
+        with pytest.raises(ValueError, match="same DuckCon"):
+            left.join(right)
+
+
+def test_left_join_retains_unmatched_rows() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        left = Relation.from_relation(
+            manager,
+            connection.sql(
+                """
+                SELECT * FROM (VALUES
+                    (1::INTEGER, 'north'::VARCHAR),
+                    (2::INTEGER, 'south'::VARCHAR)
+                ) AS data(id, region)
+                """
+            ),
+        )
+        right = Relation.from_relation(
+            manager,
+            connection.sql(
+                """
+                SELECT * FROM (VALUES
+                    (1::INTEGER, 100::INTEGER)
+                ) AS data(id, amount)
+                """
+            ),
+        )
+
+        joined = left.left_join(right)
+
+        assert joined.columns == ("id", "region", "amount")
+        assert joined.relation.order("id").fetchall() == [
+            (1, "north", 100),
+            (2, "south", None),
+        ]
+
+
+def test_semi_join_returns_only_left_columns() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        left = Relation.from_relation(
+            manager,
+            connection.sql(
+                """
+                SELECT * FROM (VALUES
+                    (1::INTEGER, 'north'::VARCHAR),
+                    (2::INTEGER, 'south'::VARCHAR),
+                    (3::INTEGER, 'east'::VARCHAR)
+                ) AS data(id, region)
+                """
+            ),
+        )
+        right = Relation.from_relation(
+            manager,
+            connection.sql(
+                """
+                SELECT * FROM (VALUES
+                    (1::INTEGER),
+                    (3::INTEGER)
+                ) AS data(id)
+                """
+            ),
+        )
+
+        joined = left.semi_join(right)
+
+        assert joined.columns == ("id", "region")
+        assert joined.relation.order("id").fetchall() == [
+            (1, "north"),
+            (3, "east"),
+        ]
+
+
+def test_join_requires_open_connection() -> None:
+    manager = DuckCon()
+    left = _make_relation(manager, "SELECT 1::INTEGER AS id")
+    right = _make_relation(manager, "SELECT 1::INTEGER AS id")
+
+    with pytest.raises(RuntimeError):
+        left.join(right)

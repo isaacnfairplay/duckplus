@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 import warnings
 from typing import Iterable, Mapping, TypeVar, overload
+from typing import Literal
 
 import duckdb  # type: ignore[import-not-found]
 
@@ -224,6 +225,115 @@ class Relation:
             raise ValueError(msg) from error
 
         return type(self).from_relation(self.duckcon, relation)
+
+    def join(
+        self,
+        other: "Relation",
+        *,
+        on: Mapping[str, str] | Iterable[tuple[str, str]] | None = None,
+    ) -> "Relation":
+        """Return an inner join with conflict validation."""
+
+        return self._join(other, join_type="inner", on=on)
+
+    def left_join(
+        self,
+        other: "Relation",
+        *,
+        on: Mapping[str, str] | Iterable[tuple[str, str]] | None = None,
+    ) -> "Relation":
+        """Return a left join with conflict validation."""
+
+        return self._join(other, join_type="left", on=on)
+
+    def right_join(
+        self,
+        other: "Relation",
+        *,
+        on: Mapping[str, str] | Iterable[tuple[str, str]] | None = None,
+    ) -> "Relation":
+        """Return a right join with conflict validation."""
+
+        return self._join(other, join_type="right", on=on)
+
+    def outer_join(
+        self,
+        other: "Relation",
+        *,
+        on: Mapping[str, str] | Iterable[tuple[str, str]] | None = None,
+    ) -> "Relation":
+        """Return a full outer join with conflict validation."""
+
+        return self._join(other, join_type="outer", on=on)
+
+    def semi_join(
+        self,
+        other: "Relation",
+        *,
+        on: Mapping[str, str] | Iterable[tuple[str, str]] | None = None,
+    ) -> "Relation":
+        """Return a semi join keeping only left relation columns."""
+
+        return self._join(other, join_type="semi", on=on)
+
+    def _join(
+        self,
+        other: "Relation",
+        *,
+        join_type: Literal["inner", "left", "right", "outer", "semi"],
+        on: Mapping[str, str] | Iterable[tuple[str, str]] | None,
+    ) -> "Relation":
+        if not isinstance(other, Relation):
+            msg = "join helpers require another Relation instance"
+            raise TypeError(msg)
+
+        if self.duckcon is not other.duckcon:
+            msg = "Joined relations must originate from the same DuckCon"
+            raise ValueError(msg)
+
+        if not self.duckcon.is_open:
+            msg = (
+                "DuckCon connection must be open to call join helpers. "
+                "Use DuckCon as a context manager."
+            )
+            raise RuntimeError(msg)
+
+        join_pairs = self._prepare_join_pairs(other, on)
+        if not join_pairs:
+            msg = (
+                "join requires at least one shared column or explicit join condition"
+            )
+            raise ValueError(msg)
+
+        left_alias = self._relation.alias
+        right_alias = other._relation.alias
+
+        condition_sql = self._render_join_condition(join_pairs, left_alias, right_alias)
+
+        try:
+            joined_relation = self._relation.join(
+                other._relation,
+                condition_sql,
+                how=join_type,
+            )
+        except duckdb.BinderException as error:
+            msg = "Join condition references unknown columns"
+            raise ValueError(msg) from error
+
+        projection_entries = self._build_join_projection_entries(
+            other,
+            left_alias,
+            right_alias,
+            include_right_columns=join_type != "semi",
+        )
+
+        if not projection_entries:
+            msg = "join helpers require at least one projected column"
+            raise ValueError(msg)
+
+        select_list = ", ".join(projection_entries)
+        projected = joined_relation.project(select_list)
+        return type(self).from_relation(self.duckcon, projected)
 
     def aggregate(  # pylint: disable=too-many-locals,keyword-arg-before-vararg
         self,
@@ -517,6 +627,190 @@ class Relation:
                 raise KeyError(msg)
 
         return resolved
+
+    def _prepare_join_pairs(
+        self,
+        other: "Relation",
+        on: Mapping[str, str] | Iterable[tuple[str, str]] | None,
+    ) -> list[tuple[str, str]]:
+        left_casefold_map = self._build_casefold_map(self.columns)
+        right_casefold_map = self._build_casefold_map(other.columns)
+
+        pairs, seen_pairs = self._prepare_explicit_join_pairs(
+            on,
+            left_casefold_map,
+            right_casefold_map,
+        )
+
+        for column in self.columns:
+            key = column.casefold()
+            right_matches = right_casefold_map.get(key)
+            if not right_matches:
+                continue
+
+            left_matches = left_casefold_map.get(key, [])
+            if len(left_matches) > 1:
+                formatted = self._format_column_list(left_matches)
+                msg = (
+                    "Join on shared columns is ambiguous on left relation; "
+                    f"multiple columns match ignoring case: {formatted}"
+                )
+                raise ValueError(msg)
+
+            if len(right_matches) > 1:
+                formatted = self._format_column_list(right_matches)
+                msg = (
+                    "Join on shared columns is ambiguous on right relation; "
+                    f"multiple columns match ignoring case: {formatted}"
+                )
+                raise ValueError(msg)
+
+            right_column = right_matches[0]
+            pair_key = (column.casefold(), right_column.casefold())
+            if pair_key in seen_pairs:
+                continue
+            seen_pairs.add(pair_key)
+            pairs.append((column, right_column))
+
+        return pairs
+
+    def _prepare_explicit_join_pairs(
+        self,
+        on: Mapping[str, str] | Iterable[tuple[str, str]] | None,
+        left_casefold_map: Mapping[str, list[str]],
+        right_casefold_map: Mapping[str, list[str]],
+    ) -> tuple[list[tuple[str, str]], set[tuple[str, str]]]:
+        pairs: list[tuple[str, str]] = []
+        seen_pairs: set[tuple[str, str]] = set()
+
+        for left_name, right_name in self._normalise_join_on_entries(on):
+            left_resolved = self._resolve_casefolded_column(
+                left_casefold_map,
+                left_name,
+                relation_label="Left",
+            )
+            right_resolved = self._resolve_casefolded_column(
+                right_casefold_map,
+                right_name,
+                relation_label="Right",
+            )
+            pair_key = (left_resolved.casefold(), right_resolved.casefold())
+            if pair_key in seen_pairs:
+                msg = (
+                    "join condition for columns "
+                    f"'{left_resolved}' and '{right_resolved}' specified multiple times"
+                )
+                raise ValueError(msg)
+            seen_pairs.add(pair_key)
+            pairs.append((left_resolved, right_resolved))
+
+        return pairs, seen_pairs
+
+    @staticmethod
+    def _normalise_join_on_entries(
+        on: Mapping[str, str] | Iterable[tuple[str, str]] | None,
+    ) -> list[tuple[str, str]]:
+        if on is None:
+            return []
+
+        if isinstance(on, Mapping):
+            items = list(on.items())
+        else:
+            items = list(on)
+
+        normalised: list[tuple[str, str]] = []
+        for entry in items:
+            if not isinstance(entry, tuple) or len(entry) != 2:
+                msg = "join on entries must be (left, right) column pairs"
+                raise TypeError(msg)
+
+            left_name, right_name = entry
+            if not isinstance(left_name, str) or not isinstance(right_name, str):
+                msg = "join on column names must be strings"
+                raise TypeError(msg)
+
+            left_trimmed = left_name.strip()
+            right_trimmed = right_name.strip()
+            if not left_trimmed or not right_trimmed:
+                msg = "join on column names cannot be empty"
+                raise ValueError(msg)
+
+            normalised.append((left_trimmed, right_trimmed))
+
+        return normalised
+
+    def _render_join_condition(
+        self,
+        join_pairs: Iterable[tuple[str, str]],
+        left_alias: str,
+        right_alias: str,
+    ) -> str:
+        left_identifier = self._quote_identifier(left_alias)
+        right_identifier = self._quote_identifier(right_alias)
+
+        clauses = []
+        for left_column, right_column in join_pairs:
+            left_reference = f"{left_identifier}.{self._quote_identifier(left_column)}"
+            right_reference = f"{right_identifier}.{self._quote_identifier(right_column)}"
+            clauses.append(f"{left_reference} = {right_reference}")
+
+        return " AND ".join(clauses)
+
+    def _build_join_projection_entries(
+        self,
+        other: "Relation",
+        left_alias: str,
+        right_alias: str,
+        *,
+        include_right_columns: bool,
+    ) -> list[str]:
+        left_identifier = self._quote_identifier(left_alias)
+        right_identifier = self._quote_identifier(right_alias)
+
+        entries: list[str] = []
+        for column in self.columns:
+            reference = f"{left_identifier}.{self._quote_identifier(column)}"
+            entries.append(f"{reference} AS {self._quote_identifier(column)}")
+
+        if include_right_columns:
+            left_casefolds = {column.casefold() for column in self.columns}
+            for column in other.columns:
+                if column.casefold() in left_casefolds:
+                    continue
+                reference = f"{right_identifier}.{self._quote_identifier(column)}"
+                entries.append(f"{reference} AS {self._quote_identifier(column)}")
+
+        return entries
+
+    @staticmethod
+    def _build_casefold_map(columns: Iterable[str]) -> dict[str, list[str]]:
+        mapping: dict[str, list[str]] = {}
+        for column in columns:
+            mapping.setdefault(column.casefold(), []).append(column)
+        return mapping
+
+    @classmethod
+    def _resolve_casefolded_column(
+        cls,
+        casefold_map: Mapping[str, list[str]],
+        column: str,
+        *,
+        relation_label: str,
+    ) -> str:
+        matches = casefold_map.get(column.casefold())
+        if not matches:
+            msg = f"{relation_label} join column '{column}' does not exist"
+            raise KeyError(msg)
+
+        if len(matches) > 1:
+            formatted = cls._format_column_list(matches)
+            msg = (
+                f"{relation_label} join column '{column}' is ambiguous; "
+                f"matches: {formatted}. Rename columns to disambiguate"
+            )
+            raise ValueError(msg)
+
+        return matches[0]
 
     def _normalise_group_by(
         self, group_by: Iterable[str] | str | None
