@@ -11,6 +11,11 @@ from duckplus.typed import (
     NumericExpression,
     ducktype,
 )
+from duckplus.typed.functions import (
+    DuckDBFunctionDefinition,
+    _coerce_operands_for_overload,
+)
+from duckplus.typed.types import parse_type
 
 
 def col_dep(name: str, *, table: str | None = None) -> ExpressionDependency:
@@ -118,6 +123,45 @@ def test_function_catalog_aggregate_numeric_sum_alias() -> None:
     expression = ducktype.Functions.Aggregate.Numeric.sum("revenue").alias("total")
     assert expression.render() == 'sum("revenue") AS "total"'
     assert expression.dependencies == {col_dep('revenue')}
+
+
+def _build_overload(*parameter_types: str) -> DuckDBFunctionDefinition:
+    return DuckDBFunctionDefinition(
+        schema_name="main",
+        function_name="test",
+        function_type="scalar",
+        return_type=None,
+        parameter_types=tuple(parse_type(param) for param in parameter_types),
+        varargs=None,
+    )
+
+
+def test_function_argument_accepts_narrower_unsigned_integer() -> None:
+    overload = _build_overload("UINTEGER")
+    operand = ducktype.Numeric.literal(5)
+    coerced = _coerce_operands_for_overload((operand,), overload)
+    assert coerced == [operand]
+
+
+def test_function_argument_accepts_generic_numeric_for_integer() -> None:
+    overload = _build_overload("UTINYINT")
+    operand = ducktype.Numeric("value")
+    coerced = _coerce_operands_for_overload((operand,), overload)
+    assert coerced == [operand]
+
+
+def test_function_argument_rejects_wider_integer() -> None:
+    overload = _build_overload("UTINYINT")
+    operand = ducktype.Numeric.literal(512)
+    with pytest.raises(TypeError):
+        _coerce_operands_for_overload((operand,), overload)
+
+
+def test_function_argument_accepts_narrower_signed_integer() -> None:
+    overload = _build_overload("INTEGER")
+    operand = ducktype.Numeric.literal(-5)
+    coerced = _coerce_operands_for_overload((operand,), overload)
+    assert coerced == [operand]
 
 
 def test_numeric_expression_method_sum() -> None:

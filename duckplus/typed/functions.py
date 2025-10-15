@@ -232,6 +232,14 @@ def _coerce_function_operand(
     expected_type: DuckDBType | None = None,
 ) -> TypedExpression:
     if isinstance(value, TypedExpression):
+        if expected_type is not None:
+            operand_type = value.duck_type
+            if isinstance(operand_type, DuckDBType) and not expected_type.accepts(operand_type):
+                msg = (
+                    "DuckDB function arguments must match expected types: "
+                    f"expected {expected_type.render()}, got {operand_type.render()}"
+                )
+                raise TypeError(msg)
         return value
     if expected_type is not None:
         coerced = _coerce_by_duck_type(value, expected_type)
