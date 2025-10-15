@@ -10,7 +10,13 @@ from .expression import (
     VarcharExpression,
     ducktype,
 )
-from .functions import DuckDBCatalogUnavailableError, DuckDBFunctionNamespace
+from .functions import (
+    AGGREGATE_FUNCTIONS,
+    DuckDBFunctionNamespace,
+    DuckDBFunctionSignature,
+    SCALAR_FUNCTIONS,
+    WINDOW_FUNCTIONS,
+)
 
 __all__ = [
     "AliasedExpression",
@@ -21,6 +27,9 @@ __all__ = [
     "TypedExpression",
     "VarcharExpression",
     "ducktype",
-    "DuckDBCatalogUnavailableError",
     "DuckDBFunctionNamespace",
+    "DuckDBFunctionSignature",
+    "SCALAR_FUNCTIONS",
+    "AGGREGATE_FUNCTIONS",
+    "WINDOW_FUNCTIONS",
 ]
