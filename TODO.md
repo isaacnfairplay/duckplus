@@ -29,6 +29,20 @@ Answer these before starting any TODO item to confirm the work is understood and
 4. Ensure optional components only render when their column dependencies exist, raise clear errors for ambiguous dependencies, and leave required projections untouched while updating docs to explain the workflow.
 5. Validate via targeted pytest coverage for the new paths and run the mypy, uvx, and pylint suites alongside the full pytest run per repository policy.
 
+### Preflight Answers – Relation.aggregate helper
+1. Implement `Relation.aggregate` to wrap DuckDB's relation aggregation while validating group-by columns and aggregation expressions against the immutable metadata cached on `Relation`.
+2. The behaviour belongs in `duckplus/relation.py`, with new unit tests extending `tests/test_relation.py` and documentation updates landing in `docs/relation.md`.
+3. Review DuckDB's `DuckDBPyRelation.aggregate` semantics alongside existing column helper implementations to mirror error handling, plus inspect typed expression factories for aggregation helpers.
+4. Verify grouped results preserve column order, ensure typed and SQL aggregates reject unknown dependencies, cover filter handling, and exercise duplicate alias and connection state edge cases.
+5. Validate with pytest plus the repository-standard mypy, uvx, and pylint runs to maintain quality gates.
+
+### Preflight Answers – Relation.filter helper
+1. Build a `Relation.filter` wrapper that composes boolean SQL snippets and typed expressions to return a filtered relation while keeping the original untouched.
+2. The logic should live in `duckplus/relation.py`, likely reusing the filter normalisation introduced for `aggregate`, with coverage added to `tests/test_relation.py`.
+3. Study the new `_normalise_filter_clauses` helper, DuckDB's relation `.filter` API, and the typed boolean expression utilities to align behaviour and dependency validation.
+4. Ensure conditions validate column references, support chaining multiple filters, surface clear errors for non-boolean expressions, and respect connection state expectations.
+5. Confirm correctness with dedicated pytest scenarios alongside the mandated mypy, uvx, and pylint suites before completion.
+
 ### Notes for "Transformation helpers"
 1. We need a `Relation.transform` helper that issues `SELECT * REPLACE` statements so callers can rewrite existing columns while preserving immutability.
 2. The behaviour naturally belongs on `duckplus.relation.Relation`, building on the stored `DuckCon` and underlying `DuckDBPyRelation` metadata.
@@ -73,7 +87,7 @@ Answer these before starting any TODO item to confirm the work is understood and
 2. Once expressions carry type information, revisit column helpers (`add`, `transform`, and future subset/drop utilities) to accept expression instances alongside raw SQL strings for safer composition.
 
 ## Aggregation and Filtering
-- [ ] Implement `Relation.aggregate(group_by, **named_aggs, *filters)` with validation of group columns.
+- [x] Implement `Relation.aggregate(group_by, **named_aggs, *filters)` with validation of group columns.
 - [ ] Implement `Relation.filter(*conditions)` compatible with typed expressions and raw SQL snippets.
 
 ## Advanced Joins
