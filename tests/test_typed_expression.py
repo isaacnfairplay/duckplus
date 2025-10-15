@@ -236,3 +236,72 @@ def test_case_expression_rejects_multiple_else_clauses() -> None:
     builder = ducktype.Numeric.case().when(True, 1).else_(0)
     with pytest.raises(ValueError):
         builder.else_(2)
+
+
+def test_select_builder_renders_sql_statement() -> None:
+    statement = (
+        ducktype.select()
+        .column(ducktype.Numeric("amount"))
+        .column(ducktype.Numeric("amount").sum().alias("total"))
+        .column("CURRENT_DATE", alias="today")
+        .from_("orders")
+        .build()
+    )
+    assert (
+        statement
+        == 'SELECT "amount", sum("amount") AS "total", CURRENT_DATE AS "today" '
+        "FROM orders"
+    )
+
+
+def test_select_builder_allows_alias_override() -> None:
+    expression = ducktype.Numeric("amount").sum().alias("total")
+    statement = ducktype.select().column(expression, alias="override").build()
+    assert statement == 'SELECT sum("amount") AS "override"'
+
+
+def test_select_builder_requires_columns() -> None:
+    builder = ducktype.select()
+    with pytest.raises(ValueError):
+        builder.build()
+
+
+def test_select_builder_rejects_multiple_from_clauses() -> None:
+    builder = ducktype.select().column("1")
+    builder.from_("dual")
+    with pytest.raises(ValueError):
+        builder.from_("other")
+
+
+def test_select_builder_supports_star_projection() -> None:
+    statement = ducktype.select().star().build()
+    assert statement == "SELECT *"
+
+
+def test_select_builder_star_supports_exclude_and_replace() -> None:
+    statement = (
+        ducktype.select()
+        .star(
+            replace=[("renamed", '"value"')],
+            exclude=["other"],
+        )
+        .build()
+    )
+    assert (
+        statement
+        == 'SELECT * REPLACE ("value" AS "renamed") EXCLUDE ("other")'
+    )
+
+
+def test_select_builder_star_accepts_aliased_expressions() -> None:
+    expression = ducktype.Numeric("value").alias("renamed")
+    statement = ducktype.select().star(replace=[expression]).build()
+    assert statement == 'SELECT * REPLACE ("value" AS "renamed")'
+
+
+def test_select_builder_build_select_list() -> None:
+    builder = ducktype.select().column("1")
+    select_list = builder.build_select_list()
+    assert select_list == "1"
+    with pytest.raises(RuntimeError):
+        builder.column("2")
