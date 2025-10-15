@@ -10,6 +10,7 @@ from .expressions.base import (
     GenericExpression,
     TypedExpression,
 )
+from .expressions.case import CaseExpressionBuilder
 from .expressions.binary import BlobExpression, BlobFactory
 from .expressions.boolean import BooleanFactory
 from .expressions.generic import GenericFactory
@@ -47,6 +48,7 @@ __all__ = [
     "BlobExpression",
     "BlobFactory",
     "BooleanExpression",
+    "CaseExpressionBuilder",
     "BooleanFactory",
     "DuckTypeNamespace",
     "GenericExpression",

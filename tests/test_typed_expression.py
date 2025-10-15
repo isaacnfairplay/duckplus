@@ -159,3 +159,52 @@ def test_window_over_validates_direction() -> None:
 def test_window_over_rejects_empty_frame_clause() -> None:
     with pytest.raises(ValueError):
         ducktype.Numeric("amount").sum().over(frame="   ")
+
+
+def test_numeric_case_expression_renders_sql() -> None:
+    expression = (
+        ducktype.Numeric.case()
+        .when(ducktype.Varchar("status") == "active", 1)
+        .when(ducktype.Varchar("status") == "inactive", 0)
+        .else_(ducktype.Numeric.literal(-1))
+        .end()
+    )
+    assert (
+        expression.render()
+        == "CASE WHEN (\"status\" = 'active') THEN 1 "
+        "WHEN (\"status\" = 'inactive') THEN 0 ELSE -1 END"
+    )
+    assert expression.dependencies == {"status"}
+
+
+def test_case_expression_supports_nested_builders() -> None:
+    fallback = (
+        ducktype.Varchar.case()
+        .when(True, "fallback")
+        .else_("unknown")
+        .end()
+    )
+    expression = (
+        ducktype.Varchar.case()
+        .when(ducktype.Boolean("is_internal"), "internal")
+        .else_(fallback)
+        .end()
+    )
+    assert (
+        expression.render()
+        == "CASE WHEN \"is_internal\" THEN 'internal' ELSE "
+        "CASE WHEN TRUE THEN 'fallback' ELSE 'unknown' END END"
+    )
+    assert expression.dependencies == {"is_internal"}
+
+
+def test_case_expression_requires_when_clause() -> None:
+    builder = ducktype.Numeric.case()
+    with pytest.raises(ValueError):
+        builder.end()
+
+
+def test_case_expression_rejects_multiple_else_clauses() -> None:
+    builder = ducktype.Numeric.case().when(True, 1).else_(0)
+    with pytest.raises(ValueError):
+        builder.else_(2)

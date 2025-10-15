@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Iterable
 
 from .base import BooleanExpression
+from .case import CaseExpressionBuilder
 
 
 class BooleanFactory:
@@ -24,3 +25,9 @@ class BooleanFactory:
             return self.literal(operand)
         msg = "Boolean operands must be expression or bool"
         raise TypeError(msg)
+
+    def case(self) -> CaseExpressionBuilder[BooleanExpression]:
+        return CaseExpressionBuilder(
+            result_coercer=self.coerce,
+            condition_coercer=self.coerce,
+        )

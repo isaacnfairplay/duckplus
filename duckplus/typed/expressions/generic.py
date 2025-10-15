@@ -5,7 +5,9 @@ from __future__ import annotations
 from typing import Iterable
 
 from ..types import DuckDBType, GenericType
-from .base import GenericExpression
+from .base import GenericExpression, TypedExpression
+from .boolean import BooleanFactory
+from .case import CaseExpressionBuilder
 
 
 class GenericFactory:
@@ -28,7 +30,20 @@ class GenericFactory:
     def coerce(self, operand: object) -> GenericExpression:
         if isinstance(operand, GenericExpression):
             return operand
+        if isinstance(operand, TypedExpression):
+            return GenericExpression(
+                operand.render(),
+                duck_type=operand.duck_type,
+                dependencies=operand.dependencies,
+            )
         if isinstance(operand, str):
             return self(operand)
         msg = "Unsupported operand for generic expression"
         raise TypeError(msg)
+
+    def case(self) -> CaseExpressionBuilder[GenericExpression]:
+        boolean_factory = BooleanFactory()
+        return CaseExpressionBuilder(
+            result_coercer=self.coerce,
+            condition_coercer=boolean_factory.coerce,
+        )

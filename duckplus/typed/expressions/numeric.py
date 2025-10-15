@@ -7,6 +7,8 @@ from typing import Callable, Iterable, TYPE_CHECKING
 
 from ..types import DuckDBType, NumericType, infer_numeric_literal_type
 from .base import TypedExpression
+from .boolean import BooleanFactory
+from .case import CaseExpressionBuilder
 from .utils import format_numeric, quote_identifier
 
 if TYPE_CHECKING:  # pragma: no cover - type checking helper
@@ -136,6 +138,13 @@ class NumericFactory:
             return self.literal(operand)
         msg = "Unsupported operand for numeric expression"
         raise TypeError(msg)
+
+    def case(self) -> CaseExpressionBuilder[NumericExpression]:
+        boolean_factory = BooleanFactory()
+        return CaseExpressionBuilder(
+            result_coercer=self.coerce,
+            condition_coercer=boolean_factory.coerce,
+        )
 
     @property
     def Aggregate(self) -> "NumericAggregateFactory":
