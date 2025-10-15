@@ -110,3 +110,52 @@ def test_generic_max_by_accepts_numeric() -> None:
     winner = ducktype.Generic("customer").max_by(ducktype.Numeric("score"))
     assert "max_by" in winner.render()
     assert winner.dependencies == {"customer", "score"}
+
+
+def test_window_over_renders_partition_and_order_clauses() -> None:
+    base = ducktype.Numeric("amount").sum()
+    windowed = base.over(
+        partition_by=["customer"],
+        order_by=[(ducktype.Numeric("order_date"), "DESC")],
+    )
+    assert (
+        windowed.render()
+        == '(sum("amount") OVER (PARTITION BY "customer" ORDER BY "order_date" DESC))'
+    )
+    assert windowed.dependencies == {"amount", "customer", "order_date"}
+
+
+def test_window_over_supports_frame_clauses() -> None:
+    windowed = ducktype.Numeric("amount").sum().over(
+        order_by=["event_time"],
+        frame="ROWS BETWEEN 1 PRECEDING AND CURRENT ROW",
+    )
+    assert (
+        windowed.render()
+        == '(sum("amount") OVER (ORDER BY "event_time" ROWS BETWEEN 1 PRECEDING AND CURRENT ROW))'
+    )
+    assert windowed.dependencies == {"amount", "event_time"}
+
+
+def test_window_over_preserves_aliasing() -> None:
+    windowed = (
+        ducktype.Numeric("amount")
+        .sum()
+        .alias("running_total")
+        .over(partition_by=["customer"])
+    )
+    assert (
+        windowed.render()
+        == '(sum("amount") OVER (PARTITION BY "customer")) AS "running_total"'
+    )
+    assert windowed.dependencies == {"amount", "customer"}
+
+
+def test_window_over_validates_direction() -> None:
+    with pytest.raises(ValueError):
+        ducktype.Numeric("amount").sum().over(order_by=[("order_date", "sideways")])
+
+
+def test_window_over_rejects_empty_frame_clause() -> None:
+    with pytest.raises(ValueError):
+        ducktype.Numeric("amount").sum().over(frame="   ")

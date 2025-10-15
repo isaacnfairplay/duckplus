@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable as IterableABC
 from decimal import Decimal
 from types import NotImplementedType
 from typing import Iterable, TypeVar, Union
@@ -45,6 +46,18 @@ class TypedExpression:
     def alias(self, alias: str) -> "AliasedExpression":
         return AliasedExpression(base=self, alias=alias)
 
+    def _clone_with_sql(
+        self,
+        sql: str,
+        *,
+        dependencies: Iterable[str],
+    ) -> "TypedExpression":
+        return type(self)(
+            sql,
+            duck_type=self.duck_type,
+            dependencies=dependencies,
+        )
+
     def _comparison(self: ExpressionT, operator: str, other: object) -> "BooleanExpression":
         operand = self._coerce_operand(other)
         sql = f"({self.render()} {operator} {operand.render()})"
@@ -68,6 +81,102 @@ class TypedExpression:
             return self._comparison("!=", other)
         return NotImplemented
 
+    def over(
+        self,
+        *,
+        partition_by: Iterable[object] | object | None = None,
+        order_by: Iterable[object] | object | None = None,
+        frame: str | None = None,
+    ) -> "TypedExpression":
+        """Wrap the expression in a DuckDB window clause."""
+
+        partition_operands = self._normalise_window_operands(partition_by)
+        order_operands = self._normalise_window_operands(order_by)
+
+        dependencies = set(self.dependencies)
+        partition_sql: list[str] = []
+        for operand in partition_operands:
+            sql, operand_dependencies = self._coerce_window_operand(operand)
+            partition_sql.append(sql)
+            dependencies.update(operand_dependencies)
+
+        order_sql: list[str] = []
+        for operand in order_operands:
+            sql, operand_dependencies = self._coerce_window_order_operand(operand)
+            order_sql.append(sql)
+            dependencies.update(operand_dependencies)
+
+        components: list[str] = []
+        if partition_sql:
+            components.append(f"PARTITION BY {', '.join(partition_sql)}")
+        if order_sql:
+            components.append(f"ORDER BY {', '.join(order_sql)}")
+        if frame is not None:
+            frame_sql = frame.strip()
+            if not frame_sql:
+                msg = "Window frame clause cannot be empty"
+                raise ValueError(msg)
+            components.append(frame_sql)
+
+        window_spec = " ".join(components)
+        window_clause = f"({window_spec})" if components else "()"
+        sql = f"({self.render()} OVER {window_clause})"
+        return self._clone_with_sql(sql, dependencies=dependencies)
+
+    @classmethod
+    def _normalise_window_operands(
+        cls, operands: Iterable[object] | object | None
+    ) -> list[object]:
+        if operands is None:
+            return []
+        if isinstance(operands, (list, tuple, set)):
+            return list(operands)
+        if isinstance(operands, (TypedExpression, str)):
+            return [operands]
+        if isinstance(operands, IterableABC):
+            return list(operands)
+        return [operands]
+
+    @classmethod
+    def _coerce_window_operand(
+        cls, operand: object
+    ) -> tuple[str, frozenset[str]]:
+        if isinstance(operand, TypedExpression):
+            return operand.render(), operand.dependencies
+        if isinstance(operand, str):
+            identifier = operand.strip()
+            if not identifier:
+                msg = "Column references in window clauses cannot be empty"
+                raise ValueError(msg)
+            return quote_identifier(identifier), frozenset({identifier})
+        msg = (
+            "Window clauses accept column names or typed expressions; "
+            f"got {type(operand)!r}"
+        )
+        raise TypeError(msg)
+
+    @classmethod
+    def _coerce_window_order_operand(
+        cls, operand: object
+    ) -> tuple[str, frozenset[str]]:
+        if isinstance(operand, tuple) and len(operand) == 2:
+            expression_operand, direction = operand
+            sql, dependencies = cls._coerce_window_operand(expression_operand)
+            direction_sql = cls._normalise_sort_direction(direction)
+            return f"{sql} {direction_sql}", dependencies
+        return cls._coerce_window_operand(operand)
+
+    @staticmethod
+    def _normalise_sort_direction(direction: object) -> str:
+        if not isinstance(direction, str):
+            msg = "Window order direction must be a string"
+            raise TypeError(msg)
+        normalised = direction.strip().upper()
+        if normalised not in {"ASC", "DESC"}:
+            msg = "Window order direction must be 'ASC' or 'DESC'"
+            raise ValueError(msg)
+        return normalised
+
 
 class AliasedExpression(TypedExpression):
     """Adapter adding an alias to an expression during rendering."""
@@ -88,6 +197,29 @@ class AliasedExpression(TypedExpression):
 
     def _coerce_operand(self, other: object) -> TypedExpression:  # type: ignore[override]
         return self.base._coerce_operand(other)  # pylint: disable=protected-access
+
+    def _clone_with_sql(
+        self,
+        sql: str,
+        *,
+        dependencies: Iterable[str],
+    ) -> "TypedExpression":
+        cloned = self.base._clone_with_sql(sql, dependencies=dependencies)
+        return cloned.alias(self.alias_name)
+
+    def over(
+        self,
+        *,
+        partition_by: Iterable[object] | object | None = None,
+        order_by: Iterable[object] | object | None = None,
+        frame: str | None = None,
+    ) -> "TypedExpression":
+        windowed = self.base.over(
+            partition_by=partition_by,
+            order_by=order_by,
+            frame=frame,
+        )
+        return windowed.alias(self.alias_name)
 
 
 class BooleanExpression(TypedExpression):

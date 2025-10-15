@@ -58,6 +58,22 @@ The legacy namespace is still available for advanced scenarios:
 legacy = ducktype.Numeric.Aggregate.sum("revenue")
 ```
 
+## Window Functions
+
+Aggregates (and any other typed expressions) can be wrapped in a window clause with
+`.over`, which accepts `partition_by`, `order_by`, and raw `frame` arguments:
+
+```python
+rolling_revenue = ducktype.Numeric("revenue").sum().over(
+    partition_by=["customer_id"],
+    order_by=[(ducktype.Numeric("event_ts"), "DESC")],
+    frame="ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW",
+)
+```
+
+Dependencies from the partition and ordering expressions are merged onto the
+result, keeping downstream helpers aware of all referenced columns.
+
 ## Function Namespaces
 
 The DuckDB function catalog is exposed via `ducktype.Functions` with scalar, aggregate, and window namespaces. Each namespace is grouped by return type for discoverability.

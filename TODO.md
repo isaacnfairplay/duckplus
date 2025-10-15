@@ -8,6 +8,13 @@ Answer these before starting any TODO item to confirm the work is understood and
 4. What success criteria, edge cases, and failure behaviours must be exercised to consider the task complete?
 5. How will this change be validated (tests, linters, examples), and are new fixtures or sample data required?
 
+### Preflight Notes – Window function helpers
+1. Extend typed expressions with an ergonomic `over` helper so windowed aggregates integrate with the fluent API without falling back to raw SQL strings.
+2. The implementation should live alongside existing typed expression logic, primarily in `duckplus/typed/expressions/base.py`, with alias-aware handling in related classes.
+3. Review `duckplus/typed/expression.py`, the expression subclasses, and `tests/test_typed_expression.py` to mirror current construction patterns and dependency tracking.
+4. The helper must render correct `OVER (...)` clauses, merge partition/order dependencies, support direction keywords, validate inputs, and keep chaining behaviour (including aliasing) intact.
+5. Cover the behaviour with new unit tests, update the typed API docs, and run the mypy/pylint/pytest suite to satisfy the repository's pre-commit policy.
+
 ### Notes for "Transformation helpers"
 1. We need a `Relation.transform` helper that issues `SELECT * REPLACE` statements so callers can rewrite existing columns while preserving immutability.
 2. The behaviour naturally belongs on `duckplus.relation.Relation`, building on the stored `DuckCon` and underlying `DuckDBPyRelation` metadata.
@@ -43,7 +50,7 @@ Answer these before starting any TODO item to confirm the work is understood and
 - [x] Surface aggregation helpers, e.g. `ducktype.Numeric.Aggregate.sum("sales") -> "sum(sales)"`.
 - [x] Enable expression comparisons (`ducktype.Varchar("customer") == "prime"`) and joins between differently named columns.
 - [x] Support aliasing and renaming via methods like `.alias("my_customer")` with dict/str serialization.
-- [ ] Add window function construction helpers on typed expressions.
+- [x] Add window function construction helpers on typed expressions.
 
 ### Notes for "Typed Expression API"
 1. Rich expression objects should expose column dependency metadata so helpers like `Relation.add` can validate references to both existing and newly-created columns.
