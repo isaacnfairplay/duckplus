@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Iterable
 
+from ..dependencies import DependencyLike
 from ..types import DuckDBType, GenericType
 from .base import GenericExpression, TypedExpression
 from .boolean import BooleanFactory
@@ -11,14 +12,19 @@ from .case import CaseExpressionBuilder
 
 
 class GenericFactory:
-    def __call__(self, column: str) -> GenericExpression:
-        return GenericExpression.column(column)
+    def __call__(
+        self,
+        column: str,
+        *,
+        table: str | None = None,
+    ) -> GenericExpression:
+        return GenericExpression.column(column, table=table)
 
     def raw(
         self,
         sql: str,
         *,
-        dependencies: Iterable[str] = (),
+        dependencies: Iterable[DependencyLike] = (),
         duck_type: DuckDBType | None = None,
     ) -> GenericExpression:
         return GenericExpression(

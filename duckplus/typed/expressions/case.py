@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Callable, Generic, TypeVar, cast
 
+from ..dependencies import ExpressionDependency
 from .base import AliasedExpression, BooleanExpression, TypedExpression
 
 ResultExpressionT = TypeVar("ResultExpressionT", bound=TypedExpression)
@@ -62,7 +63,7 @@ class CaseExpressionBuilder(Generic[ResultExpressionT]):
         self._finalised = True
 
         parts = ["CASE"]
-        dependencies: set[str] = set()
+        dependencies: set[ExpressionDependency] = set()
 
         for condition_expression, result_expression in self._when_clauses:
             parts.append(

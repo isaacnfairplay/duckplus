@@ -4,18 +4,29 @@ from __future__ import annotations
 
 from typing import Iterable
 
+from ..dependencies import DependencyLike
 from .base import BooleanExpression
 from .case import CaseExpressionBuilder
 
 
 class BooleanFactory:
-    def __call__(self, column: str) -> BooleanExpression:
-        return BooleanExpression.column(column)
+    def __call__(
+        self,
+        column: str,
+        *,
+        table: str | None = None,
+    ) -> BooleanExpression:
+        return BooleanExpression.column(column, table=table)
 
     def literal(self, value: bool) -> BooleanExpression:
         return BooleanExpression.literal(value)
 
-    def raw(self, sql: str, *, dependencies: Iterable[str] = ()) -> BooleanExpression:
+    def raw(
+        self,
+        sql: str,
+        *,
+        dependencies: Iterable[DependencyLike] = (),
+    ) -> BooleanExpression:
         return BooleanExpression(sql, dependencies=dependencies)
 
     def coerce(self, operand: object) -> BooleanExpression:

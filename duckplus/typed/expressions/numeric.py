@@ -5,11 +5,12 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Callable, Iterable, TYPE_CHECKING
 
+from ..dependencies import DependencyLike, ExpressionDependency
 from ..types import DuckDBType, NumericType, infer_numeric_literal_type
 from .base import TypedExpression
 from .boolean import BooleanFactory
 from .case import CaseExpressionBuilder
-from .utils import format_numeric, quote_identifier
+from .utils import format_numeric, quote_qualified_identifier
 
 if TYPE_CHECKING:  # pragma: no cover - type checking helper
     from ..functions import DuckDBFunctionNamespace
@@ -24,7 +25,7 @@ class NumericExpression(TypedExpression):
         self,
         sql: str,
         *,
-        dependencies: Iterable[str] = (),
+        dependencies: Iterable[DependencyLike] = (),
         duck_type: DuckDBType | None = None,
     ) -> None:
         super().__init__(
@@ -34,8 +35,15 @@ class NumericExpression(TypedExpression):
         )
 
     @classmethod
-    def column(cls, name: str) -> "NumericExpression":
-        return cls(quote_identifier(name), dependencies=(name,))
+    def column(
+        cls,
+        name: str,
+        *,
+        table: str | None = None,
+    ) -> "NumericExpression":
+        dependency = ExpressionDependency.column(name, table=table)
+        sql = quote_qualified_identifier(name, table=table)
+        return cls(sql, dependencies=(dependency,))
 
     @classmethod
     def literal(
@@ -55,7 +63,7 @@ class NumericExpression(TypedExpression):
         cls,
         sql: str,
         *,
-        dependencies: Iterable[str] = (),
+        dependencies: Iterable[DependencyLike] = (),
         duck_type: DuckDBType | None = None,
     ) -> "NumericExpression":
         return cls(sql, dependencies=dependencies, duck_type=duck_type)
@@ -110,8 +118,13 @@ class NumericFactory:
     def __init__(self, function_namespace: "DuckDBFunctionNamespace | None" = None) -> None:
         self._function_namespace = function_namespace
 
-    def __call__(self, column: str) -> NumericExpression:
-        return NumericExpression.column(column)
+    def __call__(
+        self,
+        column: str,
+        *,
+        table: str | None = None,
+    ) -> NumericExpression:
+        return NumericExpression.column(column, table=table)
 
     def literal(self, value: NumericOperand) -> NumericExpression:
         return NumericExpression.literal(value)
@@ -120,7 +133,7 @@ class NumericFactory:
         self,
         sql: str,
         *,
-        dependencies: Iterable[str] = (),
+        dependencies: Iterable[DependencyLike] = (),
         duck_type: DuckDBType | None = None,
     ) -> NumericExpression:
         return NumericExpression.raw(
@@ -134,6 +147,10 @@ class NumericFactory:
             return operand
         if isinstance(operand, str):
             return self(operand)
+        if isinstance(operand, tuple) and len(operand) == 2:
+            table, column = operand
+            if isinstance(table, str) and isinstance(column, str):
+                return NumericExpression.column(column, table=table)
         if isinstance(operand, (int, float, Decimal)):
             return self.literal(operand)
         msg = "Unsupported operand for numeric expression"

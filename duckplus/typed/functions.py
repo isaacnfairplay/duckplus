@@ -7,6 +7,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import ClassVar, Iterable, Mapping, Sequence, Tuple
 
+from .dependencies import ExpressionDependency
 from .expression import (
     BlobExpression,
     BooleanExpression,
@@ -15,7 +16,7 @@ from .expression import (
     TypedExpression,
     VarcharExpression,
 )
-from .expressions.utils import quote_identifier
+from .expressions.utils import quote_identifier, quote_qualified_identifier
 from .types import DuckDBType, GenericType, IdentifierType, UnknownType
 
 
@@ -248,11 +249,21 @@ def _coerce_function_operand_default(value: object) -> TypedExpression:
         return NumericExpression.literal(value)
     if isinstance(value, bytes):
         return BlobExpression.literal(value)
+    if isinstance(value, tuple) and len(value) == 2:
+        table, column = value
+        if isinstance(table, str) and isinstance(column, str):
+            dependency = ExpressionDependency.column(column, table=table)
+            return GenericExpression(
+                quote_qualified_identifier(column, table=table),
+                duck_type=IdentifierType("IDENTIFIER"),
+                dependencies=(dependency,),
+            )
     if isinstance(value, str):
+        dependency = ExpressionDependency.column(value)
         return GenericExpression(
             quote_identifier(value),
             duck_type=IdentifierType("IDENTIFIER"),
-            dependencies=(value,),
+            dependencies=(dependency,),
         )
     if value is None:
         return GenericExpression("NULL", duck_type=UnknownType())
@@ -260,8 +271,10 @@ def _coerce_function_operand_default(value: object) -> TypedExpression:
     raise TypeError(msg)
 
 
-def _merge_dependencies(expressions: Iterable[TypedExpression]) -> frozenset[str]:
-    dependencies: set[str] = set()
+def _merge_dependencies(
+    expressions: Iterable[TypedExpression],
+) -> frozenset[ExpressionDependency]:
+    dependencies: set[ExpressionDependency] = set()
     for expression in expressions:
         dependencies.update(expression.dependencies)
     return frozenset(dependencies)
@@ -303,12 +316,23 @@ def _coerce_by_duck_type(
         return VarcharExpression.literal(value)
     if category == "blob" and isinstance(value, bytes):
         return BlobExpression.literal(value)
-    if category == "identifier" and isinstance(value, str):
-        return GenericExpression(
-            quote_identifier(value),
-            duck_type=expected_type,
-            dependencies=(value,),
-        )
+    if category == "identifier":
+        if isinstance(value, tuple) and len(value) == 2:
+            table, column = value
+            if isinstance(table, str) and isinstance(column, str):
+                dependency = ExpressionDependency.column(column, table=table)
+                return GenericExpression(
+                    quote_qualified_identifier(column, table=table),
+                    duck_type=expected_type,
+                    dependencies=(dependency,),
+                )
+        if isinstance(value, str):
+            dependency = ExpressionDependency.column(value)
+            return GenericExpression(
+                quote_identifier(value),
+                duck_type=expected_type,
+                dependencies=(dependency,),
+            )
     if value is None and category != "identifier":
         return GenericExpression("NULL", duck_type=UnknownType())
     return None
@@ -356,7 +380,7 @@ def _construct_expression(
     sql: str,
     *,
     return_type: DuckDBType | None,
-    dependencies: frozenset[str],
+    dependencies: frozenset[ExpressionDependency],
     category: str,
 ) -> TypedExpression:
     duck_type = return_type or GenericType("UNKNOWN")

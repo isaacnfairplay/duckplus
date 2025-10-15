@@ -2,6 +2,7 @@
 
 # pylint: disable=duplicate-code
 
+from .dependencies import ExpressionDependency
 from .expression import (
     AliasedExpression,
     BlobExpression,
@@ -31,6 +32,7 @@ __all__ = [
     "TypedExpression",
     "VarcharExpression",
     "ducktype",
+    "ExpressionDependency",
     "DuckDBFunctionNamespace",
     "DuckDBFunctionSignature",
     "SCALAR_FUNCTIONS",

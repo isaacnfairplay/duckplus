@@ -7,8 +7,13 @@ from decimal import Decimal
 from types import NotImplementedType
 from typing import Iterable, TypeVar, Union
 
+from ..dependencies import (
+    DependencyLike,
+    ExpressionDependency,
+    normalise_dependencies,
+)
 from ..types import BooleanType, DuckDBType, GenericType
-from .utils import quote_identifier
+from .utils import quote_identifier, quote_qualified_identifier
 
 ExpressionT = TypeVar("ExpressionT", bound="TypedExpression")
 ComparisonResult = Union["BooleanExpression", NotImplementedType]
@@ -24,11 +29,11 @@ class TypedExpression:
         sql: str,
         *,
         duck_type: DuckDBType,
-        dependencies: Iterable[str] = (),
+        dependencies: Iterable[DependencyLike] = (),
     ) -> None:
         self._sql = sql
         self.duck_type = duck_type
-        self._dependencies = frozenset(dependencies)
+        self._dependencies = normalise_dependencies(dependencies)
 
     def render(self) -> str:
         return self._sql
@@ -40,7 +45,7 @@ class TypedExpression:
         return f"{self.__class__.__name__}({self.render()!r}, {self.duck_type!r})"
 
     @property
-    def dependencies(self) -> frozenset[str]:
+    def dependencies(self) -> frozenset[ExpressionDependency]:
         return self._dependencies
 
     def alias(self, alias: str) -> "AliasedExpression":
@@ -50,7 +55,7 @@ class TypedExpression:
         self,
         sql: str,
         *,
-        dependencies: Iterable[str],
+        dependencies: Iterable[DependencyLike],
     ) -> "TypedExpression":
         return type(self)(
             sql,
@@ -140,15 +145,24 @@ class TypedExpression:
     @classmethod
     def _coerce_window_operand(
         cls, operand: object
-    ) -> tuple[str, frozenset[str]]:
+    ) -> tuple[str, frozenset[ExpressionDependency]]:
         if isinstance(operand, TypedExpression):
             return operand.render(), operand.dependencies
+        if isinstance(operand, ExpressionDependency):
+            column = operand.column_name
+            if column is None:
+                msg = "Window clauses require column-level dependencies"
+                raise ValueError(msg)
+            sql = quote_qualified_identifier(column, table=operand.table_name)
+            return sql, frozenset({operand})
         if isinstance(operand, str):
             identifier = operand.strip()
             if not identifier:
                 msg = "Column references in window clauses cannot be empty"
                 raise ValueError(msg)
-            return quote_identifier(identifier), frozenset({identifier})
+            dependency = ExpressionDependency.column(identifier)
+            sql = quote_identifier(identifier)
+            return sql, frozenset({dependency})
         msg = (
             "Window clauses accept column names or typed expressions; "
             f"got {type(operand)!r}"
@@ -158,11 +172,11 @@ class TypedExpression:
     @classmethod
     def _coerce_window_order_operand(
         cls, operand: object
-    ) -> tuple[str, frozenset[str]]:
+    ) -> tuple[str, frozenset[ExpressionDependency]]:
         if isinstance(operand, tuple) and len(operand) == 2:
             expression_operand, direction = operand
-            sql, dependencies = cls._coerce_window_operand(expression_operand)
             direction_sql = cls._normalise_sort_direction(direction)
+            sql, dependencies = cls._coerce_window_operand(expression_operand)
             return f"{sql} {direction_sql}", dependencies
         return cls._coerce_window_operand(operand)
 
@@ -202,7 +216,7 @@ class AliasedExpression(TypedExpression):
         self,
         sql: str,
         *,
-        dependencies: Iterable[str],
+        dependencies: Iterable[DependencyLike],
     ) -> "TypedExpression":
         cloned = self.base._clone_with_sql(sql, dependencies=dependencies)
         return cloned.alias(self.alias_name)
@@ -231,7 +245,7 @@ class BooleanExpression(TypedExpression):
         self,
         sql: str,
         *,
-        dependencies: Iterable[str] = (),
+        dependencies: Iterable[DependencyLike] = (),
         duck_type: DuckDBType | None = None,
     ) -> None:
         super().__init__(
@@ -265,10 +279,16 @@ class BooleanExpression(TypedExpression):
         raise TypeError(msg)
 
     @classmethod
-    def column(cls, name: str) -> "BooleanExpression":
+    def column(
+        cls,
+        name: str,
+        *,
+        table: str | None = None,
+    ) -> "BooleanExpression":
+        dependency = ExpressionDependency.column(name, table=table)
         return cls(
-            quote_identifier(name),
-            dependencies=(name,),
+            quote_qualified_identifier(name, table=table),
+            dependencies=(dependency,),
         )
 
     @classmethod
@@ -276,7 +296,12 @@ class BooleanExpression(TypedExpression):
         return cls("TRUE" if value else "FALSE")
 
     @classmethod
-    def raw(cls, sql: str, *, dependencies: Iterable[str] = ()) -> "BooleanExpression":
+    def raw(
+        cls,
+        sql: str,
+        *,
+        dependencies: Iterable[DependencyLike] = (),
+    ) -> "BooleanExpression":
         return cls(sql, dependencies=dependencies)
 
 
@@ -290,7 +315,7 @@ class GenericExpression(TypedExpression):
         sql: str,
         *,
         duck_type: DuckDBType | None = None,
-        dependencies: Iterable[str] = (),
+        dependencies: Iterable[DependencyLike] = (),
     ) -> None:
         super().__init__(
             sql,
@@ -309,14 +334,25 @@ class GenericExpression(TypedExpression):
         raise TypeError(msg)
 
     @classmethod
-    def column(cls, name: str) -> "GenericExpression":
+    def column(
+        cls,
+        name: str,
+        *,
+        table: str | None = None,
+    ) -> "GenericExpression":
+        dependency = ExpressionDependency.column(name, table=table)
         return cls(
-            quote_identifier(name),
-            dependencies=(name,),
+            quote_qualified_identifier(name, table=table),
+            dependencies=(dependency,),
         )
 
     @classmethod
-    def raw(cls, sql: str, *, dependencies: Iterable[str] = ()) -> "GenericExpression":
+    def raw(
+        cls,
+        sql: str,
+        *,
+        dependencies: Iterable[DependencyLike] = (),
+    ) -> "GenericExpression":
         return cls(sql, dependencies=dependencies)
 
     def max_by(self, order: "TypedExpression") -> "TypedExpression":

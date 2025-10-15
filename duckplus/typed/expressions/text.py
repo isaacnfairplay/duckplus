@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from typing import Iterable
 
+from ..dependencies import DependencyLike, ExpressionDependency
 from ..types import DuckDBType, VarcharType
 from .base import TypedExpression
 from .boolean import BooleanFactory
 from .case import CaseExpressionBuilder
-from .utils import quote_identifier, quote_string
+from .utils import quote_qualified_identifier, quote_string
 
 
 class VarcharExpression(TypedExpression):
@@ -18,7 +19,7 @@ class VarcharExpression(TypedExpression):
         self,
         sql: str,
         *,
-        dependencies: Iterable[str] = (),
+        dependencies: Iterable[DependencyLike] = (),
         duck_type: DuckDBType | None = None,
     ) -> None:
         super().__init__(
@@ -28,8 +29,17 @@ class VarcharExpression(TypedExpression):
         )
 
     @classmethod
-    def column(cls, name: str) -> "VarcharExpression":
-        return cls(quote_identifier(name), dependencies=(name,))
+    def column(
+        cls,
+        name: str,
+        *,
+        table: str | None = None,
+    ) -> "VarcharExpression":
+        dependency = ExpressionDependency.column(name, table=table)
+        return cls(
+            quote_qualified_identifier(name, table=table),
+            dependencies=(dependency,),
+        )
 
     @classmethod
     def literal(
@@ -48,7 +58,7 @@ class VarcharExpression(TypedExpression):
         cls,
         sql: str,
         *,
-        dependencies: Iterable[str] = (),
+        dependencies: Iterable[DependencyLike] = (),
         duck_type: DuckDBType | None = None,
     ) -> "VarcharExpression":
         return cls(sql, dependencies=dependencies, duck_type=duck_type)
@@ -86,8 +96,13 @@ class VarcharExpression(TypedExpression):
 
 
 class VarcharFactory:
-    def __call__(self, column: str) -> VarcharExpression:
-        return VarcharExpression.column(column)
+    def __call__(
+        self,
+        column: str,
+        *,
+        table: str | None = None,
+    ) -> VarcharExpression:
+        return VarcharExpression.column(column, table=table)
 
     def literal(self, value: str) -> VarcharExpression:
         return VarcharExpression.literal(value)
@@ -96,7 +111,7 @@ class VarcharFactory:
         self,
         sql: str,
         *,
-        dependencies: Iterable[str] = (),
+        dependencies: Iterable[DependencyLike] = (),
         duck_type: DuckDBType | None = None,
     ) -> VarcharExpression:
         return VarcharExpression.raw(
