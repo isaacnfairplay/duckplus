@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from typing import Iterable, Sequence, TYPE_CHECKING
 
 from duckplus.typed import AliasedExpression, NumericExpression, TypedExpression, ducktype
+from duckplus.typed.types import NumericType
 
 if TYPE_CHECKING:  # pragma: no cover - executed only during type checking
     from typing import reveal_type
@@ -50,7 +51,8 @@ def build_circle_expressions(radius_column: str = "radius") -> CircleExpressions
 
     radius = ducktype.Numeric(radius_column)
     pi_literal = ducktype.Numeric.raw(
-        "3.141592653589793::DOUBLE", type_annotation="DOUBLE"
+        "3.141592653589793::DOUBLE",
+        duck_type=NumericType("DOUBLE"),
     )
     area = pi_literal * radius * radius
     circumference = pi_literal * radius * ducktype.Numeric.literal(2)

@@ -25,8 +25,8 @@ _NamespaceExprT = TypeVar('_NamespaceExprT', bound=TypedExpression)
 class _StaticFunctionNamespace(Generic[_NamespaceExprT]):
     function_type: ClassVar[str]
     return_category: ClassVar[str]
-    _IDENTIFIER_FUNCTIONS: ClassVar[Mapping[str, _DuckDBFunctionCall[_NamespaceExprT]]]
-    _SYMBOLIC_FUNCTIONS: ClassVar[Mapping[str, _DuckDBFunctionCall[_NamespaceExprT]]]
+    _IDENTIFIER_FUNCTIONS: Mapping[str, _DuckDBFunctionCall[_NamespaceExprT]]
+    _SYMBOLIC_FUNCTIONS: Mapping[str, _DuckDBFunctionCall[_NamespaceExprT]]
     def __getitem__(self, name: str) -> _DuckDBFunctionCall[_NamespaceExprT]: ...
     def get(
         self,

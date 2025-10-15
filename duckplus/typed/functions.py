@@ -1,8 +1,9 @@
 """Static DuckDB function catalog to power typed expression helpers."""
 
+# pylint: disable=too-many-arguments,too-few-public-methods,invalid-name
+
 from __future__ import annotations
 
-from dataclasses import dataclass
 from decimal import Decimal
 from typing import ClassVar, Iterable, Mapping, Sequence, Tuple
 
@@ -14,19 +15,38 @@ from .expression import (
     TypedExpression,
     VarcharExpression,
 )
-from .expression import _quote_identifier  # pylint: disable=protected-access
+from .expressions.utils import quote_identifier
+from .types import DuckDBType, GenericType, IdentifierType, UnknownType
 
 
-@dataclass(frozen=True)
 class DuckDBFunctionDefinition:
     """Captured metadata describing a DuckDB function overload."""
 
-    schema_name: str
-    function_name: str
-    function_type: str
-    return_type: str | None
-    parameter_types: tuple[str, ...]
-    varargs: str | None
+    __slots__ = (
+        "schema_name",
+        "function_name",
+        "function_type",
+        "return_type",
+        "parameter_types",
+        "varargs",
+    )
+
+    def __init__(
+        self,
+        *,
+        schema_name: str,
+        function_name: str,
+        function_type: str,
+        return_type: DuckDBType | None,
+        parameter_types: tuple[DuckDBType, ...],
+        varargs: DuckDBType | None,
+    ) -> None:
+        self.schema_name = schema_name
+        self.function_name = function_name
+        self.function_type = function_type
+        self.return_type = return_type
+        self.parameter_types = parameter_types
+        self.varargs = varargs
 
     def matches_arity(self, argument_count: int) -> bool:
         """Return whether this overload accepts the provided argument count."""
@@ -37,31 +57,51 @@ class DuckDBFunctionDefinition:
         return argument_count >= required
 
 
-@dataclass(frozen=True)
 class DuckDBFunctionSignature:
     """Structured view of a DuckDB function's callable surface."""
 
-    schema_name: str
-    function_name: str
-    function_type: str
-    return_type: str | None
-    parameter_types: tuple[str, ...]
-    varargs: str | None
-    sql_name: str
+    __slots__ = (
+        "schema_name",
+        "function_name",
+        "function_type",
+        "return_type",
+        "parameter_types",
+        "varargs",
+        "sql_name",
+    )
+
+    def __init__(
+        self,
+        *,
+        schema_name: str,
+        function_name: str,
+        function_type: str,
+        return_type: DuckDBType | None,
+        parameter_types: tuple[DuckDBType, ...],
+        varargs: DuckDBType | None,
+        sql_name: str,
+    ) -> None:
+        self.schema_name = schema_name
+        self.function_name = function_name
+        self.function_type = function_type
+        self.return_type = return_type
+        self.parameter_types = parameter_types
+        self.varargs = varargs
+        self.sql_name = sql_name
 
     def call_syntax(self) -> str:
         """Render the SQL call including argument placeholders."""
 
-        arguments = list(self.parameter_types)
-        if self.varargs:
-            arguments.append(f"{self.varargs}...")
+        arguments = [parameter.render() for parameter in self.parameter_types]
+        if self.varargs is not None:
+            arguments.append(f"{self.varargs.render()}...")
         joined_arguments = ", ".join(arguments)
         return f"{self.sql_name}({joined_arguments})"
 
     def return_annotation(self) -> str:
-        """Return the upper-cased DuckDB return annotation."""
+        """Return the DuckDB return annotation."""
 
-        return (self.return_type or "UNKNOWN").upper()
+        return (self.return_type or UnknownType()).render()
 
     def __str__(self) -> str:  # pragma: no cover - trivial wrapper
         return f"{self.call_syntax()} -> {self.return_annotation()}"
@@ -91,6 +131,24 @@ class _DuckDBFunctionCall:
         )
 
     def __call__(self, *operands: object) -> TypedExpression:
+        arity = len(operands)
+        for overload in self._overloads:
+            if not overload.matches_arity(arity):
+                continue
+            try:
+                arguments = _coerce_operands_for_overload(operands, overload)
+            except TypeError:
+                continue
+            dependencies = _merge_dependencies(arguments)
+            sql_name = _render_function_name(overload)
+            rendered_args = ", ".join(argument.render() for argument in arguments)
+            sql = f"{sql_name}({rendered_args})" if arguments else f"{sql_name}()"
+            return _construct_expression(
+                sql,
+                return_type=overload.return_type,
+                dependencies=dependencies,
+                category=self._return_category,
+            )
         arguments = [_coerce_function_operand(operand) for operand in operands]
         dependencies = _merge_dependencies(arguments)
         overload = self._select_overload(len(arguments))
@@ -168,23 +226,36 @@ class _StaticFunctionNamespace:
         return self._SYMBOLIC_FUNCTIONS
 
 
-def _coerce_function_operand(value: object) -> TypedExpression:
+def _coerce_function_operand(
+    value: object,
+    expected_type: DuckDBType | None = None,
+) -> TypedExpression:
+    if isinstance(value, TypedExpression):
+        return value
+    if expected_type is not None:
+        coerced = _coerce_by_duck_type(value, expected_type)
+        if coerced is not None:
+            return coerced
+    return _coerce_function_operand_default(value)
+
+
+def _coerce_function_operand_default(value: object) -> TypedExpression:
     if isinstance(value, TypedExpression):
         return value
     if isinstance(value, bool):
-        return BooleanExpression("TRUE" if value else "FALSE")
+        return BooleanExpression.literal(value)
     if isinstance(value, (int, float, Decimal)):
         return NumericExpression.literal(value)
     if isinstance(value, bytes):
         return BlobExpression.literal(value)
     if isinstance(value, str):
         return GenericExpression(
-            _quote_identifier(value),
-            type_annotation="IDENTIFIER",
+            quote_identifier(value),
+            duck_type=IdentifierType("IDENTIFIER"),
             dependencies=(value,),
         )
     if value is None:
-        return GenericExpression("NULL")
+        return GenericExpression("NULL", duck_type=UnknownType())
     msg = "DuckDB function arguments must be typed expressions or supported literals"
     raise TypeError(msg)
 
@@ -196,12 +267,59 @@ def _merge_dependencies(expressions: Iterable[TypedExpression]) -> frozenset[str
     return frozenset(dependencies)
 
 
+def _coerce_operands_for_overload(
+    operands: tuple[object, ...],
+    overload: DuckDBFunctionDefinition,
+) -> list[TypedExpression]:
+    required = len(overload.parameter_types)
+    varargs_type = overload.varargs
+    if varargs_type is None and len(operands) != required:
+        msg = "Incorrect argument count"
+        raise TypeError(msg)
+    if varargs_type is not None and len(operands) < required:
+        msg = "Insufficient arguments for varargs overload"
+        raise TypeError(msg)
+    coerced: list[TypedExpression] = []
+    for index, operand in enumerate(operands):
+        expected_type: DuckDBType | None
+        if index < required:
+            expected_type = overload.parameter_types[index]
+        else:
+            expected_type = varargs_type
+        coerced.append(_coerce_function_operand(operand, expected_type))
+    return coerced
+
+
+def _coerce_by_duck_type(
+    value: object,
+    expected_type: DuckDBType,
+) -> TypedExpression | None:
+    category = getattr(expected_type, "category", "generic")
+    if category == "boolean" and isinstance(value, bool):
+        return BooleanExpression.literal(value)
+    if category == "numeric" and isinstance(value, (int, float, Decimal)):
+        return NumericExpression.literal(value)
+    if category == "varchar" and isinstance(value, str):
+        return VarcharExpression.literal(value)
+    if category == "blob" and isinstance(value, bytes):
+        return BlobExpression.literal(value)
+    if category == "identifier" and isinstance(value, str):
+        return GenericExpression(
+            quote_identifier(value),
+            duck_type=expected_type,
+            dependencies=(value,),
+        )
+    if value is None and category != "identifier":
+        return GenericExpression("NULL", duck_type=UnknownType())
+    return None
+
+
 def _render_function_name(definition: DuckDBFunctionDefinition) -> str:
     schema = definition.schema_name
     name = definition.function_name
     if schema in ("main", "pg_catalog"):
-        return _quote_identifier(name) if name != name.lower() else name
-    return f"{_quote_identifier(schema)}.{_quote_identifier(name)}"
+        return quote_identifier(name) if name != name.lower() else name
+    return f"{quote_identifier(schema)}.{quote_identifier(name)}"
 
 
 def _definition_to_signature(
@@ -237,20 +355,20 @@ def _format_function_docstring(
 def _construct_expression(
     sql: str,
     *,
-    return_type: str | None,
+    return_type: DuckDBType | None,
     dependencies: frozenset[str],
     category: str,
 ) -> TypedExpression:
-    annotation = (return_type or "UNKNOWN").upper()
+    duck_type = return_type or GenericType("UNKNOWN")
     if category == "numeric":
-        return NumericExpression(sql, dependencies=dependencies, type_annotation=annotation)
+        return NumericExpression(sql, dependencies=dependencies, duck_type=duck_type)
     if category == "boolean":
-        return BooleanExpression(sql, dependencies=dependencies, type_annotation=annotation)
+        return BooleanExpression(sql, dependencies=dependencies, duck_type=duck_type)
     if category == "varchar":
-        return VarcharExpression(sql, dependencies=dependencies, type_annotation=annotation)
+        return VarcharExpression(sql, dependencies=dependencies, duck_type=duck_type)
     if category == "blob":
-        return BlobExpression(sql, dependencies=dependencies, type_annotation=annotation)
-    return GenericExpression(sql, dependencies=dependencies, type_annotation=annotation)
+        return BlobExpression(sql, dependencies=dependencies, duck_type=duck_type)
+    return GenericExpression(sql, dependencies=dependencies, duck_type=duck_type)
 
 
 from ._generated_function_namespaces import (  # noqa: E402  pylint: disable=wrong-import-position
@@ -260,13 +378,12 @@ from ._generated_function_namespaces import (  # noqa: E402  pylint: disable=wro
 )
 
 
-# pylint: disable=invalid-name
 class DuckDBFunctionNamespace:  # pylint: disable=too-few-public-methods
     """Static access to DuckDB's scalar, aggregate, and window functions."""
 
-    Scalar: ScalarFunctionNamespace  # pylint: disable=invalid-name
-    Aggregate: AggregateFunctionNamespace  # pylint: disable=invalid-name
-    Window: WindowFunctionNamespace  # pylint: disable=invalid-name
+    Scalar: ScalarFunctionNamespace
+    Aggregate: AggregateFunctionNamespace
+    Window: WindowFunctionNamespace
 
     def __init__(self) -> None:
         self.Scalar = ScalarFunctionNamespace()
@@ -277,13 +394,11 @@ class DuckDBFunctionNamespace:  # pylint: disable=too-few-public-methods
         return ["Aggregate", "Scalar", "Window"]
 
 
-# pylint: enable=invalid-name
 SCALAR_FUNCTIONS = ScalarFunctionNamespace()
 AGGREGATE_FUNCTIONS = AggregateFunctionNamespace()
 WINDOW_FUNCTIONS = WindowFunctionNamespace()
 
 
-# pylint: disable=duplicate-code
 __all__ = [
     "DuckDBFunctionDefinition",
     "DuckDBFunctionNamespace",

@@ -109,6 +109,21 @@ def _load_definitions() -> dict[str, dict[str, dict[str, list[tuple[str, str, st
     return index
 
 
+def _format_type(type_spec: str | None) -> str:
+    if type_spec is None:
+        return "None"
+    return f"parse_type({type_spec!r})"
+
+
+def _format_parameters(parameters: tuple[str, ...]) -> str:
+    if not parameters:
+        return "()"
+    formatted = ", ".join(_format_type(parameter) for parameter in parameters)
+    if len(parameters) == 1:
+        formatted += ","
+    return f"({formatted})"
+
+
 def _format_definition(
     schema: str,
     name: str,
@@ -122,9 +137,9 @@ def _format_definition(
             f"                schema_name={schema!r},",
             f"                function_name={name!r},",
             "                function_type=function_type,",
-            f"                return_type={return_type!r},",
-            f"                parameter_types={parameters!r},",
-            f"                varargs={varargs!r},",
+            f"                return_type={_format_type(return_type)},",
+            f"                parameter_types={_format_parameters(parameters)},",
+            f"                varargs={_format_type(varargs)},",
             "            ),",
         ]
     )
@@ -275,6 +290,7 @@ def main() -> None:
         "from typing import ClassVar",
         "",
         "from .functions import DuckDBFunctionDefinition, _DuckDBFunctionCall, _StaticFunctionNamespace",
+        "from .types import parse_type",
         "",
         "",
     ]
@@ -299,8 +315,8 @@ def main() -> None:
         "class _StaticFunctionNamespace(Generic[_NamespaceExprT]):",
         "    function_type: ClassVar[str]",
         "    return_category: ClassVar[str]",
-        "    _IDENTIFIER_FUNCTIONS: ClassVar[Mapping[str, _DuckDBFunctionCall[_NamespaceExprT]]]",
-        "    _SYMBOLIC_FUNCTIONS: ClassVar[Mapping[str, _DuckDBFunctionCall[_NamespaceExprT]]]",
+        "    _IDENTIFIER_FUNCTIONS: Mapping[str, _DuckDBFunctionCall[_NamespaceExprT]]",
+        "    _SYMBOLIC_FUNCTIONS: Mapping[str, _DuckDBFunctionCall[_NamespaceExprT]]",
         "    def __getitem__(self, name: str) -> _DuckDBFunctionCall[_NamespaceExprT]: ...",
         "    def get(",
         "        self,",
