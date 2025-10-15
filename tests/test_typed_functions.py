@@ -5,12 +5,16 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
+import pytest
+
 from duckplus.typed.functions import (
     AGGREGATE_FUNCTIONS,
     SCALAR_FUNCTIONS,
     WINDOW_FUNCTIONS,
     DuckDBFunctionNamespace,
+    _coerce_function_operand,
 )
+from duckplus.typed.types import IntegerType
 
 
 def test_scalar_function_signatures_are_available_without_runtime_loading() -> None:
@@ -87,3 +91,9 @@ def test_stub_defines_return_type_annotations_for_language_servers() -> None:
     bool_and_annotation = _find_annotation(aggregate_boolean, "bool_and")
     assert _extract_generic_argument(abs_annotation) == "NumericExpression"
     assert _extract_generic_argument(bool_and_annotation) == "BooleanExpression"
+
+
+def test_coerce_function_operand_rejects_out_of_range_integer_literal() -> None:
+    expected_type = IntegerType("UTINYINT")
+    with pytest.raises(TypeError, match="expected UTINYINT, got USMALLINT"):
+        _coerce_function_operand(512, expected_type)
