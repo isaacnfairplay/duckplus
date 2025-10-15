@@ -12,6 +12,8 @@ import duckdb  # type: ignore[import-not-found]
 
 from .duckcon import DuckCon
 from .typed.select import SelectStatementBuilder
+from .typed.dependencies import ExpressionDependency
+from .typed.expressions.base import AliasedExpression, TypedExpression
 
 
 T = TypeVar("T")
@@ -133,8 +135,22 @@ class Relation:
 
         return type(self).from_relation(self.duckcon, relation)
 
+    @overload
     def add(self, **expressions: str) -> "Relation":  # pylint: disable=too-many-locals
-        """Return a new relation with additional computed columns."""
+        ...
+
+    @overload
+    def add(self, **expressions: TypedExpression) -> "Relation":
+        ...
+
+    def add(self, **expressions: object) -> "Relation":  # pylint: disable=too-many-locals
+        """Return a new relation with additional computed columns.
+
+        Expressions can be provided either as raw SQL strings or as typed
+        expressions from :mod:`duckplus.typed`. Typed expressions carry
+        dependency metadata, allowing the helper to validate that references
+        only target columns present on the original relation.
+        """
 
         if not expressions:
             msg = "add requires at least one expression"
@@ -174,17 +190,11 @@ class Relation:
                 raise ValueError(msg)
             seen_aliases.add(alias_key)
 
-            if not isinstance(expression, str):
-                msg = (
-                    "add expressions must be SQL strings representing the new "
-                    f"column definition (got {type(expression)!r})"
-                )
-                raise TypeError(msg)
-
-            expression_sql = expression.strip()
-            if not expression_sql:
-                msg = f"Expression for column '{alias}' cannot be empty"
-                raise ValueError(msg)
+            expression_sql, dependencies = self._normalise_add_expression(
+                alias, expression
+            )
+            if dependencies is not None:
+                self._assert_add_dependencies(alias, dependencies)
 
             validation_builder = SelectStatementBuilder().star()
             validation_builder.column(expression_sql, alias=alias)
@@ -511,3 +521,63 @@ class Relation:
         except KeyError as error:
             msg = f"Unsupported cast target for transform: {python_type!r}"
             raise TypeError(msg) from error
+
+    def _normalise_add_expression(
+        self, alias: str, expression: object
+    ) -> tuple[str, frozenset[ExpressionDependency] | None]:
+        if isinstance(expression, str):
+            expression_sql = expression.strip()
+            if not expression_sql:
+                msg = f"Expression for column '{alias}' cannot be empty"
+                raise ValueError(msg)
+            return expression_sql, None
+
+        if isinstance(expression, TypedExpression):
+            typed_expression = self._unwrap_add_expression(alias, expression)
+            return typed_expression.render(), typed_expression.dependencies
+
+        msg = (
+            "add expressions must be SQL strings or typed expressions representing the new "
+            f"column definition (got {type(expression)!r})"
+        )
+        raise TypeError(msg)
+
+    @staticmethod
+    def _unwrap_add_expression(
+        alias: str, expression: TypedExpression
+    ) -> TypedExpression:
+        current = expression
+        while isinstance(current, AliasedExpression):
+            alias_name = current.alias_name
+            if alias_name.casefold() != alias.casefold():
+                msg = (
+                    "Aliased expressions passed to add must use the same alias as the target "
+                    f"column ('{alias_name}' vs '{alias}')"
+                )
+                raise ValueError(msg)
+            current = current.base
+        return current
+
+    def _assert_add_dependencies(
+        self,
+        alias: str,
+        dependencies: frozenset[ExpressionDependency],
+    ) -> None:
+        for dependency in dependencies:
+            column = dependency.column_name
+            if column is None:
+                continue
+            try:
+                resolved = self._resolve_column(column)
+            except ValueError as error:  # pragma: no cover - defensive
+                msg = (
+                    "add expression for column "
+                    f"'{alias}' references ambiguous column '{column}'"
+                )
+                raise ValueError(msg) from error
+            if resolved is None:
+                msg = (
+                    "add expression for column "
+                    f"'{alias}' references unknown columns"
+                )
+                raise ValueError(msg)

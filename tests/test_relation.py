@@ -3,6 +3,7 @@ from dataclasses import FrozenInstanceError
 import pytest
 
 from duckplus import DuckCon, Relation
+from duckplus.typed import ducktype
 
 
 def _make_relation(manager: DuckCon, query: str) -> Relation:
@@ -234,6 +235,39 @@ def test_add_rejects_blank_expressions() -> None:
 
         with pytest.raises(ValueError, match="cannot be empty"):
             relation.add(double="   ")
+
+
+def test_add_accepts_typed_expressions() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 2::INTEGER AS value, 3::INTEGER AS other"),
+        )
+
+        extended = relation.add(
+            total=ducktype.Numeric("value") + ducktype.Numeric("other"),
+            delta=ducktype.Numeric.literal(10),
+        )
+
+        assert extended.columns == ("value", "other", "total", "delta")
+        assert extended.types == ("INTEGER", "INTEGER", "INTEGER", "INTEGER")
+        assert extended.relation.fetchall() == [(2, 3, 5, 10)]
+
+
+def test_add_typed_expression_rejects_new_column_dependencies() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 3::INTEGER AS value"),
+        )
+
+        with pytest.raises(ValueError, match="unknown columns"):
+            relation.add(
+                double=ducktype.Numeric("value") * 2,
+                quadruple=ducktype.Numeric("double") * 2,
+            )
 
 
 def test_add_requires_open_connection() -> None:
