@@ -22,6 +22,13 @@ Answer these before starting any TODO item to confirm the work is understood and
 4. The helper must render correct `OVER (...)` clauses, merge partition/order dependencies, support direction keywords, validate inputs, and keep chaining behaviour (including aliasing) intact.
 5. Cover the behaviour with new unit tests, update the typed API docs, and run the mypy/pylint/pytest suite to satisfy the repository's pre-commit policy.
 
+### Preflight Answers – Typed if_exists support
+1. Extend the typed SELECT builder with `if_exists` options so column projections and star modifiers automatically skip clauses targeting missing columns, mirroring the relation helpers' soft behaviours.
+2. The logic belongs in `duckplus/typed/select.py` with validation covered by `tests/test_typed_expression.py` and documentation in `docs/typed_api.md`.
+3. Review the existing select-builder helpers and relation-level `*_if_exists` methods to align validation patterns, plus inspect current typed expression tests for coverage expectations.
+4. Ensure optional components only render when their column dependencies exist, raise clear errors for ambiguous dependencies, and leave required projections untouched while updating docs to explain the workflow.
+5. Validate via targeted pytest coverage for the new paths and run the mypy, uvx, and pylint suites alongside the full pytest run per repository policy.
+
 ### Notes for "Transformation helpers"
 1. We need a `Relation.transform` helper that issues `SELECT * REPLACE` statements so callers can rewrite existing columns while preserving immutability.
 2. The behaviour naturally belongs on `duckplus.relation.Relation`, building on the stored `DuckCon` and underlying `DuckDBPyRelation` metadata.
@@ -59,7 +66,7 @@ Answer these before starting any TODO item to confirm the work is understood and
 - [x] Add window function construction helpers on typed expressions.
 - [x] Introduce a fluent CASE expression builder that composes with typed operands, including nested usage.
 - [x] Provide a fluent SELECT statement builder for assembling projection lists.
-- [ ] Add if_exists options to allow better support of column management operations and make any operations that happen on an if_exists predicated on its existence
+- [x] Add if_exists options to allow better support of column management operations and make any operations that happen on an if_exists predicated on its existence
 
 ### Notes for "Typed Expression API"
 1. Rich expression objects should expose column dependency metadata so helpers like `Relation.add` can validate references to both existing and newly-created columns.
