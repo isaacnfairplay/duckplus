@@ -276,6 +276,139 @@ class Relation:
 
         return self._join(other, join_type="semi", on=on)
 
+    def asof_join(
+        self,
+        other: "Relation",
+        *,
+        order: tuple[object, object],
+        on: Mapping[str, str] | Iterable[tuple[str, str]] | None = None,
+        tolerance: object | None = None,
+        direction: Literal["backward", "forward"] = "backward",
+    ) -> "Relation":
+        """Return an as-of join aligning rows by an ordering column."""
+
+        if not isinstance(other, Relation):
+            msg = "asof_join requires another Relation instance"
+            raise TypeError(msg)
+
+        if self.duckcon is not other.duckcon:
+            msg = "Joined relations must originate from the same DuckCon"
+            raise ValueError(msg)
+
+        if not self.duckcon.is_open:
+            msg = (
+                "DuckCon connection must be open to call asof_join. "
+                "Use DuckCon as a context manager."
+            )
+            raise RuntimeError(msg)
+
+        if not isinstance(order, tuple) or len(order) != 2:
+            msg = "asof_join order must be a two-item tuple"
+            raise TypeError(msg)
+
+        direction_key = direction.casefold()
+        if direction_key not in {"backward", "forward"}:
+            msg = "asof_join direction must be 'backward' or 'forward'"
+            raise ValueError(msg)
+
+        join_pairs = self._prepare_join_pairs(other, on)
+
+        left_casefold_map = {
+            key: list(values) for key, values in self._casefolded_columns.items()
+        }
+        right_casefold_map = self._build_casefold_map(other.columns)
+
+        left_alias = "left"
+        right_alias = "right"
+
+        left_order_sql, _ = self._normalise_asof_operand(
+            order[0],
+            alias=left_alias,
+            relation_label="left asof order operand",
+            casefold_map=left_casefold_map,
+        )
+        right_order_sql, _ = self._normalise_asof_operand(
+            order[1],
+            alias=right_alias,
+            relation_label="right asof order operand",
+            casefold_map=right_casefold_map,
+        )
+
+        tolerance_sql: str | None
+        if tolerance is None:
+            tolerance_sql = None
+        else:
+            tolerance_sql = self._normalise_asof_tolerance(
+                tolerance,
+                left_alias=left_alias,
+                right_alias=right_alias,
+                left_casefold_map=left_casefold_map,
+                right_casefold_map=right_casefold_map,
+            )
+
+        left_identifier = self._quote_identifier(left_alias)
+        right_identifier = self._quote_identifier(right_alias)
+
+        condition_clauses = [
+            (
+                f"{left_identifier}.{self._quote_identifier(left_column)} = "
+                f"{right_identifier}.{self._quote_identifier(right_column)}"
+            )
+            for left_column, right_column in join_pairs
+        ]
+
+        if direction_key == "backward":
+            inequality_clause = f"{left_order_sql} >= {right_order_sql}"
+            if tolerance_sql is not None:
+                tolerance_clause = (
+                    f"({left_order_sql} - {right_order_sql}) <= {tolerance_sql}"
+                )
+            else:
+                tolerance_clause = None
+        else:
+            inequality_clause = f"{left_order_sql} <= {right_order_sql}"
+            if tolerance_sql is not None:
+                tolerance_clause = (
+                    f"({right_order_sql} - {left_order_sql}) <= {tolerance_sql}"
+                )
+            else:
+                tolerance_clause = None
+
+        condition_clauses.append(inequality_clause)
+        if tolerance_clause is not None:
+            condition_clauses.append(tolerance_clause)
+
+        condition_sql = " AND ".join(condition_clauses)
+
+        projection_entries = self._build_join_projection_entries(
+            other,
+            left_alias=left_alias,
+            right_alias=right_alias,
+            include_right_columns=True,
+        )
+        if not projection_entries:
+            msg = "asof_join requires at least one projected column"
+            raise ValueError(msg)
+        select_list = ", ".join(projection_entries)
+
+        left_subquery = self._relation.sql_query()
+        right_subquery = other._relation.sql_query()
+
+        query = (
+            f"SELECT {select_list}\n"
+            f"FROM ({left_subquery}) AS {left_identifier}\n"
+            f"ASOF JOIN ({right_subquery}) AS {right_identifier}\n"
+            f"ON {condition_sql}"
+        )
+
+        try:
+            joined_relation = self.duckcon.connection.sql(query)
+        except duckdb.BinderException as error:
+            msg = "asof join expressions reference unknown columns"
+            raise ValueError(msg) from error
+
+        return type(self).from_relation(self.duckcon, joined_relation)
+
     def _join(
         self,
         other: "Relation",
@@ -755,6 +888,143 @@ class Relation:
             clauses.append(f"{left_reference} = {right_reference}")
 
         return " AND ".join(clauses)
+
+    def _normalise_asof_operand(
+        self,
+        operand: object,
+        *,
+        alias: str,
+        relation_label: str,
+        casefold_map: Mapping[str, list[str]],
+    ) -> tuple[str, frozenset[ExpressionDependency]]:
+        if isinstance(operand, str):
+            column = operand.strip()
+            if not column:
+                msg = f"{relation_label} cannot be empty"
+                raise ValueError(msg)
+            resolved = self._resolve_casefolded_column(
+                casefold_map,
+                column,
+                relation_label=relation_label,
+            )
+            alias_identifier = self._quote_identifier(alias)
+            column_identifier = self._quote_identifier(resolved)
+            return f"{alias_identifier}.{column_identifier}", frozenset()
+
+        if isinstance(operand, TypedExpression):
+            dependencies = operand.dependencies
+            allowed_aliases = {
+                alias.casefold(): (alias, casefold_map),
+            }
+            self._validate_asof_expression_dependencies(
+                dependencies,
+                allowed_aliases=allowed_aliases,
+                context=relation_label,
+            )
+            return operand.render(), dependencies
+
+        msg = (
+            f"{relation_label} must be a column name or typed expression "
+            f"(got {type(operand)!r})"
+        )
+        raise TypeError(msg)
+
+    def _normalise_asof_tolerance(
+        self,
+        tolerance: object,
+        *,
+        left_alias: str,
+        right_alias: str,
+        left_casefold_map: Mapping[str, list[str]],
+        right_casefold_map: Mapping[str, list[str]],
+    ) -> str:
+        if isinstance(tolerance, bool):
+            msg = "asof tolerance cannot be a boolean"
+            raise TypeError(msg)
+
+        if isinstance(tolerance, (int, float)):
+            return repr(tolerance)
+
+        if isinstance(tolerance, str):
+            sql = tolerance.strip()
+            if not sql:
+                msg = "asof tolerance cannot be empty"
+                raise ValueError(msg)
+            return sql
+
+        if isinstance(tolerance, TypedExpression):
+            dependencies = tolerance.dependencies
+            allowed_aliases = {
+                left_alias.casefold(): (left_alias, left_casefold_map),
+                right_alias.casefold(): (right_alias, right_casefold_map),
+            }
+            self._validate_asof_expression_dependencies(
+                dependencies,
+                allowed_aliases=allowed_aliases,
+                context="asof tolerance expression",
+            )
+            return tolerance.render()
+
+        msg = (
+            "asof tolerance must be a SQL string, numeric literal, or typed expression "
+            f"(got {type(tolerance)!r})"
+        )
+        raise TypeError(msg)
+
+    def _validate_asof_expression_dependencies(
+        self,
+        dependencies: frozenset[ExpressionDependency],
+        *,
+        allowed_aliases: Mapping[str, tuple[str, Mapping[str, list[str]]]],
+        context: str,
+    ) -> None:
+        if not dependencies:
+            return
+
+        alias_items = {
+            key.casefold(): (name, mapping)
+            for key, (name, mapping) in allowed_aliases.items()
+        }
+
+        default_alias: tuple[str, Mapping[str, list[str]]] | None
+        if len(alias_items) == 1:
+            default_alias = next(iter(alias_items.values()))
+        else:
+            default_alias = None
+
+        allowed_names = ", ".join(sorted(name for name, _ in alias_items.values()))
+
+        for dependency in dependencies:
+            column = dependency.column_name
+            table = dependency.table_name
+
+            if column is None:
+                msg = f"{context} cannot reference entire tables"
+                raise ValueError(msg)
+
+            if table is None:
+                if default_alias is None:
+                    msg = (
+                        f"{context} must qualify column '{column}' with one of: {allowed_names}"
+                    )
+                    raise ValueError(msg)
+                alias_name, casefold_map = default_alias
+            else:
+                alias_key = table.casefold()
+                try:
+                    alias_name, casefold_map = alias_items[alias_key]
+                except KeyError as error:
+                    msg = (
+                        f"{context} references unknown table alias '{table}'. "
+                        f"Expected one of: {allowed_names}"
+                    )
+                    raise ValueError(msg) from error
+
+            self._resolve_casefolded_column(
+                casefold_map,
+                column,
+                relation_label=f"{context} alias '{alias_name}'",
+            )
 
     def _build_join_projection_entries(
         self,

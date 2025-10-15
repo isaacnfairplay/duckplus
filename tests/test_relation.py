@@ -1014,3 +1014,172 @@ def test_join_requires_open_connection() -> None:
 
     with pytest.raises(RuntimeError):
         left.join(right)
+
+
+def test_asof_join_matches_previous_rows() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        trades = Relation.from_relation(
+            manager,
+            connection.sql(
+                """
+                SELECT * FROM (VALUES
+                    (1::INTEGER, 10::INTEGER),
+                    (2::INTEGER, 20::INTEGER),
+                    (1::INTEGER, 35::INTEGER)
+                ) AS data(symbol, event_ts)
+                """
+            ),
+        )
+        quotes = Relation.from_relation(
+            manager,
+            connection.sql(
+                """
+                SELECT * FROM (VALUES
+                    (1::INTEGER, 5::INTEGER, 100::INTEGER),
+                    (1::INTEGER, 30::INTEGER, 110::INTEGER),
+                    (2::INTEGER, 19::INTEGER, 90::INTEGER)
+                ) AS data(symbol, quote_ts, price)
+                """
+            ),
+        )
+
+        joined = trades.asof_join(
+            quotes,
+            on={"symbol": "symbol"},
+            order=("event_ts", "quote_ts"),
+        )
+
+        assert joined.columns == ("symbol", "event_ts", "quote_ts", "price")
+        assert joined.relation.order("event_ts").fetchall() == [
+            (1, 10, 5, 100),
+            (2, 20, 19, 90),
+            (1, 35, 30, 110),
+        ]
+
+
+def test_asof_join_respects_tolerance() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        left = Relation.from_relation(
+            manager,
+            connection.sql(
+                """
+                SELECT * FROM (VALUES
+                    (1::INTEGER, 10::INTEGER),
+                    (1::INTEGER, 50::INTEGER)
+                ) AS data(symbol, event_ts)
+                """
+            ),
+        )
+        right = Relation.from_relation(
+            manager,
+            connection.sql(
+                """
+                SELECT * FROM (VALUES
+                    (1::INTEGER, 3::INTEGER, 100::INTEGER),
+                    (1::INTEGER, 30::INTEGER, 200::INTEGER)
+                ) AS data(symbol, quote_ts, price)
+                """
+            ),
+        )
+
+        joined = left.asof_join(
+            right,
+            on={"symbol": "symbol"},
+            order=("event_ts", "quote_ts"),
+            tolerance=15,
+        )
+
+        assert joined.relation.fetchall() == [(1, 10, 3, 100)]
+
+
+def test_asof_join_supports_typed_operands() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        events = Relation.from_relation(
+            manager,
+            connection.sql(
+                """
+                SELECT * FROM (VALUES
+                    (1::INTEGER, 10::INTEGER, 7::INTEGER),
+                    (1::INTEGER, 20::INTEGER, 3::INTEGER),
+                    (1::INTEGER, 50::INTEGER, 10::INTEGER)
+                ) AS data(symbol, event_ts, max_gap)
+                """
+            ),
+        )
+        snapshots = Relation.from_relation(
+            manager,
+            connection.sql(
+                """
+                SELECT * FROM (VALUES
+                    (1::INTEGER, 4::INTEGER, 100::INTEGER),
+                    (1::INTEGER, 18::INTEGER, 200::INTEGER),
+                    (1::INTEGER, 45::INTEGER, 300::INTEGER)
+                ) AS data(symbol, quote_ts, price)
+                """
+            ),
+        )
+
+        joined = events.asof_join(
+            snapshots,
+            on={"symbol": "symbol"},
+            order=(
+                ducktype.Numeric.coerce(("left", "event_ts")),
+                ducktype.Numeric.coerce(("right", "quote_ts")),
+            ),
+            tolerance=ducktype.Numeric.coerce(("left", "max_gap")),
+        )
+
+        assert joined.relation.order("event_ts").fetchall() == [
+            (1, 10, 7, 4, 100),
+            (1, 20, 3, 18, 200),
+            (1, 50, 10, 45, 300),
+        ]
+
+
+def test_asof_join_rejects_unknown_order_column() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        left = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 1::INTEGER AS id, 10::INTEGER AS event_ts"),
+        )
+        right = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 1::INTEGER AS id, 5::INTEGER AS quote_ts"),
+        )
+
+        with pytest.raises(KeyError):
+            left.asof_join(right, on={"id": "id"}, order=("missing", "quote_ts"))
+
+
+def test_asof_join_requires_open_connection() -> None:
+    manager = DuckCon()
+    left = _make_relation(manager, "SELECT 1::INTEGER AS id, 1::INTEGER AS value")
+    right = _make_relation(manager, "SELECT 1::INTEGER AS id, 1::INTEGER AS other")
+
+    with pytest.raises(RuntimeError):
+        left.asof_join(right, on={"id": "id"}, order=("value", "other"))
+
+
+def test_asof_join_rejects_invalid_direction() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        left = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 1::INTEGER AS id, 1::INTEGER AS event_ts"),
+        )
+        right = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 1::INTEGER AS id, 1::INTEGER AS quote_ts"),
+        )
+
+        with pytest.raises(ValueError, match="direction"):
+            left.asof_join(
+                right,
+                on={"id": "id"},
+                order=("event_ts", "quote_ts"),
+                direction="nearest",  # type: ignore[arg-type]
+            )
