@@ -238,7 +238,11 @@ class Relation:
             raise ValueError(msg)
 
         resolved_group_by = self._normalise_group_by(group_by)
-        filter_clauses = self._normalise_filter_clauses(filters)
+        filter_clauses = self._normalise_filter_clauses(
+            filters,
+            label_prefix="aggregate filter",
+            error_context="Aggregate filters",
+        )
 
         if not self.duckcon.is_open:
             msg = (
@@ -530,12 +534,51 @@ class Relation:
             operation="aggregate group_by",
         )
 
+    def filter(self, *conditions: object) -> "Relation":
+        """Return a new relation filtered by the provided conditions."""
+
+        if not conditions:
+            msg = "filter requires at least one condition"
+            raise ValueError(msg)
+
+        if not self.duckcon.is_open:
+            msg = (
+                "DuckCon connection must be open to call filter. "
+                "Use DuckCon as a context manager."
+            )
+            raise RuntimeError(msg)
+
+        filter_clauses = self._normalise_filter_clauses(
+            conditions,
+            label_prefix="filter",
+            error_context="Filters",
+        )
+
+        working_relation = self._relation
+        for clause_sql, dependencies, label in filter_clauses:
+            if dependencies is not None:
+                self._assert_dependencies_exist(
+                    dependencies,
+                    error_prefix=label,
+                )
+            try:
+                working_relation = working_relation.filter(clause_sql)
+            except duckdb.BinderException as error:
+                msg = f"{label} references unknown columns"
+                raise ValueError(msg) from error
+
+        return type(self).from_relation(self.duckcon, working_relation)
+
     def _normalise_filter_clauses(
-        self, filters: tuple[object, ...]
+        self,
+        filters: tuple[object, ...],
+        *,
+        label_prefix: str,
+        error_context: str,
     ) -> list[tuple[str, frozenset[ExpressionDependency] | None, str]]:
         clauses: list[tuple[str, frozenset[ExpressionDependency] | None, str]] = []
         for index, condition in enumerate(filters, start=1):
-            label = f"aggregate filter condition {index}"
+            label = f"{label_prefix} condition {index}"
             if isinstance(condition, str):
                 sql = condition.strip()
                 if not sql:
@@ -545,7 +588,10 @@ class Relation:
                 continue
 
             if isinstance(condition, TypedExpression):
-                boolean_expression = self._unwrap_boolean_expression(condition)
+                boolean_expression = self._unwrap_boolean_expression(
+                    condition,
+                    error_context=error_context,
+                )
                 clauses.append(
                     (
                         boolean_expression.render(),
@@ -556,7 +602,7 @@ class Relation:
                 continue
 
             msg = (
-                "Aggregate filters must be SQL strings or boolean typed expressions"
+                f"{error_context} must be SQL strings or boolean typed expressions"
             )
             raise TypeError(msg)
 
@@ -716,7 +762,10 @@ class Relation:
         return current
 
     def _unwrap_boolean_expression(
-        self, expression: TypedExpression
+        self,
+        expression: TypedExpression,
+        *,
+        error_context: str,
     ) -> BooleanExpression:
         current = expression
         while isinstance(current, AliasedExpression):
@@ -724,7 +773,7 @@ class Relation:
         if not isinstance(current, BooleanExpression) and not isinstance(
             current.duck_type, BooleanType
         ):
-            msg = "Aggregate filters must be boolean expressions"
+            msg = f"{error_context} must be boolean expressions"
             raise TypeError(msg)
         if isinstance(current, BooleanExpression):
             return current

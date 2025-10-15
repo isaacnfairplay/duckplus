@@ -80,3 +80,39 @@ assert summary.relation.order("category").fetchall() == [
 Filters accept either SQL snippets or typed boolean expressions. If a filter or
 aggregate references an unknown column, DuckPlus raises a descriptive error
 before executing the query, keeping failures easy to diagnose.
+
+## Filtering rows
+
+`Relation.filter` applies one or more conditions to a relation while keeping the
+original untouched. Conditions can mix raw SQL snippets with typed boolean
+expressions, and each clause is validated against the source relation's column
+metadata before DuckDB executes the query.
+
+```python
+from duckplus import DuckCon, Relation
+from duckplus.typed import ducktype
+
+manager = DuckCon()
+with manager as connection:
+    base = Relation.from_relation(
+        manager,
+        connection.sql(
+            "SELECT * FROM (VALUES",
+            " ('a'::VARCHAR, 1::INTEGER),",
+            " ('a'::VARCHAR, 2::INTEGER),",
+            " ('b'::VARCHAR, 3::INTEGER)",
+            ") AS data(category, amount)",
+        ),
+    )
+
+    filtered = base.filter(
+        "amount > 1",
+        ducktype.Boolean.raw("category = 'b'", dependencies=["category"]),
+    )
+
+assert filtered.columns == ("category", "amount")
+assert filtered.relation.fetchall() == [("b", 3)]
+```
+
+Like aggregation filters, blank conditions or references to unknown columns
+raise descriptive errors so mistakes surface quickly.
