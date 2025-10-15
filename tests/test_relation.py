@@ -726,3 +726,93 @@ def test_aggregate_rejects_mismatched_alias_typed_expressions() -> None:
 
         with pytest.raises(ValueError, match="aggregate must use the same alias"):
             relation.aggregate(("category",), total=expression)
+
+
+def test_filter_applies_multiple_conditions() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(_AGGREGATE_SOURCE_SQL),
+        )
+
+        filtered = relation.filter(
+            "amount > 1",
+            ducktype.Boolean.raw("category = 'b'", dependencies=["category"]),
+        )
+
+        assert filtered.columns == relation.columns
+        assert filtered.relation.order("category").fetchall() == [("b", 3)]
+
+
+def test_filter_rejects_unknown_columns_in_strings() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(_AGGREGATE_SOURCE_SQL),
+        )
+
+        with pytest.raises(ValueError, match="unknown columns"):
+            relation.filter("missing > 1")
+
+
+def test_filter_rejects_unknown_columns_in_typed_expressions() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(_AGGREGATE_SOURCE_SQL),
+        )
+
+        with pytest.raises(ValueError, match="unknown columns"):
+            relation.filter(
+                ducktype.Boolean.raw(
+                    "missing > 1",
+                    dependencies=["missing"],
+                )
+            )
+
+
+def test_filter_rejects_non_boolean_typed_conditions() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(_AGGREGATE_SOURCE_SQL),
+        )
+
+        with pytest.raises(TypeError):
+            relation.filter(ducktype.Numeric("amount"))
+
+
+def test_filter_rejects_blank_conditions() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(_AGGREGATE_SOURCE_SQL),
+        )
+
+        with pytest.raises(ValueError):
+            relation.filter("   ")
+
+
+def test_filter_requires_conditions() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(_AGGREGATE_SOURCE_SQL),
+        )
+
+        with pytest.raises(ValueError):
+            relation.filter()
+
+
+def test_filter_requires_open_connection() -> None:
+    manager = DuckCon()
+    relation = _make_relation(manager, _AGGREGATE_SOURCE_SQL)
+
+    with pytest.raises(RuntimeError):
+        relation.filter("amount > 1")

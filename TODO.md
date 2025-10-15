@@ -88,7 +88,7 @@ Answer these before starting any TODO item to confirm the work is understood and
 
 ## Aggregation and Filtering
 - [x] Implement `Relation.aggregate(group_by, **named_aggs, *filters)` with validation of group columns.
-- [ ] Implement `Relation.filter(*conditions)` compatible with typed expressions and raw SQL snippets.
+- [x] Implement `Relation.filter(*conditions)` compatible with typed expressions and raw SQL snippets.
 
 ## Advanced Joins
 - [ ] Implement "error on column conflict" joins (inner/left/right/outer/semi) that auto-join shared columns and allow explicit conditions.
