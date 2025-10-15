@@ -9,7 +9,7 @@ Answer these before starting any TODO item to confirm the work is understood and
 5. How will this change be validated (tests, linters, examples), and are new fixtures or sample data required?
 
 ### Preflight Answers – Column addition helper dependencies
-1. Update `Relation.add` to validate each expression against the original relation so columns introduced in the same call can no longer be referenced.
+1. Update `Relation.add` to validate each expression against the original relation so columns introduced in the same call can no longer be referenced, including when typed expressions provide dependency metadata.
 2. The `duckplus.relation.Relation` class owns column creation helpers today, so changes belong in `duckplus/relation.py`, with tests in `tests/test_relation.py`.
 3. Review the existing `Relation.add` implementation along with its unit tests to mirror validation patterns and understand current error handling.
 4. Confirm column order is preserved, that newly introduced aliases are rejected when referenced immediately, and that error messages remain informative.
