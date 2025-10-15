@@ -164,6 +164,33 @@ def test_add_appends_new_columns() -> None:
         assert extended.relation.fetchall() == [(2, 4, 6)]
 
 
+def test_add_supports_dependent_expressions() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 3::INTEGER AS value"),
+        )
+
+        extended = relation.add(double="value * 2", quadruple="double * 2")
+
+        assert extended.columns == ("value", "double", "quadruple")
+        assert extended.types == ("INTEGER", "INTEGER", "INTEGER")
+        assert extended.relation.fetchall() == [(3, 6, 12)]
+
+
+def test_add_rejects_forward_references() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 3::INTEGER AS value"),
+        )
+
+        with pytest.raises(ValueError, match="unknown columns"):
+            relation.add(double="quadruple * 2", quadruple="value * 4")
+
+
 def test_add_rejects_existing_columns_case_insensitively() -> None:
     manager = DuckCon()
     with manager as connection:
