@@ -1,11 +1,13 @@
 """Context manager utilities for DuckDB connections."""
 
+# pylint: disable=import-error
+
 from __future__ import annotations
 
 from collections.abc import Callable
 from typing import Any, Optional
 
-import duckdb
+import duckdb  # type: ignore[import-not-found]
 
 
 class DuckCon:

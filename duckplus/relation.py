@@ -1,12 +1,14 @@
 """Utilities for working with DuckDB relations."""
 
+# pylint: disable=import-error
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 import warnings
 from typing import Iterable, Mapping, TypeVar, overload
 
-import duckdb
+import duckdb  # type: ignore[import-not-found]
 
 from .duckcon import DuckCon
 
@@ -318,7 +320,7 @@ class Relation:
             raise RuntimeError(msg)
 
         self._assert_no_conflicts(validated)
-        select_list = f"* RENAME ({', '.join(self._build_rename_clauses(validated))})"
+        select_list = self._build_explicit_select(validated)
         relation = self._relation.project(select_list)
         return type(self).from_relation(self.duckcon, relation)
 
@@ -372,13 +374,16 @@ class Relation:
             msg = f"Renaming results in duplicate column names: {formatted}"
             raise ValueError(msg)
 
-    def _build_rename_clauses(self, renames: Mapping[str, str]) -> list[str]:
-        clauses = []
-        for column, new_name in renames.items():
-            source = self._quote_identifier(column)
-            target = self._quote_identifier(new_name)
-            clauses.append(f"{source} AS {target}")
-        return clauses
+    def _build_explicit_select(self, renames: Mapping[str, str]) -> str:
+        clauses: list[str] = []
+        for column in self.columns:
+            if column in renames:
+                source = self._quote_identifier(column)
+                target = self._quote_identifier(renames[column])
+                clauses.append(f"{source} AS {target}")
+            else:
+                clauses.append(self._quote_identifier(column))
+        return ", ".join(clauses)
 
     def _resolve_subset(
         self,
