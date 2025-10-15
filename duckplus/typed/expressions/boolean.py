@@ -1,0 +1,26 @@
+"""Boolean expression factories."""
+
+from __future__ import annotations
+
+from typing import Iterable
+
+from .base import BooleanExpression
+
+
+class BooleanFactory:
+    def __call__(self, column: str) -> BooleanExpression:
+        return BooleanExpression.column(column)
+
+    def literal(self, value: bool) -> BooleanExpression:
+        return BooleanExpression.literal(value)
+
+    def raw(self, sql: str, *, dependencies: Iterable[str] = ()) -> BooleanExpression:
+        return BooleanExpression(sql, dependencies=dependencies)
+
+    def coerce(self, operand: object) -> BooleanExpression:
+        if isinstance(operand, BooleanExpression):
+            return operand
+        if isinstance(operand, bool):
+            return self.literal(operand)
+        msg = "Boolean operands must be expression or bool"
+        raise TypeError(msg)

@@ -1,5 +1,7 @@
 """Typed expression primitives for DuckPlus."""
 
+# pylint: disable=duplicate-code
+
 from .expression import (
     AliasedExpression,
     BlobExpression,
