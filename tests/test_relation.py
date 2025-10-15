@@ -12,6 +12,22 @@ def _make_relation(manager: DuckCon, query: str) -> Relation:
         return Relation.from_relation(manager, duck_relation)
 
 
+_AGGREGATE_SOURCE_SQL = """
+    SELECT * FROM (VALUES
+        ('a'::VARCHAR, 1::INTEGER),
+        ('a'::VARCHAR, 2::INTEGER),
+        ('b'::VARCHAR, 3::INTEGER)
+    ) AS data(category, amount)
+""".strip()
+
+
+_SINGLE_ROW_SQL = """
+    SELECT * FROM (VALUES
+        ('a'::VARCHAR, 1::INTEGER)
+    ) AS data(category, amount)
+""".strip()
+
+
 def test_relation_is_immutable() -> None:
     manager = DuckCon()
     relation = _make_relation(manager, "SELECT 1 AS value")
@@ -537,3 +553,176 @@ def test_drop_if_exists_returns_original_when_nothing_to_drop() -> None:
         result = relation.drop_if_exists("missing")
 
     assert result is relation
+
+
+def test_aggregate_groups_rows_and_computes_aggregates() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(_AGGREGATE_SOURCE_SQL),
+        )
+
+        aggregated = relation.aggregate(
+            ("category",),
+            total="sum(amount)",
+            average="avg(amount)",
+        )
+
+        ordered = aggregated.relation.order("category").fetchall()
+        assert ordered == [("a", 3, 1.5), ("b", 3, 3.0)]
+        assert aggregated.columns == ("category", "total", "average")
+
+
+def test_aggregate_accepts_typed_expressions() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(_AGGREGATE_SOURCE_SQL),
+        )
+
+        aggregated = relation.aggregate(
+            ("CATEGORY",),
+            total=ducktype.Numeric.Aggregate.sum("amount"),
+        )
+
+        assert aggregated.columns == ("category", "total")
+        assert aggregated.relation.order("category").fetchall() == [
+            ("a", 3),
+            ("b", 3),
+        ]
+
+
+def test_aggregate_supports_filters() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(_AGGREGATE_SOURCE_SQL),
+        )
+
+        string_filtered = relation.aggregate(
+            ("category",),
+            "amount > 1",
+            total="sum(amount)",
+        )
+
+        typed_filtered = relation.aggregate(
+            ("category",),
+            ducktype.Boolean.raw("amount > 1", dependencies=["amount"]),
+            total="sum(amount)",
+        )
+
+        expected = [("a", 2), ("b", 3)]
+        assert string_filtered.relation.order("category").fetchall() == expected
+        assert typed_filtered.relation.order("category").fetchall() == expected
+
+
+def test_aggregate_rejects_unknown_group_by_columns() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(_SINGLE_ROW_SQL),
+        )
+
+        with pytest.raises(KeyError):
+            relation.aggregate(("missing",), total="sum(amount)")
+
+
+def test_aggregate_rejects_unknown_aggregation_columns() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(_SINGLE_ROW_SQL),
+        )
+
+        with pytest.raises(ValueError, match="unknown columns"):
+            relation.aggregate(("category",), total="sum(missing)")
+
+
+def test_aggregate_rejects_typed_expression_with_unknown_columns() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(_SINGLE_ROW_SQL),
+        )
+
+        with pytest.raises(ValueError, match="unknown columns"):
+            relation.aggregate(
+                ("category",),
+                total=ducktype.Numeric.Aggregate.sum("missing"),
+            )
+
+
+def test_aggregate_rejects_non_boolean_filters() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(_SINGLE_ROW_SQL),
+        )
+
+        with pytest.raises(TypeError):
+            relation.aggregate(("category",), ducktype.Numeric("amount"), total="sum(amount)")
+
+
+def test_aggregate_rejects_blank_filters() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(_SINGLE_ROW_SQL),
+        )
+
+        with pytest.raises(ValueError):
+            relation.aggregate(("category",), "   ", total="sum(amount)")
+
+
+def test_aggregate_requires_aggregations() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(_SINGLE_ROW_SQL),
+        )
+
+        with pytest.raises(ValueError):
+            relation.aggregate(("category",))
+
+
+def test_aggregate_requires_open_connection() -> None:
+    manager = DuckCon()
+    relation = _make_relation(manager, _SINGLE_ROW_SQL)
+
+    with pytest.raises(RuntimeError):
+        relation.aggregate(("category",), total="sum(amount)")
+
+
+def test_aggregate_rejects_duplicate_aggregation_names() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(_SINGLE_ROW_SQL),
+        )
+
+        with pytest.raises(ValueError, match="specified multiple times"):
+            relation.aggregate(("category",), total="sum(amount)", TOTAL="avg(amount)")
+
+
+def test_aggregate_rejects_mismatched_alias_typed_expressions() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(_SINGLE_ROW_SQL),
+        )
+
+        expression = ducktype.Numeric.Aggregate.sum("amount").alias("other")
+
+        with pytest.raises(ValueError, match="aggregate must use the same alias"):
+            relation.aggregate(("category",), total=expression)
