@@ -1,5 +1,7 @@
 """Unit tests for the typed expression sub-module."""
 
+from decimal import Decimal
+
 import pytest
 
 from duckplus.typed import BooleanExpression, GenericExpression, NumericExpression, ducktype
@@ -24,6 +26,13 @@ def test_varchar_equality_to_literal() -> None:
     assert isinstance(expression, BooleanExpression)
     assert expression.render() == "(\"customer\" = 'prime')"
     assert expression.dependencies == {"customer"}
+
+
+def test_numeric_equality_to_decimal_literal() -> None:
+    expression = ducktype.Numeric("balance") == Decimal("12.50")
+    assert isinstance(expression, BooleanExpression)
+    assert expression.render() == '("balance" = 12.50)'
+    assert expression.dependencies == {"balance"}
 
 
 def test_boolean_composition_with_literals() -> None:
