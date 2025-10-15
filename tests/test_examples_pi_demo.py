@@ -5,13 +5,14 @@ import builtins
 import pytest
 
 from duckplus.examples import pi_demo
+from duckplus.typed import ExpressionDependency
 
 
 def test_build_circle_expressions_uses_numeric_dependencies() -> None:
     expressions = pi_demo.build_circle_expressions("r")
     assert expressions.radius.render() == '"r"'
     assert expressions.area.render() == '((3.141592653589793::DOUBLE * "r") * "r")'
-    assert expressions.area.dependencies == {"r"}
+    assert expressions.area.dependencies == {ExpressionDependency.column("r")}
     assert expressions.circumference.render() == '((3.141592653589793::DOUBLE * "r") * 2)'
 
 

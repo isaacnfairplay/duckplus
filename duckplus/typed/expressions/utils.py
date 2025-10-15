@@ -10,6 +10,12 @@ def quote_identifier(identifier: str) -> str:
     return f'"{escaped}"'
 
 
+def quote_qualified_identifier(column: str, *, table: str | None = None) -> str:
+    if table is None:
+        return quote_identifier(column)
+    return f"{quote_identifier(table)}.{quote_identifier(column)}"
+
+
 def quote_string(value: str) -> str:
     escaped = value.replace("'", "''")
     return f"'{escaped}'"

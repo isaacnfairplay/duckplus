@@ -1,6 +1,6 @@
 # Typed API Overview
 
-DuckPlus exposes a typed expression builder that mirrors DuckDB's type system. Expressions record their DuckDB type metadata and column dependencies so downstream helpers can validate usage.
+DuckPlus exposes a typed expression builder that mirrors DuckDB's type system. Expressions record their DuckDB type metadata and column or table dependencies so downstream helpers can validate usage across complex queries.
 
 ## Core Factories
 
@@ -11,6 +11,10 @@ order_total = ducktype.Numeric("total")
 customer_name = ducktype.Varchar("customer")
 was_discounted = ducktype.Boolean("has_discount")
 raw_payload = ducktype.Blob("payload")
+
+# Optional table qualification is supported for dependency-aware column references
+order_total_orders = ducktype.Numeric("total", table="orders")
+assert order_total_orders.render() == '"orders"."total"'
 ```
 
 Each factory exposes helpers to construct literal and raw expressions:
@@ -56,6 +60,18 @@ The legacy namespace is still available for advanced scenarios:
 
 ```python
 legacy = ducktype.Numeric.Aggregate.sum("revenue")
+```
+
+Raw helpers accept explicit dependency metadata for advanced scenarios such as table-level lineage tracking:
+
+```python
+from duckplus.typed import ExpressionDependency
+
+orders_count = ducktype.Numeric.raw(
+    "count(*)",
+    dependencies=[("orders", None)],
+)
+assert orders_count.dependencies == {ExpressionDependency.table("orders")}
 ```
 
 ## Window Functions

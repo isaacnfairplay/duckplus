@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from typing import Iterable
 
+from ..dependencies import DependencyLike, ExpressionDependency
 from ..types import BlobType, DuckDBType
 from .base import TypedExpression
-from .utils import quote_identifier
+from .utils import quote_qualified_identifier
 
 
 class BlobExpression(TypedExpression):
@@ -16,7 +17,7 @@ class BlobExpression(TypedExpression):
         self,
         sql: str,
         *,
-        dependencies: Iterable[str] = (),
+        dependencies: Iterable[DependencyLike] = (),
         duck_type: DuckDBType | None = None,
     ) -> None:
         super().__init__(
@@ -26,8 +27,17 @@ class BlobExpression(TypedExpression):
         )
 
     @classmethod
-    def column(cls, name: str) -> "BlobExpression":
-        return cls(quote_identifier(name), dependencies=(name,))
+    def column(
+        cls,
+        name: str,
+        *,
+        table: str | None = None,
+    ) -> "BlobExpression":
+        dependency = ExpressionDependency.column(name, table=table)
+        return cls(
+            quote_qualified_identifier(name, table=table),
+            dependencies=(dependency,),
+        )
 
     @classmethod
     def literal(
@@ -47,7 +57,7 @@ class BlobExpression(TypedExpression):
         cls,
         sql: str,
         *,
-        dependencies: Iterable[str] = (),
+        dependencies: Iterable[DependencyLike] = (),
         duck_type: DuckDBType | None = None,
     ) -> "BlobExpression":
         return cls(sql, dependencies=dependencies, duck_type=duck_type)
@@ -62,8 +72,13 @@ class BlobExpression(TypedExpression):
 
 
 class BlobFactory:
-    def __call__(self, column: str) -> BlobExpression:
-        return BlobExpression.column(column)
+    def __call__(
+        self,
+        column: str,
+        *,
+        table: str | None = None,
+    ) -> BlobExpression:
+        return BlobExpression.column(column, table=table)
 
     def literal(self, value: bytes) -> BlobExpression:
         return BlobExpression.literal(value)
@@ -72,7 +87,7 @@ class BlobFactory:
         self,
         sql: str,
         *,
-        dependencies: Iterable[str] = (),
+        dependencies: Iterable[DependencyLike] = (),
         duck_type: DuckDBType | None = None,
     ) -> BlobExpression:
         return BlobExpression.raw(

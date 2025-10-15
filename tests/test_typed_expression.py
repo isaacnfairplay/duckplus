@@ -4,59 +4,87 @@ from decimal import Decimal
 
 import pytest
 
-from duckplus.typed import BooleanExpression, GenericExpression, NumericExpression, ducktype
+from duckplus.typed import (
+    BooleanExpression,
+    ExpressionDependency,
+    GenericExpression,
+    NumericExpression,
+    ducktype,
+)
+
+
+def col_dep(name: str, *, table: str | None = None) -> ExpressionDependency:
+    return ExpressionDependency.column(name, table=table)
+
+
+def table_dep(name: str) -> ExpressionDependency:
+    return ExpressionDependency.table(name)
 
 
 def test_numeric_column_carries_metadata() -> None:
     expression = ducktype.Numeric("total")
     assert isinstance(expression, NumericExpression)
     assert expression.render() == '"total"'
-    assert expression.dependencies == {"total"}
+    assert expression.dependencies == {col_dep('total')}
     assert expression.duck_type.render() == "NUMERIC"
+
+
+def test_numeric_column_with_table_dependency() -> None:
+    expression = ducktype.Numeric("total", table="orders")
+    assert expression.render() == '"orders"."total"'
+    assert expression.dependencies == {col_dep('total', table='orders')}
+
+
+def test_raw_expression_allows_table_dependency() -> None:
+    expression = ducktype.Numeric.raw(
+        "count(*)",
+        dependencies=[("orders", None)],
+    )
+    assert expression.dependencies == {table_dep('orders')}
 
 
 def test_numeric_aggregate_sum_uses_dependencies() -> None:
     expression = ducktype.Numeric.Aggregate.sum("sales")
     assert expression.render() == 'sum("sales")'
-    assert expression.dependencies == {"sales"}
+    assert expression.dependencies == {col_dep('sales')}
 
 
 def test_varchar_equality_to_literal() -> None:
     expression = ducktype.Varchar("customer") == "prime"
     assert isinstance(expression, BooleanExpression)
     assert expression.render() == "(\"customer\" = 'prime')"
-    assert expression.dependencies == {"customer"}
+    assert expression.dependencies == {col_dep('customer')}
 
 
 def test_numeric_equality_to_decimal_literal() -> None:
     expression = ducktype.Numeric("balance") == Decimal("12.50")
     assert isinstance(expression, BooleanExpression)
     assert expression.render() == '("balance" = 12.50)'
-    assert expression.dependencies == {"balance"}
+    assert expression.dependencies == {col_dep('balance')}
 
 
 def test_boolean_composition_with_literals() -> None:
     predicate = ducktype.Boolean("is_active") & ducktype.Boolean.literal(True)
     assert predicate.render() == '("is_active" AND TRUE)'
-    assert predicate.dependencies == {"is_active"}
+    assert predicate.dependencies == {col_dep('is_active')}
 
 
 def test_numeric_arithmetic_and_aliasing() -> None:
     expression = (ducktype.Numeric("subtotal") + 5).alias("order_total")
     assert expression.render() == '("subtotal" + 5) AS "order_total"'
-    assert expression.dependencies == {"subtotal"}
+    assert expression.dependencies == {col_dep('subtotal')}
 
 
 def test_varchar_concatenation_with_literal() -> None:
     expression = ducktype.Varchar("first_name") + " "
     assert expression.render() == "(\"first_name\" || ' ')"
-    assert expression.dependencies == {"first_name"}
+    assert expression.dependencies == {col_dep('first_name')}
 
 
 def test_varchar_right_concatenation_literal() -> None:
     expression = "Hello, " + ducktype.Varchar("name")
     assert expression.render() == "('Hello, ' || \"name\")"
-    assert expression.dependencies == {"name"}
+    assert expression.dependencies == {col_dep('name')}
 
 
 def test_numeric_operand_validation() -> None:
@@ -76,7 +104,7 @@ def test_function_catalog_boolean_namespace_handles_dependencies() -> None:
         ducktype.Varchar("name"), "A"
     )
     assert expression.render() == "starts_with(\"name\", 'A')"
-    assert expression.dependencies == {"name"}
+    assert expression.dependencies == {col_dep('name')}
     assert expression.duck_type.render() == "BOOLEAN"
 
 def test_function_catalog_numeric_pow_accepts_literal_exponent() -> None:
@@ -84,19 +112,19 @@ def test_function_catalog_numeric_pow_accepts_literal_exponent() -> None:
         ducktype.Numeric("base"), 2
     )
     assert expression.render() == 'pow("base", 2)'
-    assert expression.dependencies == {"base"}
+    assert expression.dependencies == {col_dep('base')}
 
 def test_function_catalog_aggregate_numeric_sum_alias() -> None:
     expression = ducktype.Functions.Aggregate.Numeric.sum("revenue").alias("total")
     assert expression.render() == 'sum("revenue") AS "total"'
-    assert expression.dependencies == {"revenue"}
+    assert expression.dependencies == {col_dep('revenue')}
 
 
 def test_numeric_expression_method_sum() -> None:
     aggregated = ducktype.Numeric("amount").sum()
     assert isinstance(aggregated, NumericExpression)
     assert aggregated.render() == 'sum("amount")'
-    assert aggregated.dependencies == {"amount"}
+    assert aggregated.dependencies == {col_dep('amount')}
 
 
 def test_generic_expression_lacks_sum_method() -> None:
@@ -109,7 +137,7 @@ def test_generic_expression_lacks_sum_method() -> None:
 def test_generic_max_by_accepts_numeric() -> None:
     winner = ducktype.Generic("customer").max_by(ducktype.Numeric("score"))
     assert "max_by" in winner.render()
-    assert winner.dependencies == {"customer", "score"}
+    assert winner.dependencies == {col_dep('customer'), col_dep('score')}
 
 
 def test_window_over_renders_partition_and_order_clauses() -> None:
@@ -122,7 +150,7 @@ def test_window_over_renders_partition_and_order_clauses() -> None:
         windowed.render()
         == '(sum("amount") OVER (PARTITION BY "customer" ORDER BY "order_date" DESC))'
     )
-    assert windowed.dependencies == {"amount", "customer", "order_date"}
+    assert windowed.dependencies == {col_dep('amount'), col_dep('customer'), col_dep('order_date')}
 
 
 def test_window_over_supports_frame_clauses() -> None:
@@ -134,7 +162,7 @@ def test_window_over_supports_frame_clauses() -> None:
         windowed.render()
         == '(sum("amount") OVER (ORDER BY "event_time" ROWS BETWEEN 1 PRECEDING AND CURRENT ROW))'
     )
-    assert windowed.dependencies == {"amount", "event_time"}
+    assert windowed.dependencies == {col_dep('amount'), col_dep('event_time')}
 
 
 def test_window_over_preserves_aliasing() -> None:
@@ -148,7 +176,7 @@ def test_window_over_preserves_aliasing() -> None:
         windowed.render()
         == '(sum("amount") OVER (PARTITION BY "customer")) AS "running_total"'
     )
-    assert windowed.dependencies == {"amount", "customer"}
+    assert windowed.dependencies == {col_dep('amount'), col_dep('customer')}
 
 
 def test_window_over_validates_direction() -> None:
@@ -174,7 +202,7 @@ def test_numeric_case_expression_renders_sql() -> None:
         == "CASE WHEN (\"status\" = 'active') THEN 1 "
         "WHEN (\"status\" = 'inactive') THEN 0 ELSE -1 END"
     )
-    assert expression.dependencies == {"status"}
+    assert expression.dependencies == {col_dep('status')}
 
 
 def test_case_expression_supports_nested_builders() -> None:
@@ -195,7 +223,7 @@ def test_case_expression_supports_nested_builders() -> None:
         == "CASE WHEN \"is_internal\" THEN 'internal' ELSE "
         "CASE WHEN TRUE THEN 'fallback' ELSE 'unknown' END END"
     )
-    assert expression.dependencies == {"is_internal"}
+    assert expression.dependencies == {col_dep('is_internal')}
 
 
 def test_case_expression_requires_when_clause() -> None:
