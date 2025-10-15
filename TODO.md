@@ -51,6 +51,7 @@ Answer these before starting any TODO item to confirm the work is understood and
 - [x] Enable expression comparisons (`ducktype.Varchar("customer") == "prime"`) and joins between differently named columns.
 - [x] Support aliasing and renaming via methods like `.alias("my_customer")` with dict/str serialization.
 - [x] Add window function construction helpers on typed expressions.
+- [x] Introduce a fluent CASE expression builder that composes with typed operands, including nested usage.
 
 ### Notes for "Typed Expression API"
 1. Rich expression objects should expose column dependency metadata so helpers like `Relation.add` can validate references to both existing and newly-created columns.

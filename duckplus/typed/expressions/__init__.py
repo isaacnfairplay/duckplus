@@ -1,6 +1,7 @@
 """Composable typed expression building blocks."""
 
 from .base import AliasedExpression, BooleanExpression, GenericExpression, TypedExpression
+from .case import CaseExpressionBuilder
 from .binary import BlobExpression, BlobFactory
 from .boolean import BooleanFactory
 from .generic import GenericFactory
@@ -12,6 +13,7 @@ __all__ = [
     "BlobExpression",
     "BlobFactory",
     "BooleanExpression",
+    "CaseExpressionBuilder",
     "BooleanFactory",
     "GenericExpression",
     "GenericFactory",

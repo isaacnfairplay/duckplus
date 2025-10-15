@@ -74,6 +74,27 @@ rolling_revenue = ducktype.Numeric("revenue").sum().over(
 Dependencies from the partition and ordering expressions are merged onto the
 result, keeping downstream helpers aware of all referenced columns.
 
+## CASE Expressions
+
+Typed factories expose a `.case()` helper that builds searched CASE expressions
+while preserving type information and dependencies:
+
+```python
+customer_segment = (
+    ducktype.Varchar.case()
+    .when(ducktype.Boolean("is_high_value"), "VIP")
+    .when(ducktype.Boolean("is_employee"), "Internal")
+    .else_("Standard")
+    .end()
+)
+```
+
+Each `when` clause accepts any boolean expression (including literals), and the
+`then`/`else` branches coerce through the underlying factory so literals and
+typed expressions compose naturally. The builder returns a normal typed
+expression, allowing nested CASE expressions or further chaining such as
+`.alias("segment")`.
+
 ## Function Namespaces
 
 The DuckDB function catalog is exposed via `ducktype.Functions` with scalar, aggregate, and window namespaces. Each namespace is grouped by return type for discoverability.

@@ -6,6 +6,8 @@ from typing import Iterable
 
 from ..types import DuckDBType, VarcharType
 from .base import TypedExpression
+from .boolean import BooleanFactory
+from .case import CaseExpressionBuilder
 from .utils import quote_identifier, quote_string
 
 
@@ -110,3 +112,10 @@ class VarcharFactory:
             return self.literal(operand)
         msg = "Unsupported operand for varchar expression"
         raise TypeError(msg)
+
+    def case(self) -> CaseExpressionBuilder[VarcharExpression]:
+        boolean_factory = BooleanFactory()
+        return CaseExpressionBuilder(
+            result_coercer=self.coerce,
+            condition_coercer=boolean_factory.coerce,
+        )
