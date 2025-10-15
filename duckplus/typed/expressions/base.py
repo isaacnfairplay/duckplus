@@ -1,5 +1,7 @@
 """Base expression classes shared across typed operations."""
 
+# pylint: disable=too-many-locals
+
 from __future__ import annotations
 
 from collections.abc import Iterable as IterableABC
@@ -51,7 +53,7 @@ class TypedExpression:
     def alias(self, alias: str) -> "AliasedExpression":
         return AliasedExpression(base=self, alias=alias)
 
-    def _clone_with_sql(
+    def clone_with_sql(
         self,
         sql: str,
         *,
@@ -92,7 +94,7 @@ class TypedExpression:
         partition_by: Iterable[object] | object | None = None,
         order_by: Iterable[object] | object | None = None,
         frame: str | None = None,
-    ) -> "TypedExpression":
+    ) -> "TypedExpression":  # pylint: disable=too-many-locals
         """Wrap the expression in a DuckDB window clause."""
 
         partition_operands = self._normalise_window_operands(partition_by)
@@ -126,7 +128,7 @@ class TypedExpression:
         window_spec = " ".join(components)
         window_clause = f"({window_spec})" if components else "()"
         sql = f"({self.render()} OVER {window_clause})"
-        return self._clone_with_sql(sql, dependencies=dependencies)
+        return self.clone_with_sql(sql, dependencies=dependencies)
 
     @classmethod
     def _normalise_window_operands(
@@ -212,13 +214,13 @@ class AliasedExpression(TypedExpression):
     def _coerce_operand(self, other: object) -> TypedExpression:  # type: ignore[override]
         return self.base._coerce_operand(other)  # pylint: disable=protected-access
 
-    def _clone_with_sql(
+    def clone_with_sql(
         self,
         sql: str,
         *,
         dependencies: Iterable[DependencyLike],
     ) -> "TypedExpression":
-        cloned = self.base._clone_with_sql(sql, dependencies=dependencies)
+        cloned = self.base.clone_with_sql(sql, dependencies=dependencies)
         return cloned.alias(self.alias_name)
 
     def over(
@@ -356,7 +358,9 @@ class GenericExpression(TypedExpression):
         return cls(sql, dependencies=dependencies)
 
     def max_by(self, order: "TypedExpression") -> "TypedExpression":
-        from ..functions import AGGREGATE_FUNCTIONS
+        from ..functions import (  # pylint: disable=import-outside-toplevel
+            AGGREGATE_FUNCTIONS,
+        )
 
         aggregator = AGGREGATE_FUNCTIONS.Generic.max_by
         return aggregator(self, order)

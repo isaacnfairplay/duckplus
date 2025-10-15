@@ -14,6 +14,8 @@ The module includes ``reveal_type`` probes guarded by ``TYPE_CHECKING`` so the
 type checker will surface the expression types when you run the command above.
 """
 
+# pylint: disable=duplicate-code
+
 from __future__ import annotations
 
 from dataclasses import dataclass

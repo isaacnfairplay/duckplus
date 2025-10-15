@@ -7,6 +7,8 @@ from typing import cast
 
 from .base import DecimalType, DuckDBType, FloatingType, IntegerType, NumericType
 
+# pylint: disable=too-many-return-statements
+
 _UTINYINT_MAX = 255
 _USMALLINT_MAX = 65_535
 _UINTEGER_MAX = 4_294_967_295

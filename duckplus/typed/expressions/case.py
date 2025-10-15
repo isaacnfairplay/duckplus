@@ -80,7 +80,7 @@ class CaseExpressionBuilder(Generic[ResultExpressionT]):
         sql = " ".join(parts)
 
         template = self._select_template_expression()
-        cloned = template._clone_with_sql(sql, dependencies=frozenset(dependencies))
+        cloned = template.clone_with_sql(sql, dependencies=frozenset(dependencies))
         return cast(ResultExpressionT, cloned)
 
     def _select_template_expression(self) -> ResultExpressionT:

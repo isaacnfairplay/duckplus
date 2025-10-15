@@ -25,21 +25,21 @@ class DuckDBType(ABC):
         return self.render()
 
     @abstractmethod
-    def _key(self) -> Tuple[object, ...]:
+    def key(self) -> Tuple[object, ...]:
         raise NotImplementedError
 
     def accepts(self, candidate: "DuckDBType") -> bool:
         """Return whether ``candidate`` can be used where this type is expected."""
 
-        return type(self) is type(candidate) and self._key() == candidate._key()
+        return type(self) is type(candidate) and self.key() == candidate.key()
 
     def __eq__(self, other: object) -> bool:  # pragma: no cover - trivial wrapper
         if not isinstance(other, DuckDBType):
             return False
-        return type(self) is type(other) and self._key() == other._key()
+        return type(self) is type(other) and self.key() == other.key()
 
     def __hash__(self) -> int:  # pragma: no cover - trivial wrapper
-        return hash((type(self), self._key()))
+        return hash((type(self), self.key()))
 
     def __str__(self) -> str:  # pragma: no cover - trivial wrapper
         return self.render()
@@ -59,7 +59,7 @@ class SimpleType(DuckDBType):
     def render(self) -> str:
         return self.name
 
-    def _key(self) -> Tuple[object, ...]:
+    def key(self) -> Tuple[object, ...]:
         return (self.name,)
 
 
@@ -145,7 +145,7 @@ class DecimalType(NumericType):
     def render(self) -> str:
         return f"DECIMAL({self.precision}, {self.scale})"
 
-    def _key(self) -> Tuple[object, ...]:
+    def key(self) -> Tuple[object, ...]:
         return (self.precision, self.scale)
 
 
@@ -179,7 +179,7 @@ class UnknownType(DuckDBType):
     def render(self) -> str:
         return "UNKNOWN"
 
-    def _key(self) -> Tuple[object, ...]:
+    def key(self) -> Tuple[object, ...]:
         return ("UNKNOWN",)
 
     def accepts(self, candidate: DuckDBType) -> bool:

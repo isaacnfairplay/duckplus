@@ -21,7 +21,7 @@ class ListType(DuckDBType):
     def describe(self) -> str:
         return f"LIST OF {self.element_type.describe()}"
 
-    def _key(self) -> Tuple[object, ...]:
+    def key(self) -> Tuple[object, ...]:
         return (self.element_type,)
 
 
@@ -41,7 +41,7 @@ class ArrayType(DuckDBType):
         size = "variable" if self.length is None else str(self.length)
         return f"ARRAY[{size}] OF {self.element_type.describe()}"
 
-    def _key(self) -> Tuple[object, ...]:
+    def key(self) -> Tuple[object, ...]:
         return (self.element_type, self.length)
 
 
@@ -58,7 +58,7 @@ class MapType(DuckDBType):
     def describe(self) -> str:
         return f"MAP[{self.key_type.describe()} -> {self.value_type.describe()}]"
 
-    def _key(self) -> Tuple[object, ...]:
+    def key(self) -> Tuple[object, ...]:
         return (self.key_type, self.value_type)
 
 
@@ -75,7 +75,7 @@ class UnionType(DuckDBType):
         option_descriptions = ", ".join(option.describe() for option in self.options)
         return f"UNION[{option_descriptions}]"
 
-    def _key(self) -> Tuple[object, ...]:
+    def key(self) -> Tuple[object, ...]:
         return self.options
 
 
@@ -94,14 +94,14 @@ class StructField:
     def describe(self) -> str:
         return f"{self.name}: {self.type.describe()}"
 
-    def _key(self) -> Tuple[object, ...]:
+    def key(self) -> Tuple[object, ...]:
         return (self.name, self.type)
 
     def __eq__(self, other: object) -> bool:  # pragma: no cover - trivial wrapper
-        return isinstance(other, StructField) and self._key() == other._key()
+        return isinstance(other, StructField) and self.key() == other.key()
 
     def __hash__(self) -> int:  # pragma: no cover - trivial wrapper
-        return hash(self._key())
+        return hash(self.key())
 
     def __repr__(self) -> str:  # pragma: no cover - debugging helper
         return f"StructField({self.name!r}, {self.type!r})"
@@ -125,7 +125,7 @@ class StructType(DuckDBType):
         joined = ", ".join(field.describe() for field in self.fields)
         return f"STRUCT<{joined}>"
 
-    def _key(self) -> Tuple[object, ...]:
+    def key(self) -> Tuple[object, ...]:
         return self.fields
 
 
@@ -142,5 +142,5 @@ class EnumType(DuckDBType):
     def describe(self) -> str:
         return f"ENUM[{', '.join(self.values)}]"
 
-    def _key(self) -> Tuple[object, ...]:
+    def key(self) -> Tuple[object, ...]:
         return self.values
