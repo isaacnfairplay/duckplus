@@ -1,6 +1,28 @@
 """Top-level package for duckplus utilities."""
 
-from .duckcon import DuckCon
-from .relation import Relation
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 __all__ = ["DuckCon", "Relation"]
+
+try:  # pragma: no branch - small module guard
+    from .duckcon import DuckCon
+    from .relation import Relation
+except ModuleNotFoundError as exc:  # pragma: no cover - depends on duckdb
+    if TYPE_CHECKING:  # pragma: no cover - import-time hinting only
+        from .duckcon import DuckCon  # type: ignore # noqa: F401
+        from .relation import Relation  # type: ignore # noqa: F401
+    else:
+        _IMPORT_ERROR = exc
+
+        def __getattr__(name: str):
+            if name in {"DuckCon", "Relation"}:
+                message = (
+                    "DuckDB is required to use duckplus.DuckCon or duckplus.Relation. "
+                    "Install it with 'pip install duckdb' to unlock database helpers."
+                )
+                raise ModuleNotFoundError(message) from _IMPORT_ERROR
+            raise AttributeError(name) from None
+
+        DuckCon = Relation = None  # type: ignore[assignment]  # pylint: disable=invalid-name
