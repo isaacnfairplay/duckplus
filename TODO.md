@@ -43,7 +43,6 @@ Answer these before starting any TODO item to confirm the work is understood and
   - [x] Add `rename_if_exists` soft variant that skips missing columns with warnings/logging.
 - [x] Column addition helpers
   - [x] Implement `Relation.add(**expressions)` using `SELECT *, <expr> AS <alias>`.
-  - [ ] Support dependent expressions (new columns referencing existing ones) with validation (future work if design changes warrant it).
 - [ ] Column subset helpers
   - [x] Implement `Relation.keep(*columns)` to project only requested columns, raising on unknown names by default.
   - [x] Provide `keep_if_exists` variant that tolerates absent columns.
@@ -60,6 +59,7 @@ Answer these before starting any TODO item to confirm the work is understood and
 - [x] Add window function construction helpers on typed expressions.
 - [x] Introduce a fluent CASE expression builder that composes with typed operands, including nested usage.
 - [x] Provide a fluent SELECT statement builder for assembling projection lists.
+- [ ] Add if_exists options to allow better support of column management operations and make any operations that happen on an if_exists predicated on its existence
 
 ### Notes for "Typed Expression API"
 1. Rich expression objects should expose column dependency metadata so helpers like `Relation.add` can validate references to both existing and newly-created columns.
