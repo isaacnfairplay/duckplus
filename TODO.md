@@ -43,6 +43,13 @@ Answer these before starting any TODO item to confirm the work is understood and
 4. Ensure conditions validate column references, support chaining multiple filters, surface clear errors for non-boolean expressions, and respect connection state expectations.
 5. Confirm correctness with dedicated pytest scenarios alongside the mandated mypy, uvx, and pylint suites before completion.
 
+### Preflight Answers – As-of join helper
+1. Add `Relation.asof_join` to wrap DuckDB's ASOF JOIN while composing equality pairs, ordering comparisons, and optional tolerances without mutating input relations.
+2. Implement the helper in `duckplus/relation.py`, extend regression coverage in `tests/test_relation.py`, and document behaviour and alias requirements in `docs/relation.md`.
+3. Review the existing join helpers, typed expression dependency validation, and DuckDB's ASOF JOIN semantics to mirror error handling and projection rules.
+4. Ensure shared column ordering remains stable, ordering comparisons honour backward/forward modes, tolerance clauses filter rows predictably, and typed expressions require the documented `left`/`right` aliases with helpful diagnostics.
+5. Validate via focused pytest scenarios plus the repository-standard mypy, uvx, and pylint runs prior to completion.
+
 ### Notes for "Transformation helpers"
 1. We need a `Relation.transform` helper that issues `SELECT * REPLACE` statements so callers can rewrite existing columns while preserving immutability.
 2. The behaviour naturally belongs on `duckplus.relation.Relation`, building on the stored `DuckCon` and underlying `DuckDBPyRelation` metadata.
@@ -92,7 +99,7 @@ Answer these before starting any TODO item to confirm the work is understood and
 
 ## Advanced Joins
 - [x] Implement "error on column conflict" joins (inner/left/right/outer/semi) that auto-join shared columns and allow explicit conditions.
-- [ ] Implement "asof" join leveraging the expression API for ordering and tolerance configuration.
+- [x] Implement "asof" join leveraging the expression API for ordering and tolerance configuration.
 
 ## IO and Appenders
 - [ ] Provide IO helpers for CSV, Parquet, and other common formats, reusing `DuckCon` where possible.

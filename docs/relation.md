@@ -176,3 +176,76 @@ with `NULL`, and `semi_join` filters rows using the join keys but keeps only the
 left relation's columns. Attempting to join relations originating from different
 `DuckCon` instances or referencing unknown columns raises clear errors so
 callers can rename inputs before running the query.
+
+### As-of joins
+
+`Relation.asof_join` aligns rows by the most recent ordering value from the
+right-hand relation that does not violate the requested direction (backward by
+default) or tolerance. The helper automatically reuses the case-insensitive
+column matching logic from `Relation.join`, but requires callers to supply the
+ordering columns explicitly. Ordering operands can be supplied as column names
+or typed expressions; when using typed expressions, qualify column references
+with the synthetic aliases `left` and `right` that DuckPlus assigns to the
+underlying relations during query generation.
+
+```python
+from duckplus import DuckCon, Relation
+from duckplus.typed import ducktype
+
+manager = DuckCon()
+with manager as connection:
+    trades = Relation.from_relation(
+        manager,
+        connection.sql(
+            """
+            SELECT * FROM (VALUES
+                (1::INTEGER, 10::INTEGER),
+                (1::INTEGER, 35::INTEGER)
+            ) AS data(symbol, event_ts)
+            """,
+        ),
+    )
+    quotes = Relation.from_relation(
+        manager,
+        connection.sql(
+            """
+            SELECT * FROM (VALUES
+                (1::INTEGER, 5::INTEGER, 100::INTEGER),
+                (1::INTEGER, 30::INTEGER, 110::INTEGER)
+            ) AS data(symbol, quote_ts, price)
+            """,
+        ),
+    )
+
+    joined = trades.asof_join(
+        quotes,
+        on={"symbol": "symbol"},
+        order=("event_ts", "quote_ts"),
+        tolerance=ducktype.Numeric.literal(15),
+    )
+
+assert joined.relation.fetchall() == [
+    (1, 10, 5, 100),
+    (1, 35, 30, 110),
+]
+```
+
+Per-row tolerances can be provided via typed expressions as well:
+
+```python
+joined = trades.asof_join(
+    quotes,
+    on={"symbol": "symbol"},
+    order=(
+        ducktype.Numeric.coerce(("left", "event_ts")),
+        ducktype.Numeric.coerce(("right", "quote_ts")),
+    ),
+    tolerance=ducktype.Numeric.coerce(("left", "max_gap")),
+)
+```
+
+The helper validates that all referenced columns exist on the participating
+relations and raises informative errors when aliases or dependencies do not
+resolve. In the per-row tolerance example above, `trades` exposes a `max_gap`
+column that controls how far each row may look back when selecting a matching
+quote.
