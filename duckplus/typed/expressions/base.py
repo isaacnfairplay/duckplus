@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
 from types import NotImplementedType
 from typing import Iterable, TypeVar, Union
 
@@ -54,12 +55,16 @@ class TypedExpression:
         raise NotImplementedError
 
     def __eq__(self, other: object) -> ComparisonResult:  # type: ignore[override]
-        if isinstance(other, (TypedExpression, str, int, float, bool, bytes)):
+        if isinstance(
+            other, (TypedExpression, str, int, float, bool, bytes, Decimal)
+        ):
             return self._comparison("=", other)
         return NotImplemented
 
     def __ne__(self, other: object) -> ComparisonResult:  # type: ignore[override]
-        if isinstance(other, (TypedExpression, str, int, float, bool, bytes)):
+        if isinstance(
+            other, (TypedExpression, str, int, float, bool, bytes, Decimal)
+        ):
             return self._comparison("!=", other)
         return NotImplemented
 
