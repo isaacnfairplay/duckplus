@@ -29,10 +29,13 @@ __all__ = [
 PathLikeInput = Path | PathLike[str] | str
 
 
-def _ensure_path(value: PathLikeInput) -> Path:
-    """Normalise a supported path-like input into a ``Path`` instance."""
+def _ensure_path(value: PathLikeInput) -> Path | str:
+    """Normalise a supported path-like input into a DuckDB-compatible path."""
 
     if isinstance(value, Path):
+        return value
+
+    if isinstance(value, str):
         return value
 
     return Path(fspath(value))
