@@ -152,8 +152,8 @@ Answer these before starting any TODO item to confirm the work is understood and
 
 ## Practitioner Quality-of-Life Utilities
 - [x] Provide lightweight data profiling helpers (row counts, null ratios) to aid exploratory analysis directly from relations.
-- [ ] Add schema diff utilities to compare relations or files and surface column-type drift warnings.
-- [ ] Offer sample data exporters (to Pandas/Arrow/Polars) with batching options for notebook workflows, mirroring the parity guarantees of other IO helpers such as Parquet and CSV readers.
+- [x] Add schema diff utilities to compare relations or files and surface column-type drift warnings.
+- [x] Offer sample data exporters (to Pandas/Arrow/Polars) with batching options for notebook workflows, mirroring the parity guarantees of other IO helpers such as Parquet and CSV readers.
 
 ## Typed Expression Enforcement
 - [ ] Ensure column construction and aggregation helpers exclusively depend on the typed expression API across the relation surface.

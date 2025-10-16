@@ -8,9 +8,10 @@ import csv
 from dataclasses import dataclass, field
 from os import PathLike
 from pathlib import Path
-from collections.abc import Sequence
+from collections.abc import Sequence, Iterator
 from uuid import uuid4
 import warnings
+from importlib import import_module
 from typing import Any, Iterable, Mapping, TypeVar, overload, cast
 from typing import Literal
 
@@ -107,6 +108,73 @@ class Relation:
             return {column: 0.0 for column in self.columns}
 
         return {column: float(value) for column, value in zip(self.columns, row, strict=False)}
+
+    def sample_pandas(self, limit: int | None = 50) -> Any:
+        """Return a Pandas DataFrame containing a sample of the relation."""
+
+        helper = "Relation.sample_pandas"
+        require_connection(self.duckcon, helper)
+        relation = self._prepare_sample_relation(limit, helper=helper)
+        self._require_module("pandas", helper, "pip install pandas")
+        return relation.df()
+
+    def iter_pandas_batches(
+        self, batch_size: int, *, limit: int | None = None
+    ) -> Iterator[Any]:
+        """Yield Pandas DataFrame batches from the relation."""
+
+        helper = "Relation.iter_pandas_batches"
+        require_connection(self.duckcon, helper)
+        relation = self._prepare_sample_relation(limit, helper=helper)
+        self._require_module("pandas", helper, "pip install pandas")
+        normalised = self._normalise_batch_size(batch_size, helper)
+        return self._iterate_pandas_batches(relation, normalised)
+
+    def sample_arrow(self, limit: int | None = 50) -> Any:
+        """Return a PyArrow Table containing a sample of the relation."""
+
+        helper = "Relation.sample_arrow"
+        require_connection(self.duckcon, helper)
+        relation = self._prepare_sample_relation(limit, helper=helper)
+        self._require_module("pyarrow", helper, "pip install pyarrow")
+        return relation.fetch_arrow_table()
+
+    def iter_arrow_batches(
+        self, batch_size: int, *, limit: int | None = None
+    ) -> Iterator[Any]:
+        """Yield PyArrow tables from the relation in batches."""
+
+        helper = "Relation.iter_arrow_batches"
+        require_connection(self.duckcon, helper)
+        relation = self._prepare_sample_relation(limit, helper=helper)
+        pyarrow = self._require_module("pyarrow", helper, "pip install pyarrow")
+        normalised = self._normalise_batch_size(batch_size, helper)
+        reader = relation.fetch_arrow_reader(normalised)
+        return self._iterate_arrow_batches(reader, pyarrow)
+
+    def sample_polars(self, limit: int | None = 50) -> Any:
+        """Return a Polars DataFrame containing a sample of the relation."""
+
+        helper = "Relation.sample_polars"
+        require_connection(self.duckcon, helper)
+        relation = self._prepare_sample_relation(limit, helper=helper)
+        polars = self._require_module("polars", helper, "pip install polars")
+        rows = relation.fetchall()
+        return polars.DataFrame(rows, schema=list(self.columns), orient="row")
+
+    def iter_polars_batches(
+        self, batch_size: int, *, limit: int | None = None
+    ) -> Iterator[Any]:
+        """Yield Polars DataFrame batches from the relation."""
+
+        helper = "Relation.iter_polars_batches"
+        require_connection(self.duckcon, helper)
+        relation = self._prepare_sample_relation(limit, helper=helper)
+        polars = self._require_module("polars", helper, "pip install polars")
+        normalised = self._normalise_batch_size(batch_size, helper)
+        return self._iterate_polars_batches(
+            relation, normalised, polars, list(self.columns)
+        )
 
     @classmethod
     def from_relation(cls, duckcon: DuckCon, relation: duckdb.DuckDBPyRelation) -> "Relation":
@@ -1740,6 +1808,73 @@ class Relation:
     def _format_column_list(columns: Iterable[str]) -> str:
         unique = sorted(set(columns), key=str.casefold)
         return ", ".join(unique)
+
+    def _prepare_sample_relation(
+        self, limit: int | None, *, helper: str
+    ) -> duckdb.DuckDBPyRelation:
+        if limit is None:
+            return self._relation.project("*")
+        if not isinstance(limit, int):
+            msg = f"{helper} limit must be an integer or None"
+            raise TypeError(msg)
+        if limit <= 0:
+            msg = f"{helper} limit must be greater than zero"
+            raise ValueError(msg)
+        return self._relation.limit(limit)
+
+    @staticmethod
+    def _normalise_batch_size(batch_size: int, helper: str) -> int:
+        if not isinstance(batch_size, int):
+            msg = f"{helper} batch_size must be an integer"
+            raise TypeError(msg)
+        if batch_size <= 0:
+            msg = f"{helper} batch_size must be greater than zero"
+            raise ValueError(msg)
+        return batch_size
+
+    @staticmethod
+    def _iterate_pandas_batches(
+        relation: duckdb.DuckDBPyRelation, batch_size: int
+    ) -> Iterator[Any]:
+        while True:
+            chunk = relation.fetch_df_chunk(batch_size)
+            if chunk is None:
+                break
+            if len(chunk) == 0:  # pragma: no cover - depends on pandas behaviour
+                break
+            yield chunk
+
+    @staticmethod
+    def _iterate_arrow_batches(reader: Any, pyarrow_module: Any) -> Iterator[Any]:
+        while True:
+            try:
+                batch = reader.read_next_batch()
+            except StopIteration:
+                break
+            if batch is None:  # pragma: no cover - defensive
+                break
+            yield pyarrow_module.Table.from_batches([batch])
+
+    @staticmethod
+    def _iterate_polars_batches(
+        relation: duckdb.DuckDBPyRelation,
+        batch_size: int,
+        polars_module: Any,
+        columns: Sequence[str],
+    ) -> Iterator[Any]:
+        while True:
+            rows = relation.fetchmany(batch_size)
+            if not rows:
+                break
+            yield polars_module.DataFrame(rows, schema=list(columns), orient="row")
+
+    @staticmethod
+    def _require_module(module: str, helper: str, install_hint: str) -> Any:
+        try:
+            return import_module(module)
+        except ModuleNotFoundError as exc:
+            msg = f"{helper} requires {module}. Install it with {install_hint}."
+            raise ModuleNotFoundError(msg) from exc
 
     @staticmethod
     def _normalise_identifier_sequence(
