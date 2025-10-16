@@ -12,7 +12,7 @@ from collections.abc import Sequence, Iterator
 from uuid import uuid4
 import warnings
 from importlib import import_module
-from typing import Any, Iterable, Mapping, TypeVar, overload, cast
+from typing import Any, Iterable, Mapping, TypeVar, cast, overload
 from typing import Literal
 
 import duckdb  # type: ignore[import-not-found]
@@ -461,21 +461,12 @@ class Relation:
 
         return type(self).from_relation(self.duckcon, relation)
 
-    @overload
-    def add(self, **expressions: str) -> "Relation":  # pylint: disable=too-many-locals
-        ...
-
-    @overload
-    def add(self, **expressions: TypedExpression) -> "Relation":
-        ...
-
-    def add(self, **expressions: object) -> "Relation":  # pylint: disable=too-many-locals
+    def add(self, **expressions: TypedExpression) -> "Relation":  # pylint: disable=too-many-locals
         """Return a new relation with additional computed columns.
 
-        Expressions can be provided either as raw SQL strings or as typed
-        expressions from :mod:`duckplus.typed`. Typed expressions carry
-        dependency metadata, allowing the helper to validate that references
-        only target columns present on the original relation.
+        Expressions must be provided through :mod:`duckplus.typed`. Typed
+        expressions carry dependency metadata, allowing the helper to validate
+        that references only target columns present on the original relation.
         """
 
         if not expressions:
@@ -809,9 +800,13 @@ class Relation:
         self,
         group_by: Iterable[str] | str | None = None,
         *filters: object,
-        **aggregations: object,
+        **aggregations: TypedExpression,
     ) -> "Relation":
-        """Return a grouped relation with computed aggregate columns."""
+        """Return a grouped relation with computed aggregate columns.
+
+        Aggregations must be provided through :mod:`duckplus.typed` so DuckPlus
+        can validate column dependencies before delegating to DuckDB.
+        """
 
         if not aggregations:
             msg = "aggregate requires at least one aggregation expression"
@@ -2040,58 +2035,44 @@ class Relation:
             raise TypeError(msg) from error
 
     def _normalise_add_expression(
-        self, alias: str, expression: object
+        self, alias: str, expression: TypedExpression
     ) -> tuple[str, frozenset[ExpressionDependency] | None]:
-        if isinstance(expression, str):
-            expression_sql = expression.strip()
-            if not expression_sql:
-                msg = f"Expression for column '{alias}' cannot be empty"
-                raise ValueError(msg)
-            return expression_sql, None
-
-        if isinstance(expression, TypedExpression):
-            typed_expression = self._unwrap_expression_for_alias(
-                alias,
-                expression,
-                context=(
-                    "Aliased expressions passed to add must use the same alias as "
-                    "the target column"
-                ),
+        if not isinstance(expression, TypedExpression):
+            msg = (
+                "add expressions must be typed expressions representing the new "
+                f"column definition (got {type(expression)!r})"
             )
-            return typed_expression.render(), typed_expression.dependencies
+            raise TypeError(msg)
 
-        msg = (
-            "add expressions must be SQL strings or typed expressions representing the new "
-            f"column definition (got {type(expression)!r})"
+        typed_expression = self._unwrap_expression_for_alias(
+            alias,
+            expression,
+            context=(
+                "Aliased expressions passed to add must use the same alias as "
+                "the target column"
+            ),
         )
-        raise TypeError(msg)
+        return typed_expression.render(), typed_expression.dependencies
 
     def _normalise_aggregate_expression(
-        self, alias: str, expression: object
+        self, alias: str, expression: TypedExpression
     ) -> tuple[str, frozenset[ExpressionDependency] | None]:
-        if isinstance(expression, str):
-            expression_sql = expression.strip()
-            if not expression_sql:
-                msg = f"Expression for aggregation '{alias}' cannot be empty"
-                raise ValueError(msg)
-            return expression_sql, None
-
-        if isinstance(expression, TypedExpression):
-            typed_expression = self._unwrap_expression_for_alias(
-                alias,
-                expression,
-                context=(
-                    "Aliased expressions passed to aggregate must use the same alias as "
-                    "the target column"
-                ),
+        if not isinstance(expression, TypedExpression):
+            msg = (
+                "aggregate expressions must be typed expressions representing the "
+                f"aggregation (got {type(expression)!r})"
             )
-            return typed_expression.render(), typed_expression.dependencies
+            raise TypeError(msg)
 
-        msg = (
-            "aggregate expressions must be SQL strings or typed expressions representing the "
-            f"aggregation (got {type(expression)!r})"
+        typed_expression = self._unwrap_expression_for_alias(
+            alias,
+            expression,
+            context=(
+                "Aliased expressions passed to aggregate must use the same alias as "
+                "the target column"
+            ),
         )
-        raise TypeError(msg)
+        return typed_expression.render(), typed_expression.dependencies
 
     @staticmethod
     def _unwrap_expression_for_alias(

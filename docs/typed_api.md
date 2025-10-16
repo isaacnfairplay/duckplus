@@ -56,12 +56,6 @@ total_revenue = ducktype.Numeric("revenue").sum()
 mean_discount = ducktype.Numeric("discount").avg()
 ```
 
-The legacy namespace is still available for advanced scenarios:
-
-```python
-legacy = ducktype.Numeric.Aggregate.sum("revenue")
-```
-
 Raw helpers accept explicit dependency metadata for advanced scenarios such as table-level lineage tracking:
 
 ```python
