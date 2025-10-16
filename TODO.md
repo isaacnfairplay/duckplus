@@ -103,7 +103,7 @@ Answer these before starting any TODO item to confirm the work is understood and
 
 ## IO and Appenders
 - [x] Provide IO helpers for CSV, Parquet, and other common formats, reusing `DuckCon` where possible.
-- [ ] Add appenders for CSV and NDJSON plus specialised insert tooling (consult long-term Git history for reference patterns).
+- [x] Add appenders for CSV and NDJSON plus specialised insert tooling (consult long-term Git history for reference patterns).
 - [ ] Create a table interfacing API for managed inserts into DuckDB tables.
 
 ### Preflight Answers – IO reader keyword fidelity
@@ -112,6 +112,13 @@ Answer these before starting any TODO item to confirm the work is understood and
 3. Review prior reader implementations and DuckDB's Python API signatures to mirror names, defaults, and validation semantics.
 4. Validate that positional and keyword usage both function, that typos surface informative errors, and that auto-complete metadata remains intact.
 5. Cover the behaviour with targeted unit tests per format and exercise mypy/pylint/pytest along with any stub updates to keep editors happy.
+
+### Preflight Answers – CSV/NDJSON appenders
+1. Provide append helpers that stream CSV and NDJSON files into DuckDB tables while supporting creation, overwrite, and target column mapping semantics compatible with existing relation helpers.
+2. The behaviour belongs alongside the file readers in `duckplus/io/__init__.py`, with regression tests living under `tests/` and documentation updates in `docs/io.md`.
+3. Review DuckDB's relation `.create` and `.insert_into` helpers plus the existing CSV/JSON wrappers to mirror option normalisation and error handling patterns.
+4. Ensure append helpers validate target column lists, clean up temporary views, and raise clear errors when tables or schemas are missing.
+5. Validate via new pytest coverage and run the repository-standard mypy, uvx, and pylint checks to keep toolchain expectations satisfied.
 
 ### IO reader ergonomics
 - [ ] Mirror DuckDB's CSV reader signature explicitly (e.g. `filename`, `header`, `delim`, etc.) and share a typed alias for reuse across helpers without masking keyword visibility.
