@@ -13,6 +13,7 @@ import duckdb  # type: ignore[import-not-found]
 from .._table_utils import (
     append_relation_data,
     normalise_target_columns,
+    quote_identifier,
     require_connection,
 )
 from ..duckcon import DuckCon
@@ -270,8 +271,46 @@ class ParquetReadKeywordOptions(TypedDict, total=False):
 
 def _normalise_parquet_source(
     source: Path | Sequence[Path],
+    *,
+    directory: bool = False,
+    glob: str | Sequence[str] = "*.parquet",
 ) -> str | list[str]:
     """Return a DuckDB-compatible Parquet glob or list of globs."""
+
+    if directory:
+        if isinstance(source, Sequence) and not isinstance(source, (str, bytes, bytearray)):
+            msg = "read_parquet directory mode expects a single path"
+            raise TypeError(msg)
+
+        directory_path = Path(_ensure_path(source))
+        if not directory_path.is_dir():
+            msg = f"Parquet directory '{directory_path}' does not exist or is not a directory"
+            raise ValueError(msg)
+
+        patterns: Sequence[str]
+        if isinstance(glob, str):
+            patterns = (glob,)
+        else:
+            patterns = tuple(glob)
+            if not patterns:
+                msg = "Parquet directory glob patterns cannot be empty"
+                raise ValueError(msg)
+
+        collected: set[str] = set()
+        for pattern in patterns:
+            for path in directory_path.glob(pattern):
+                if path.is_file():
+                    collected.add(str(path))
+
+        if not collected:
+            formatted_patterns = ", ".join(patterns)
+            msg = (
+                f"No Parquet files matched glob(s) {formatted_patterns!r} in directory "
+                f"'{directory_path}'"
+            )
+            raise FileNotFoundError(msg)
+
+        return sorted(collected)
 
     return _normalise_path_argument(source)
 
@@ -492,22 +531,48 @@ def read_parquet(
     hive_partitioning: bool | None = None,
     union_by_name: bool | None = None,
     compression: str | None = None,
+    directory: bool = False,
+    partition_id_column: str | None = None,
+    partition_glob: str | Sequence[str] = "*.parquet",
 ) -> Relation:
     """Load a Parquet file into a :class:`Relation`."""
 
     connection = require_connection(duckcon, "read_parquet")
-    path = _normalise_parquet_source(source)
+    path = _normalise_parquet_source(source, directory=directory, glob=partition_glob)
+
+    include_filename = filename
+    if partition_id_column is not None:
+        include_filename = True
 
     kwargs = _build_parquet_options(
         binary_as_string=binary_as_string,
         file_row_number=file_row_number,
-        filename=filename,
+        filename=include_filename,
         hive_partitioning=hive_partitioning,
         union_by_name=union_by_name,
         compression=compression,
     )
 
     relation = connection.read_parquet(path, **kwargs)  # type: ignore[arg-type]
+
+    if partition_id_column is not None:
+        casefolded = {column.casefold() for column in relation.columns}
+        if partition_id_column.casefold() in casefolded:
+            msg = (
+                "Partition identifier column '{partition}' collides with existing "
+                "Parquet data column"
+            ).format(partition=partition_id_column)
+            raise ValueError(msg)
+
+        identifier = quote_identifier(partition_id_column)
+        stem_expression = (
+            "regexp_replace("
+            "regexp_replace(filename, '^.*[\\\\/]', ''), "
+            "'(?i)\\.parquet$', ''"
+            ")"
+        )
+        relation = relation.project(f"*, {stem_expression} AS {identifier}")
+
     return Relation.from_relation(duckcon, relation)
 
 

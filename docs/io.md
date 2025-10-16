@@ -125,11 +125,16 @@ io.read_parquet(
     hive_partitioning=None,
     union_by_name=None,
     compression=None,
+    directory=False,
+    partition_id_column=None,
+    partition_glob="*.parquet",
 )
 ```
 
 These options map directly to DuckDB's [`read_parquet`](https://duckdb.org/docs/data/parquet)
-table function. The ``source`` may be a single ``Path`` or a sequence of ``Path`` objects/globs.
+table function. The ``source`` may be a single ``Path`` or a sequence of ``Path``
+objects/globs. Enabling ``directory=True`` treats ``source`` as a folder and
+loads every file matching ``partition_glob`` (``"*.parquet"`` by default).
 Only explicitly provided keyword arguments are forwarded so callers can rely on
 IDE completions.
 
@@ -171,6 +176,29 @@ with manager:
 * **hive_partitioning** – Interpret partitioned directory structures.
 * **union_by_name** – Align schemas with non-matching column order.
 * **compression** – Override DuckDB's decompression behaviour.
+* **directory** – When `True`, scan a directory instead of a single file and
+  apply ``partition_glob`` to collect matching inputs.
+* **partition_id_column** – Add a derived column populated with each file's
+  stem. The helper automatically enables ``filename=True`` so provenance
+  remains accessible alongside the partition key.
+* **partition_glob** – Glob (or sequence of globs) used to select files when
+  ``directory=True``.
+
+```python
+manager = DuckCon()
+with manager:
+    relation = io.read_parquet(
+        manager,
+        Path("/data/events"),
+        directory=True,
+        partition_id_column="batch_id",
+    )
+
+assert set(relation.relation.project("batch_id").distinct().fetchall()) == {
+    ("2024_01",),
+    ("2024_02",),
+}
+```
 
 ## JSON
 

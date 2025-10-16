@@ -189,6 +189,48 @@ def test_read_parquet_supports_keyword_passthrough(tmp_path: Path) -> None:
         assert rows[2:] == [(1, "a", 0, str(second)), (2, "b", 1, str(second))]
 
 
+def test_read_parquet_directory_adds_partition_column(tmp_path: Path) -> None:
+    dataset = tmp_path / "dataset"
+    dataset.mkdir()
+    _write_parquet(dataset / "0.parquet")
+    _write_parquet(dataset / "prefix_1.parquet")
+
+    manager = DuckCon()
+    with manager:
+        relation = io_helpers.read_parquet(
+            manager,
+            dataset,
+            directory=True,
+            partition_id_column="partition_id",
+        )
+
+        assert "partition_id" in relation.columns
+        assert "filename" in relation.columns
+
+        partition_index = relation.columns.index("partition_id")
+        partitions = {row[partition_index] for row in relation.relation.fetchall()}
+        assert partitions == {"0", "prefix_1"}
+
+
+def test_read_parquet_directory_rejects_partition_collision(tmp_path: Path) -> None:
+    dataset = tmp_path / "dataset"
+    dataset.mkdir()
+    values = duckdb.sql(
+        "SELECT 1 AS partition, 'a' AS label UNION ALL SELECT 2, 'b'"
+    )
+    values.write_parquet(str(dataset / "data.parquet"), overwrite=True)
+
+    manager = DuckCon()
+    with manager:
+        with pytest.raises(ValueError, match="collides"):
+            io_helpers.read_parquet(
+                manager,
+                dataset,
+                directory=True,
+                partition_id_column="partition",
+            )
+
+
 def test_read_json_returns_relation(tmp_path: Path) -> None:
     json_path = tmp_path / "data.json"
     _write_json(json_path)

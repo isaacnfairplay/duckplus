@@ -1,9 +1,10 @@
 from dataclasses import FrozenInstanceError
+from pathlib import Path
 
 import duckdb
 import pytest
 
-from duckplus import DuckCon, Relation
+from duckplus import DuckCon, Relation, io as io_helpers
 from duckplus.typed import ducktype
 
 
@@ -1280,4 +1281,185 @@ def test_asof_join_rejects_invalid_direction() -> None:
                 on={"id": "id"},
                 order=("event_ts", "quote_ts"),
                 direction="nearest",  # type: ignore[arg-type]
+            )
+
+
+def test_relation_append_file_appends_rows(tmp_path: Path) -> None:
+    csv_path = tmp_path / "data.csv"
+    csv_path.write_text("id,value\n1,a\n2,b\n", encoding="utf-8")
+
+    manager = DuckCon()
+    with manager as connection:
+        connection.execute("CREATE TABLE data(id INTEGER, value VARCHAR)")
+        file_relation = io_helpers.read_csv(manager, csv_path)
+
+        file_relation.append_file("data")
+        rows = connection.sql("SELECT * FROM data ORDER BY id").fetchall()
+
+    assert rows == [(1, "a"), (2, "b")]
+
+
+def test_relation_append_file_requires_open_connection(tmp_path: Path) -> None:
+    csv_path = tmp_path / "data.csv"
+    csv_path.write_text("id\n1\n", encoding="utf-8")
+
+    manager = DuckCon()
+    with manager:
+        file_relation = io_helpers.read_csv(manager, csv_path)
+
+    with pytest.raises(RuntimeError, match="must be open"):
+        file_relation.append_file("data")
+
+
+def test_relation_distinct_append_file_skips_duplicates(tmp_path: Path) -> None:
+    csv_path = tmp_path / "data.csv"
+    csv_path.write_text("id\n1\n1\n2\n", encoding="utf-8")
+
+    manager = DuckCon()
+    with manager as connection:
+        connection.execute("CREATE TABLE data(id INTEGER)")
+        file_relation = io_helpers.read_csv(manager, csv_path)
+
+        file_relation.distinct_append_file("data")
+        rows = connection.sql("SELECT * FROM data ORDER BY id").fetchall()
+
+    assert rows == [(1,), (2,)]
+
+
+def test_relation_append_file_target_columns_respect_defaults(tmp_path: Path) -> None:
+    csv_path = tmp_path / "data.csv"
+    csv_path.write_text("id,value,created\n1,a,2024-01-01\n", encoding="utf-8")
+
+    manager = DuckCon()
+    with manager as connection:
+        connection.execute(
+            "CREATE TABLE data(id INTEGER, value VARCHAR, created TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"
+        )
+        file_relation = io_helpers.read_csv(manager, csv_path)
+
+        file_relation.append_file("data", target_columns=("id", "value"))
+        rows = connection.sql(
+            "SELECT id, value, created IS NOT NULL FROM data ORDER BY id"
+        ).fetchall()
+
+    assert rows == [(1, "a", True)]
+
+
+def test_relation_append_file_create_creates_table(tmp_path: Path) -> None:
+    parquet_path = tmp_path / "data.parquet"
+    connection = duckdb.connect()
+    try:
+        escaped = str(parquet_path).replace("'", "''")
+        connection.execute(
+            "COPY (SELECT 10 AS id, 'x' AS value UNION ALL SELECT 11, 'y') "
+            f"TO '{escaped}' (FORMAT 'parquet')"
+        )
+    finally:
+        connection.close()
+
+    manager = DuckCon()
+    with manager as connection:
+        file_relation = io_helpers.read_parquet(manager, parquet_path)
+
+        file_relation.append_file("created_table", create=True)
+        rows = connection.sql(
+            "SELECT * FROM created_table ORDER BY id"
+        ).fetchall()
+
+    assert rows == [(10, "x"), (11, "y")]
+
+
+def test_relation_append_file_overwrite_replaces_rows(tmp_path: Path) -> None:
+    json_path = tmp_path / "data.json"
+    json_path.write_text("{\"id\": 1}\n{\"id\": 2}\n", encoding="utf-8")
+
+    manager = DuckCon()
+    with manager as connection:
+        connection.execute("CREATE TABLE data(id INTEGER)")
+        connection.execute("INSERT INTO data VALUES (99)")
+        file_relation = io_helpers.read_json(manager, json_path)
+
+        file_relation.append_file("data", overwrite=True)
+        rows = connection.sql("SELECT * FROM data ORDER BY id").fetchall()
+
+    assert rows == [(1,), (2,)]
+
+
+def test_relation_write_parquet_dataset_partition_actions(tmp_path: Path) -> None:
+    dataset = tmp_path / "dataset"
+    dataset.mkdir()
+
+    connection = duckdb.connect()
+    try:
+        connection.sql(
+            "SELECT 'prefix_0' AS partition_key, 1 AS value"
+        ).write_parquet(str(dataset / "prefix_0.parquet"), overwrite=True)
+        connection.sql(
+            "SELECT '1' AS partition_key, 5 AS value"
+        ).write_parquet(str(dataset / "1.parquet"), overwrite=True)
+    finally:
+        connection.close()
+
+    manager = DuckCon()
+    with manager:
+        relation = Relation.from_sql(
+            manager,
+            """
+            SELECT * FROM (
+                VALUES
+                    ('prefix_0'::VARCHAR, 2::INTEGER),
+                    ('1'::VARCHAR, 10::INTEGER)
+            ) AS data(partition_key, value)
+            """.strip(),
+        )
+
+        relation.write_parquet_dataset(
+            dataset,
+            partition_column="partition_key",
+            partition_actions={"prefix_0": "append", "1": "overwrite"},
+        )
+
+        dataset_relation = io_helpers.read_parquet(
+            manager,
+            dataset,
+            directory=True,
+            partition_id_column="partition_id",
+        )
+        partition_idx = dataset_relation.columns.index("partition_id")
+        value_idx = dataset_relation.columns.index("value")
+        grouped: dict[str, list[int]] = {}
+        for row in dataset_relation.relation.fetchall():
+            key = row[partition_idx]
+            grouped.setdefault(key, []).append(row[value_idx])
+
+    assert sorted(grouped["prefix_0"]) == [1, 2]
+    assert grouped["1"] == [10]
+
+
+def test_relation_write_parquet_dataset_immutable_enforces_new_partitions(
+    tmp_path: Path,
+) -> None:
+    dataset = tmp_path / "immutable"
+
+    manager = DuckCon()
+    with manager:
+        relation = Relation.from_sql(
+            manager,
+            "SELECT 'fresh'::VARCHAR AS partition_key, 42::INTEGER AS value",
+        )
+
+        relation.write_parquet_dataset(
+            dataset,
+            partition_column="partition_key",
+            immutable=True,
+        )
+
+        stored_rows = duckdb.read_parquet(str(dataset / "fresh.parquet")).fetchall()
+        assert stored_rows == [("fresh", 42)]
+
+        with pytest.raises(ValueError, match="immutable"):
+            relation.write_parquet_dataset(
+                dataset,
+                partition_column="partition_key",
+                immutable=True,
             )

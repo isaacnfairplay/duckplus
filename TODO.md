@@ -144,8 +144,8 @@ Answer these before starting any TODO item to confirm the work is understood and
 - [x] Add regression tests that instantiate each reader via keyword arguments to guard against accidental signature regressions.
 
 ## File-backed Table Operations
-- [ ] Expose `Relation.append_file` and `Relation.distinct_append_file` helpers that treat Parquet/CSV/JSON datasets like managed tables.
-- [ ] Reuse the existing table appender abstractions so file-backed append operations share validation and transaction semantics.
+- [x] Expose `Relation.append_file` and `Relation.distinct_append_file` helpers that treat Parquet/CSV/JSON datasets like managed tables.
+- [x] Reuse the existing table appender abstractions so file-backed append operations share validation and transaction semantics.
 - [ ] Document parity expectations versus DuckDB's `COPY`/`INSERT` commands, including transactional caveats for immutable formats when appending files.
 - [ ] Add tests that round-trip data through each file format to confirm append and distinct-append workflows plus schema drift handling.
 
