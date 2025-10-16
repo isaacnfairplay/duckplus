@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import duckdb  # type: ignore[import-not-found]
 
@@ -93,3 +93,14 @@ class DuckCon:
             raise KeyError(f"Helper '{name}' is not registered.")
         helper = self._helpers[name]
         return helper(self.connection, *args, **kwargs)
+
+    def table(self, name: str) -> "Table":
+        """Return a managed table wrapper bound to this connection."""
+
+        from .table import Table  # pylint: disable=import-outside-toplevel
+
+        return Table(self, name)
+
+
+if TYPE_CHECKING:  # pragma: no cover - import for typing only
+    from .table import Table

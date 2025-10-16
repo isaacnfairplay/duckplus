@@ -249,3 +249,37 @@ relations and raises informative errors when aliases or dependencies do not
 resolve. In the per-row tolerance example above, `trades` exposes a `max_gap`
 column that controls how far each row may look back when selecting a matching
 quote.
+
+## Writing relations into tables
+
+Once a relation contains the desired result set, call
+`DuckCon.table(<name>).insert(...)` to materialise it into a DuckDB table while
+keeping connection management consistent with other helpers. The wrapper reuses
+the same validation as the file appenders so callers can opt into table
+creation, overwriting, or inserting into a subset of columns when defaults
+should populate the remainder.
+
+```python
+from duckplus import DuckCon, Relation
+
+manager = DuckCon()
+with manager as connection:
+    # Build a relation using the fluent helpers.
+    relation = Relation.from_sql(
+        manager,
+        "SELECT * FROM (VALUES (1::INTEGER, 'north'::VARCHAR)) AS data(id, region)",
+    )
+
+    # Persist the relation into a table, creating it on first run.
+    manager.table("analytics.customers").insert(relation, create=True, overwrite=True)
+
+    rows = connection.sql("SELECT * FROM analytics.customers").fetchall()
+
+assert rows == [(1, "north")]
+```
+
+Attempting to persist a relation created from another `DuckCon` instance raises
+an informative error so call sites keep connection ownership explicit. When
+`create=True`, the helper requires inserting every column to keep table schemas
+deterministic; during append operations, specify `target_columns` to rely on
+table defaults for any omitted values.
