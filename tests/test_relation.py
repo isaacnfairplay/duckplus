@@ -1,5 +1,6 @@
 from dataclasses import FrozenInstanceError
 from pathlib import Path
+import csv
 
 import duckdb
 import pytest
@@ -1284,105 +1285,143 @@ def test_asof_join_rejects_invalid_direction() -> None:
             )
 
 
-def test_relation_append_file_appends_rows(tmp_path: Path) -> None:
-    csv_path = tmp_path / "data.csv"
-    csv_path.write_text("id,value\n1,a\n2,b\n", encoding="utf-8")
-
-    manager = DuckCon()
-    with manager as connection:
-        connection.execute("CREATE TABLE data(id INTEGER, value VARCHAR)")
-        file_relation = io_helpers.read_csv(manager, csv_path)
-
-        file_relation.append_file("data")
-        rows = connection.sql("SELECT * FROM data ORDER BY id").fetchall()
-
-    assert rows == [(1, "a"), (2, "b")]
-
-
-def test_relation_append_file_requires_open_connection(tmp_path: Path) -> None:
-    csv_path = tmp_path / "data.csv"
-    csv_path.write_text("id\n1\n", encoding="utf-8")
+def test_relation_append_csv_writes_rows(tmp_path: Path) -> None:
+    target = tmp_path / "data.csv"
 
     manager = DuckCon()
     with manager:
-        file_relation = io_helpers.read_csv(manager, csv_path)
-
-    with pytest.raises(RuntimeError, match="must be open"):
-        file_relation.append_file("data")
-
-
-def test_relation_distinct_append_file_skips_duplicates(tmp_path: Path) -> None:
-    csv_path = tmp_path / "data.csv"
-    csv_path.write_text("id\n1\n1\n2\n", encoding="utf-8")
-
-    manager = DuckCon()
-    with manager as connection:
-        connection.execute("CREATE TABLE data(id INTEGER)")
-        file_relation = io_helpers.read_csv(manager, csv_path)
-
-        file_relation.distinct_append_file("data")
-        rows = connection.sql("SELECT * FROM data ORDER BY id").fetchall()
-
-    assert rows == [(1,), (2,)]
-
-
-def test_relation_append_file_target_columns_respect_defaults(tmp_path: Path) -> None:
-    csv_path = tmp_path / "data.csv"
-    csv_path.write_text("id,value,created\n1,a,2024-01-01\n", encoding="utf-8")
-
-    manager = DuckCon()
-    with manager as connection:
-        connection.execute(
-            "CREATE TABLE data(id INTEGER, value VARCHAR, created TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"
+        relation = Relation.from_sql(
+            manager,
+            """
+            SELECT * FROM (VALUES
+                (1::INTEGER, 'north'::VARCHAR),
+                (2::INTEGER, 'south'::VARCHAR)
+            ) AS data(id, region)
+            """.strip(),
         )
-        file_relation = io_helpers.read_csv(manager, csv_path)
 
-        file_relation.append_file("data", target_columns=("id", "value"))
-        rows = connection.sql(
-            "SELECT id, value, created IS NOT NULL FROM data ORDER BY id"
-        ).fetchall()
+        result = relation.append_csv(target)
+        assert result.columns == ("id", "region")
 
-    assert rows == [(1, "a", True)]
+    with target.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.reader(handle))
+
+    assert rows == [["id", "region"], ["1", "north"], ["2", "south"]]
 
 
-def test_relation_append_file_create_creates_table(tmp_path: Path) -> None:
-    parquet_path = tmp_path / "data.parquet"
+def test_relation_append_csv_unique_id_skips_duplicates(tmp_path: Path) -> None:
+    target = tmp_path / "data.csv"
+    target.write_text("id,region\n1,north\n", encoding="utf-8")
+
+    manager = DuckCon()
+    with manager:
+        relation = Relation.from_sql(
+            manager,
+            """
+            SELECT * FROM (VALUES
+                (1::INTEGER, 'north'::VARCHAR),
+                (2::INTEGER, 'south'::VARCHAR)
+            ) AS data(id, region)
+            """.strip(),
+        )
+
+        relation.append_csv(target, unique_id_column="id")
+
+    with target.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.reader(handle))
+
+    assert rows == [["id", "region"], ["1", "north"], ["2", "south"]]
+
+
+def test_relation_append_csv_mutate_false_leaves_file_unchanged(tmp_path: Path) -> None:
+    target = tmp_path / "data.csv"
+    target.write_text("id\n1\n", encoding="utf-8")
+
+    manager = DuckCon()
+    with manager:
+        relation = Relation.from_sql(
+            manager,
+            "SELECT * FROM (VALUES (1::INTEGER), (2::INTEGER)) AS data(id)",
+        )
+
+        result = relation.append_csv(
+            target,
+            unique_id_column="id",
+            mutate=False,
+        )
+
+        assert result.relation.fetchall() == [(2,)]
+
+    assert target.read_text(encoding="utf-8") == "id\n1\n"
+
+
+def test_relation_append_parquet_appends_rows(tmp_path: Path) -> None:
+    target = tmp_path / "data.parquet"
     connection = duckdb.connect()
     try:
-        escaped = str(parquet_path).replace("'", "''")
-        connection.execute(
-            "COPY (SELECT 10 AS id, 'x' AS value UNION ALL SELECT 11, 'y') "
-            f"TO '{escaped}' (FORMAT 'parquet')"
-        )
+        connection.sql(
+            "SELECT 1::INTEGER AS id, 'north'::VARCHAR AS region"
+        ).write_parquet(str(target), overwrite=True)
     finally:
         connection.close()
 
     manager = DuckCon()
-    with manager as connection:
-        file_relation = io_helpers.read_parquet(manager, parquet_path)
+    with manager:
+        relation = Relation.from_sql(
+            manager,
+            """
+            SELECT * FROM (VALUES
+                (1::INTEGER, 'north'::VARCHAR),
+                (2::INTEGER, 'south'::VARCHAR)
+            ) AS data(id, region)
+            """.strip(),
+        )
 
-        file_relation.append_file("created_table", create=True)
-        rows = connection.sql(
-            "SELECT * FROM created_table ORDER BY id"
-        ).fetchall()
+        relation.append_parquet(target, unique_id_column="id", mutate=True)
 
-    assert rows == [(10, "x"), (11, "y")]
+    rows = duckdb.read_parquet(str(target)).order("id").fetchall()
+    assert rows == [(1, "north"), (2, "south")]
 
 
-def test_relation_append_file_overwrite_replaces_rows(tmp_path: Path) -> None:
-    json_path = tmp_path / "data.json"
-    json_path.write_text("{\"id\": 1}\n{\"id\": 2}\n", encoding="utf-8")
+def test_relation_append_parquet_mutate_false_returns_rows(tmp_path: Path) -> None:
+    target = tmp_path / "data.parquet"
+    connection = duckdb.connect()
+    try:
+        connection.sql(
+            "SELECT 1::INTEGER AS id, 'north'::VARCHAR AS region"
+        ).write_parquet(str(target), overwrite=True)
+    finally:
+        connection.close()
 
     manager = DuckCon()
-    with manager as connection:
-        connection.execute("CREATE TABLE data(id INTEGER)")
-        connection.execute("INSERT INTO data VALUES (99)")
-        file_relation = io_helpers.read_json(manager, json_path)
+    with manager:
+        relation = Relation.from_sql(
+            manager,
+            "SELECT * FROM (VALUES (1::INTEGER, 'north'::VARCHAR), (2, 'south')) AS data(id, region)",
+        )
 
-        file_relation.append_file("data", overwrite=True)
-        rows = connection.sql("SELECT * FROM data ORDER BY id").fetchall()
+        result = relation.append_parquet(
+            target,
+            unique_id_column="id",
+            mutate=False,
+        )
 
-    assert rows == [(1,), (2,)]
+        assert result.relation.fetchall() == [(2, "south")]
+
+    rows = duckdb.read_parquet(str(target)).fetchall()
+    assert rows == [(1, "north")]
+
+
+def test_relation_append_parquet_rejects_directory(tmp_path: Path) -> None:
+    manager = DuckCon()
+    with manager:
+        relation = Relation.from_sql(
+            manager,
+            "SELECT 1::INTEGER AS id",
+        )
+
+        with pytest.raises(ValueError, match="Parquet file"):
+            relation.append_parquet(tmp_path)
 
 
 def test_relation_write_parquet_dataset_partition_actions(tmp_path: Path) -> None:

@@ -124,12 +124,12 @@ Answer these before starting any TODO item to confirm the work is understood and
 4. Validate that the helpers continue to reject conflicting aliases while accepting keyword-only usage for optional parameters, mirroring the documented snippets.
 5. Run pytest, mypy, uvx, and pylint to guarantee the reader signatures stay in sync with the documentation and type hints.
 
-### Preflight Answers – CSV/NDJSON appenders
-1. Provide append helpers that stream CSV and NDJSON files into DuckDB tables while supporting creation, overwrite, and target column mapping semantics compatible with existing relation helpers.
-2. The behaviour belongs alongside the file readers in `duckplus/io/__init__.py`, with regression tests living under `tests/` and documentation updates in `docs/io.md`.
-3. Review DuckDB's relation `.create` and `.insert_into` helpers plus the existing CSV/JSON wrappers to mirror option normalisation and error handling patterns.
-4. Ensure append helpers validate target column lists, clean up temporary views, and raise clear errors when tables or schemas are missing.
-5. Validate via new pytest coverage and run the repository-standard mypy, uvx, and pylint checks to keep toolchain expectations satisfied.
+### Preflight Answers – File append helpers
+1. Introduce relation-driven append helpers that operate directly on CSV and Parquet files, supporting unique identifier or all-column anti joins before writing.
+2. Implement the behaviour on `duckplus.relation.Relation`, leaning on DuckDB's file readers for existing data while keeping the connection lifecycle identical to other relation helpers.
+3. Document mutate semantics (CSV defaults to in-place append; Parquet requires an opt-in rewrite) and explain temporary file usage for Parquet safety.
+4. Cover the workflows with new pytest scenarios and update `docs/relation.md`/`docs/io.md` to point at the relation-based appenders.
+5. Continue running mypy, uvx, pylint, and pytest per repository policy to guard against regressions.
 
 ### Preflight Answers – Table interfacing API
 1. Managed table helpers should live alongside `DuckCon` and reuse the existing relation metadata, ensuring inserts only run when the connection is open and the relation originates from the same manager.
@@ -143,11 +143,11 @@ Answer these before starting any TODO item to confirm the work is understood and
 - [x] Document each reader's callable signature within `docs/io.md`, emphasising IDE support and providing examples for keyword usage.
 - [x] Add regression tests that instantiate each reader via keyword arguments to guard against accidental signature regressions.
 
-## File-backed Table Operations
-- [x] Expose `Relation.append_file` and `Relation.distinct_append_file` helpers that treat Parquet/CSV/JSON datasets like managed tables.
-- [x] Reuse the existing table appender abstractions so file-backed append operations share validation and transaction semantics.
-- [ ] Document parity expectations versus DuckDB's `COPY`/`INSERT` commands, including transactional caveats for immutable formats when appending files.
-- [ ] Add tests that round-trip data through each file format to confirm append and distinct-append workflows plus schema drift handling.
+## File-backed IO Operations
+- [x] Add `Relation.append_csv` and `Relation.append_parquet` helpers that append directly to files with optional unique-id or all-column deduplication.
+- [x] Ensure Parquet appends rewrite targets via temporary files and document the mutate defaults across formats.
+- [x] Refresh the documentation to highlight the relation-first append workflow and its duplicate-avoidance options.
+- [ ] Expand integration tests to stress large append batches and edge cases for the new file helpers.
 
 ## Practitioner Quality-of-Life Utilities
 - [ ] Provide lightweight data profiling helpers (row counts, null ratios) to aid exploratory analysis directly from relations.
