@@ -54,6 +54,56 @@ def test_relation_metadata_populated() -> None:
     assert relation.types == ("INTEGER", "VARCHAR")
 
 
+def test_relation_row_count_reports_total_rows() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(
+                "SELECT * FROM (VALUES (1::INTEGER), (2::INTEGER), (3::INTEGER)) AS data(value)"
+            ),
+        )
+
+        assert relation.row_count() == 3
+
+
+def test_relation_null_ratios_measure_missing_data() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(
+                """
+                SELECT * FROM (VALUES
+                    (1::INTEGER, NULL::INTEGER),
+                    (2::INTEGER, 5::INTEGER),
+                    (NULL::INTEGER, NULL::INTEGER)
+                ) AS data(first_value, second_value)
+                """.strip()
+            ),
+        )
+
+        ratios = relation.null_ratios()
+
+    assert ratios == {
+        "first_value": pytest.approx(1 / 3),
+        "second_value": pytest.approx(2 / 3),
+    }
+
+
+def test_relation_null_ratios_return_zero_for_empty_relation() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(
+                "SELECT * FROM (VALUES (1::INTEGER, 2::INTEGER)) AS data(a, b) WHERE 1 = 0"
+            ),
+        )
+
+        assert relation.null_ratios() == {"a": 0.0, "b": 0.0}
+
+
 def test_relation_from_sql_uses_active_connection() -> None:
     manager = DuckCon()
 
@@ -1355,6 +1405,82 @@ def test_relation_append_csv_mutate_false_leaves_file_unchanged(tmp_path: Path) 
     assert target.read_text(encoding="utf-8") == "id\n1\n"
 
 
+def test_relation_append_csv_match_all_columns_skips_duplicates(tmp_path: Path) -> None:
+    target = tmp_path / "data.csv"
+    target.write_text("id,region\n1,north\n2,south\n", encoding="utf-8")
+
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(
+                """
+                SELECT * FROM (VALUES
+                    (2::INTEGER, 'south'::VARCHAR),
+                    (3::INTEGER, 'east'::VARCHAR)
+                ) AS data(id, region)
+                """.strip()
+            ),
+        )
+
+        relation.append_csv(target, match_all_columns=True)
+
+    with target.open(encoding="utf-8", newline="") as handle:
+        reader = csv.reader(handle)
+        header = next(reader)
+        data_rows = list(reader)
+
+    assert header == ["id", "region"]
+    assert data_rows == [["1", "north"], ["2", "south"], ["3", "east"]]
+
+
+def test_relation_append_csv_match_all_columns_rejects_extra_columns(
+    tmp_path: Path,
+) -> None:
+    target = tmp_path / "data.csv"
+    target.write_text("id,region,extra\n1,north,x\n", encoding="utf-8")
+
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(
+                "SELECT 1::INTEGER AS id, 'north'::VARCHAR AS region"
+            ),
+        )
+
+        with pytest.raises(ValueError, match="target file contains columns not present"):
+            relation.append_csv(target, match_all_columns=True)
+
+
+def test_relation_append_csv_large_batch(tmp_path: Path) -> None:
+    target = tmp_path / "bulk.csv"
+
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(
+                """
+                SELECT
+                    range AS id,
+                    ('region_' || (range % 10))::VARCHAR AS region
+                FROM range(0, 5000)
+                """.strip()
+            ),
+        )
+
+        relation.append_csv(target)
+
+    with target.open(encoding="utf-8", newline="") as handle:
+        reader = csv.reader(handle)
+        header = next(reader)
+        row_count = sum(1 for _ in reader)
+
+    assert header == ["id", "region"]
+    assert row_count == 5000
+
+
 def test_relation_append_parquet_appends_rows(tmp_path: Path) -> None:
     target = tmp_path / "data.parquet"
     connection = duckdb.connect()
@@ -1422,6 +1548,86 @@ def test_relation_append_parquet_rejects_directory(tmp_path: Path) -> None:
 
         with pytest.raises(ValueError, match="Parquet file"):
             relation.append_parquet(tmp_path)
+
+
+def test_relation_append_parquet_match_all_columns_skips_duplicates(
+    tmp_path: Path,
+) -> None:
+    target = tmp_path / "data.parquet"
+    connection = duckdb.connect()
+    try:
+        connection.sql(
+            "SELECT * FROM (VALUES (1::INTEGER, 'north'::VARCHAR), (2, 'south')) AS data(id, region)"
+        ).write_parquet(str(target), overwrite=True)
+    finally:
+        connection.close()
+
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(
+                """
+                SELECT * FROM (VALUES
+                    (2::INTEGER, 'south'::VARCHAR),
+                    (3::INTEGER, 'east'::VARCHAR)
+                ) AS data(id, region)
+                """.strip()
+            ),
+        )
+
+        relation.append_parquet(target, match_all_columns=True, mutate=True)
+
+    rows = duckdb.read_parquet(str(target)).order("id").fetchall()
+    assert rows == [(1, "north"), (2, "south"), (3, "east")]
+
+
+def test_relation_append_parquet_match_all_columns_rejects_extra_columns(
+    tmp_path: Path,
+) -> None:
+    target = tmp_path / "data.parquet"
+    connection = duckdb.connect()
+    try:
+        connection.sql(
+            "SELECT * FROM (VALUES (1::INTEGER, 'north'::VARCHAR, TRUE)) AS data(id, region, extra)"
+        ).write_parquet(str(target), overwrite=True)
+    finally:
+        connection.close()
+
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(
+                "SELECT 1::INTEGER AS id, 'north'::VARCHAR AS region"
+            ),
+        )
+
+        with pytest.raises(ValueError, match="target file contains columns not present"):
+            relation.append_parquet(target, match_all_columns=True)
+
+
+def test_relation_append_parquet_large_batch(tmp_path: Path) -> None:
+    target = tmp_path / "bulk.parquet"
+
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(
+                """
+                SELECT
+                    range AS id,
+                    ('region_' || (range % 10))::VARCHAR AS region
+                FROM range(0, 4096)
+                """.strip()
+            ),
+        )
+
+        relation.append_parquet(target, mutate=True)
+
+    count = duckdb.read_parquet(str(target)).aggregate("COUNT(*)").fetchone()[0]
+    assert int(count) == 4096
 
 
 def test_relation_write_parquet_dataset_partition_actions(tmp_path: Path) -> None:

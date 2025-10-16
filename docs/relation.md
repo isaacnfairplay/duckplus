@@ -325,6 +325,44 @@ resolve. In the per-row tolerance example above, `trades` exposes a `max_gap`
 column that controls how far each row may look back when selecting a matching
 quote.
 
+## Profiling relation data
+
+Exploratory analysis often benefits from quick metadata about the result set
+before diving into more involved transformations. DuckPlus provides
+:meth:`Relation.row_count` and :meth:`Relation.null_ratios` so callers can
+profile relations without leaving Python:
+
+```python
+from duckplus import DuckCon, Relation
+
+manager = DuckCon()
+with manager as connection:
+    relation = Relation.from_relation(
+        manager,
+        connection.sql(
+            """
+            SELECT * FROM (VALUES
+                (1::INTEGER, 'north'::VARCHAR, NULL::VARCHAR),
+                (2::INTEGER, 'south'::VARCHAR, 'prime'::VARCHAR),
+                (NULL::INTEGER, 'east'::VARCHAR, NULL::VARCHAR)
+            ) AS data(id, region, segment)
+            """.strip(),
+        ),
+    )
+
+    rows = relation.row_count()
+    nulls = relation.null_ratios()
+
+print(rows)
+print(nulls)
+```
+
+``Relation.null_ratios`` returns a dictionary keyed by the relation's column
+names with floating-point ratios between ``0.0`` and ``1.0``. Empty relations
+produce zero ratios while relations without columns return an empty dictionary.
+In the example above the helper reports ``3`` rows and a mapping such as
+``{"id": 0.3333333333, "region": 0.0, "segment": 0.6666666667}``.
+
 ## Writing relations into tables
 
 Once a relation contains the desired result set, call
