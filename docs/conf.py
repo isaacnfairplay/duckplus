@@ -5,6 +5,7 @@ import datetime as _dt
 import os
 import sys
 from typing import Any, Dict
+from urllib.parse import urljoin
 
 # Ensure the package can be imported for autodoc examples.
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -62,8 +63,20 @@ html_theme = "pydata_sphinx_theme"
 html_static_path = ["_static"]
 html_css_files = ["theme_overrides.css"]
 
-DEFAULT_SWITCHER_URL = (
-    "https://isaacnfairplay.github.io/duckplus/_static/version_switcher.json"
+DEFAULT_REPOSITORY = "isaacnfairplay/duckplus"
+repository = os.environ.get("GITHUB_REPOSITORY", DEFAULT_REPOSITORY)
+try:
+    owner, repo_name = repository.split("/", 1)
+except ValueError:
+    owner, repo_name = DEFAULT_REPOSITORY.split("/", 1)
+
+DEFAULT_HTML_BASEURL = f"https://{owner}.github.io/{repo_name}/"
+html_baseurl = os.environ.get("DUCKPLUS_DOCS_BASEURL", DEFAULT_HTML_BASEURL)
+
+switcher_path = "_static/version_switcher.json"
+DEFAULT_SWITCHER_URL = os.environ.get(
+    "DUCKPLUS_DOCS_SWITCHER_URL",
+    urljoin(html_baseurl, switcher_path),
 )
 
 html_theme_options: Dict[str, Any] = {
