@@ -117,20 +117,30 @@ def _append_relation_data(
                 f"CREATE TABLE {table_identifier} AS SELECT * FROM {quoted_view}"
             )
         else:
-            if overwrite:
-                connection.execute(f"DELETE FROM {table_identifier}")
-            if target_columns is None:
-                connection.execute(
-                    f"INSERT INTO {table_identifier} SELECT * FROM {quoted_view}"
-                )
-            else:
-                columns_sql = ", ".join(
-                    _quote_identifier(column) for column in target_columns
-                )
-                connection.execute(
-                    f"INSERT INTO {table_identifier} ({columns_sql}) "
-                    f"SELECT {columns_sql} FROM {quoted_view}"
-                )
+            transaction_started = False
+            try:
+                if overwrite:
+                    connection.execute("BEGIN")
+                    transaction_started = True
+                    connection.execute(f"DELETE FROM {table_identifier}")
+                if target_columns is None:
+                    connection.execute(
+                        f"INSERT INTO {table_identifier} SELECT * FROM {quoted_view}"
+                    )
+                else:
+                    columns_sql = ", ".join(
+                        _quote_identifier(column) for column in target_columns
+                    )
+                    connection.execute(
+                        f"INSERT INTO {table_identifier} ({columns_sql}) "
+                        f"SELECT {columns_sql} FROM {quoted_view}"
+                    )
+                if transaction_started:
+                    connection.execute("COMMIT")
+            except Exception:
+                if transaction_started:
+                    connection.execute("ROLLBACK")
+                raise
     finally:
         connection.execute(f"DROP VIEW IF EXISTS {quoted_view}")
 
