@@ -105,3 +105,44 @@ Answer these before starting any TODO item to confirm the work is understood and
 - [ ] Provide IO helpers for CSV, Parquet, and other common formats, reusing `DuckCon` where possible.
 - [ ] Add appenders for CSV and NDJSON plus specialised insert tooling (consult long-term Git history for reference patterns).
 - [ ] Create a table interfacing API for managed inserts into DuckDB tables.
+
+### Preflight Answers – IO reader keyword fidelity
+1. Ensure each reader helper continues to expose the documented keyword arguments explicitly instead of forwarding `**kwargs`, keeping IDE completions reliable.
+2. The behaviour lives in the IO helper modules (e.g. `duckplus/io/csv.py`, `duckplus/io/parquet.py`), with typing support defined in a shared alias module if helpful.
+3. Review prior reader implementations and DuckDB's Python API signatures to mirror names, defaults, and validation semantics.
+4. Validate that positional and keyword usage both function, that typos surface informative errors, and that auto-complete metadata remains intact.
+5. Cover the behaviour with targeted unit tests per format and exercise mypy/pylint/pytest along with any stub updates to keep editors happy.
+
+### IO reader ergonomics
+- [ ] Mirror DuckDB's CSV reader signature explicitly (e.g. `filename`, `header`, `delim`, etc.) and share a typed alias for reuse across helpers without masking keyword visibility.
+- [ ] Apply the explicit keyword signature pattern to Parquet, JSON, and other file readers to guarantee parity with DuckDB defaults.
+- [ ] Document each reader's callable signature within `docs/io.md`, emphasising IDE support and providing examples for keyword usage.
+- [ ] Add regression tests that instantiate each reader via keyword arguments to guard against accidental signature regressions.
+
+## Extension Integrations
+- [ ] Package nano-ODBC community extension support with a `DuckCon.load_nano_odbc()` helper and usage docs.
+- [ ] Surface the Excel community extension through a `Relation.from_excel` convenience that loads and documents available parameters.
+- [ ] Audit DuckDB bundled extensions (e.g. HTTPFS, Spatial) and queue helpers for any not yet wrapped by the relation API.
+
+### Preflight Answers – Extension enablement
+1. Provide thin wrappers that manage extension installation/registration while keeping connection lifecycle rules intact.
+2. Changes will live near `duckplus/extensions.py` (or equivalent) and integrate with `DuckCon` so sessions can opt-in cleanly.
+3. Review DuckDB's extension loading docs plus community guidance for nano-ODBC and Excel to mirror configuration nuances.
+4. Ensure helpers surface clear errors when extensions are unavailable, offer idempotent loading, and integrate with the IO roadmap entries.
+5. Validate behaviour with targeted pytest cases using DuckDB's extension availability flags and document manual installation steps when needed.
+
+## File-backed Table Operations
+- [ ] Expose `Relation.insert_file`/`delete_file`/`append_file` helpers that treat Parquet/CSV/JSON datasets like managed tables.
+- [ ] Reuse the existing table appender abstractions so file-backed operations share validation and transaction semantics.
+- [ ] Document parity expectations versus DuckDB's `COPY`/`INSERT` commands, including transactional caveats for immutable formats.
+- [ ] Add tests that round-trip data through each file format to confirm insert/delete/append workflows and schema drift handling.
+
+## Practitioner Quality-of-Life Utilities
+- [ ] Provide lightweight data profiling helpers (row counts, null ratios) to aid exploratory analysis directly from relations.
+- [ ] Add schema diff utilities to compare relations or files and surface column-type drift warnings.
+- [ ] Offer sample data exporters (to Pandas/Arrow) with batching options for notebook workflows.
+
+## Future Web Service Enablement
+- [ ] Design an opt-in web service layer that mounts relations as JSON/CSV HTTP endpoints while reusing validation helpers.
+- [ ] Sketch authentication and request-shaping hooks so APIs can validate inputs before executing relation pipelines.
+- [ ] Explore ASGI integration (FastAPI/Starlette) for minimal deployment while keeping dependencies optional and documented as future work.
