@@ -96,8 +96,7 @@ class Relation:
         for column in self.columns:
             quoted = self._quote_identifier(column)
             expression = (
-                f"COALESCE(AVG(CASE WHEN {quoted} IS NULL "
-                "THEN 1.0 ELSE 0.0 END), 0.0)"
+                f"COALESCE(AVG(CASE WHEN {quoted} IS NULL THEN 1.0 ELSE 0.0 END), 0.0)"
             )
             expressions.append(expression)
 
