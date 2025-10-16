@@ -163,7 +163,7 @@ Answer these before starting any TODO item to confirm the work is understood and
 ## Typed Expression Enforcement
 - [ ] Ensure column construction and aggregation helpers exclusively depend on the typed expression API across the relation surface.
 - [ ] Remove or refactor legacy helpers that bypass typed expressions, updating docs and deprecation notes accordingly.
-- [ ] Document migration guidance, highlighting how the typed expression API replaces prior untyped entry points.
+- [ ] Remove legacy code, since this is pre 1.0 breaking change is expected
 
 ## Prepare for 1.0 release ##
 - [ ] Check for bugs with extensive additional testing
