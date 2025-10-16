@@ -116,6 +116,13 @@ Answer these before starting any TODO item to confirm the work is understood and
 5. Cover the behaviour with targeted unit tests per format and exercise mypy/pylint/pytest along with any stub updates to keep editors happy.
 6. Remember that `DuckDBPyConnection.read_csv` prefers Python-specific names (`delimiter`, `quotechar`, `escapechar`, `decimal`, `skiprows`, etc.); table-function aliases like `delim` or `quote` must be normalised and should raise clear errors when conflicting values are provided.
 
+### Preflight Answers – IO reader keyword regression tests
+1. Exercise each `duckplus.io.read_*` helper by calling it with a representative set of keyword-only options to confirm the explicit signatures remain wired correctly.
+2. Extend `tests/test_io_helpers.py` with new parameterised cases that cover the CSV, Parquet, and JSON readers, reusing the existing fixture helpers to produce temporary files.
+3. Review historical regressions around alias handling (`delimiter` vs `delim`, etc.) so new tests assert the behaviour and error messages documented in `docs/io.md`.
+4. Validate that the helpers continue to reject conflicting aliases while accepting keyword-only usage for optional parameters, mirroring the documented snippets.
+5. Run pytest, mypy, uvx, and pylint to guarantee the reader signatures stay in sync with the documentation and type hints.
+
 ### Preflight Answers – CSV/NDJSON appenders
 1. Provide append helpers that stream CSV and NDJSON files into DuckDB tables while supporting creation, overwrite, and target column mapping semantics compatible with existing relation helpers.
 2. The behaviour belongs alongside the file readers in `duckplus/io/__init__.py`, with regression tests living under `tests/` and documentation updates in `docs/io.md`.

@@ -64,6 +64,17 @@ io.read_csv(
 )
 ```
 
+```python
+manager = DuckCon()
+with manager:
+    relation = io.read_csv(
+        manager,
+        "data.csv",
+        header=True,
+        delimiter=",",
+        na_values=["NA", ""],
+    )
+```
 All arguments are keyword-only apart from the connection and source, which may
 also be passed by keyword. The explicit signature keeps IDE completions in sync
 with the implementation and provides quick access to aliases such as
@@ -104,6 +115,24 @@ call time instead of being silently ignored. The positional ``duckcon`` and
 Only explicitly provided keyword arguments are forwarded so callers can rely on
 IDE completions.
 
+```python
+manager = DuckCon()
+with manager:
+    relation = io.read_parquet(
+        manager,
+        ["part-*.parquet"],
+        union_by_name=True,
+        filename=True,
+    )
+```
+
+* **binary_as_string** – Cast DuckDB's binary columns to strings when `True`.
+* **file_row_number** – Include a running row number for each file when set.
+* **filename** – Append the source filename (absolute path) when enabled.
+* **hive_partitioning** – Interpret partitioned directory structures.
+* **union_by_name** – Align schemas with non-matching column order.
+* **compression** – Override DuckDB's decompression behaviour.
+
 ## JSON
 
 ```
@@ -140,6 +169,24 @@ containers before forwarding. As with the CSV and Parquet helpers, only provided
 keyword arguments are forwarded to DuckDB to avoid masking typos.
 Passing ``duckcon``/``source`` by keyword is also supported so pipelines can
 highlight the data source being loaded inline.
+
+```python
+manager = DuckCon()
+with manager:
+    relation = io.read_json(
+        manager,
+        "events.json",
+        columns={"payload": "STRUCT"},
+        records=True,
+        maximum_depth=5,
+    )
+```
+
+* **records** – Control whether the input is JSON Lines (`True`) or arrays/objects.
+* **format** – Explicitly declare a format variant DuckDB should expect.
+* **convert_strings_to_integers** – Enable automatic integer coercion.
+* **maximum_* options** – Tune sampling depth, object size, and file counts.
+* **hive_types** / **hive_types_autocast** – Normalise Hive-partitioned datasets.
 
 ## CSV appenders
 
