@@ -95,10 +95,11 @@ class Relation:
         expressions: list[str] = []
         for column in self.columns:
             quoted = self._quote_identifier(column)
-            expressions.append(
-                "COALESCE(AVG(CASE WHEN "
-                f"{quoted} IS NULL THEN 1.0 ELSE 0.0 END), 0.0)"
+            expression = (
+                f"COALESCE(AVG(CASE WHEN {quoted} IS NULL "
+                "THEN 1.0 ELSE 0.0 END), 0.0)"
             )
+            expressions.append(expression)
 
         ratio_relation = self._relation.aggregate(", ".join(expressions))
         row = ratio_relation.fetchone()
