@@ -5,6 +5,11 @@ that integrate with :class:`duckplus.DuckCon`. Each helper expects an open
 `DuckCon` context and returns an immutable :class:`duckplus.Relation` that keeps
 a reference to the managing connection.
 
+Every reader exposes its full keyword signature directly in Python so editors
+and type checkers surface the supported options. The ``duckcon`` manager and
+``source`` parameters can also be supplied by keyword to make call sites more
+descriptive when desired.
+
 ```python
 from duckplus import DuckCon, io
 
@@ -59,6 +64,11 @@ io.read_csv(
 )
 ```
 
+All arguments are keyword-only apart from the connection and source, which may
+also be passed by keyword. The explicit signature keeps IDE completions in sync
+with the implementation and provides quick access to aliases such as
+``delim``/``delimiter``.
+
 * **source** – String or `PathLike` pointing at a CSV file or buffer.
 * **header** – Treat the first row as column names.
 * **delimiter** – Single-character field separator (aliases: `delim`).
@@ -87,7 +97,10 @@ io.read_parquet(
 ```
 
 These options map directly to DuckDB's [`read_parquet`](https://duckdb.org/docs/data/parquet)
-table function. The ``source`` may be a single path or a sequence of paths/globs.
+table function. The ``source`` may be a single path or a sequence of paths/globs,
+and explicit keyword-only arguments ensure unexpected options are surfaced at
+call time instead of being silently ignored. The positional ``duckcon`` and
+``source`` parameters can similarly be passed by keyword if preferred.
 Only explicitly provided keyword arguments are forwarded so callers can rely on
 IDE completions.
 
@@ -125,6 +138,8 @@ inputs. ``columns`` accepts the same mappings and sequences that DuckDB's
 ``read_json`` table function understands and is normalised to built-in
 containers before forwarding. As with the CSV and Parquet helpers, only provided
 keyword arguments are forwarded to DuckDB to avoid masking typos.
+Passing ``duckcon``/``source`` by keyword is also supported so pipelines can
+highlight the data source being loaded inline.
 
 ## CSV appenders
 
