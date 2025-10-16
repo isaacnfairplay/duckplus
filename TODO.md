@@ -145,7 +145,7 @@ Answer these before starting any TODO item to confirm the work is understood and
 
 ## Extension Integrations
 - [x] Package nano-ODBC community extension support with a `DuckCon.load_nano_odbc()` helper and usage docs.
-- [ ] Surface the Excel community extension through a `Relation.from_excel` convenience that loads and documents available parameters.
+- [x] Surface the Excel community extension through a `Relation.from_excel` convenience that loads and documents available parameters.
 - [ ] Audit DuckDB bundled extensions (e.g. HTTPFS, Spatial) and queue helpers for any not yet wrapped by the relation API.
 
 ### Preflight Answers – Extension enablement

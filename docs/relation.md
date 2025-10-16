@@ -53,6 +53,33 @@ DuckPlus' own integration tests rely on the environment variables
 these variables locally to exercise the helpers end-to-end; otherwise the tests
 will be skipped automatically in offline environments.
 
+## Loading Excel workbooks
+
+DuckDB's Excel community extension exposes a ``read_excel`` table function which
+DuckPlus now wraps via :meth:`Relation.from_excel`. Either request the extension
+when constructing :class:`DuckCon` or let the helper load it on demand:
+
+```python
+from duckplus import DuckCon, Relation
+
+manager = DuckCon(extra_extensions=("excel",))
+with manager:
+    sales = Relation.from_excel(
+        manager,
+        "workbooks/sales.xlsx",
+        sheet="Q1",
+        header=True,
+        names=("region", "amount"),
+        dtype={"amount": "INTEGER"},
+    )
+```
+
+If the extension has not been installed yet, DuckPlus attempts to install it via
+DuckDB's ``INSTALL excel`` command and surfaces a helpful error message when the
+machine is offline. The helper accepts the most common ``read_excel`` keyword
+arguments—``sheet``, ``header``, ``skip``, ``limit``, ``names``, ``dtype``, and
+``all_varchar``—while keeping the underlying relation immutable.
+
 ## Adding computed columns
 
 `Relation.add` accepts keyword arguments mapping new column names to SQL

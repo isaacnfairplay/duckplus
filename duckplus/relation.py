@@ -5,6 +5,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from os import PathLike
+from collections.abc import Sequence
 import warnings
 from typing import Any, Iterable, Mapping, TypeVar, overload
 from typing import Literal
@@ -152,6 +154,68 @@ class Relation:
 
         return cls.from_relation(duckcon, relation)
 
+    @classmethod
+    def from_excel(  # pylint: disable=too-many-arguments, too-many-locals
+        cls,
+        duckcon: DuckCon,
+        source: str | PathLike[str],
+        *,
+        sheet: str | int | None = None,
+        header: bool | None = None,
+        skip: int | None = None,
+        skiprows: int | None = None,
+        limit: int | None = None,
+        names: Sequence[str] | None = None,
+        dtype: Mapping[str, str] | Sequence[str] | None = None,
+        all_varchar: bool | None = None,
+    ) -> "Relation":
+        """Create a relation from an Excel workbook via DuckDB's excel extension."""
+
+        if not duckcon.is_open:
+            msg = (
+                "DuckCon connection must be open to call from_excel. "
+                "Use DuckCon as a context manager."
+            )
+            raise RuntimeError(msg)
+
+        if skip is not None and skiprows is not None and skip != skiprows:
+            msg = "Both 'skip' and alias 'skiprows' were provided"
+            raise ValueError(msg)
+        if skip is None:
+            skip = skiprows
+
+        duckcon._load_excel()  # type: ignore[attr-defined]  # pylint: disable=protected-access
+
+        connection = duckcon.connection
+
+        arguments: list[str] = [cls._quote_sql_string(str(source))]
+
+        options = {
+            "sheet": sheet,
+            "header": header,
+            "skip": skip,
+            "limit": limit,
+            "names": list(names) if names is not None else None,
+            "dtype": cls._normalise_excel_dtype(dtype),
+            "all_varchar": all_varchar,
+        }
+
+        for key, value in options.items():
+            if value is None:
+                continue
+            rendered = cls._serialise_excel_parameter(value)
+            arguments.append(f"{key}={rendered}")
+
+        sql = f"SELECT * FROM read_excel({', '.join(arguments)})"
+
+        try:
+            relation = connection.sql(sql)
+        except duckdb.BinderException as exc:
+            msg = "Invalid parameters supplied to read_excel"
+            raise ValueError(msg) from exc
+
+        return cls.from_relation(duckcon, relation)
+
     @staticmethod
     def _build_odbc_query_sql(
         connection_string: str,
@@ -194,6 +258,46 @@ class Relation:
             return Relation._quote_sql_string(value)
         msg = (
             "Unsupported parameter type for ODBC query bindings: "
+            f"{type(value)!r}"
+        )
+        raise TypeError(msg)
+
+    @staticmethod
+    def _normalise_excel_dtype(
+        dtype: Mapping[str, str] | Sequence[str] | None,
+    ) -> Mapping[str, str] | Sequence[str] | None:
+        if dtype is None:
+            return None
+        if isinstance(dtype, Mapping):
+            return dict(dtype)
+        return list(dtype)
+
+    @staticmethod
+    def _serialise_excel_parameter(value: object) -> str:
+        if isinstance(value, bool):
+            return "TRUE" if value else "FALSE"
+        if isinstance(value, (int, float)):
+            return repr(value)
+        if isinstance(value, str):
+            return Relation._quote_sql_string(value)
+        if isinstance(value, Mapping):
+            parts = []
+            for key, subvalue in value.items():
+                if not isinstance(key, str):
+                    msg = "Excel option maps require string keys"
+                    raise TypeError(msg)
+                rendered_value = Relation._serialise_excel_parameter(subvalue)
+                parts.append(
+                    f"{Relation._quote_sql_string(key)}: {rendered_value}"
+                )
+            return "{" + ", ".join(parts) + "}"
+        if isinstance(value, Sequence) and not isinstance(
+            value, (str, bytes, bytearray)
+        ):
+            rendered_items = [Relation._serialise_excel_parameter(item) for item in value]
+            return "[" + ", ".join(rendered_items) + "]"
+        msg = (
+            "Unsupported parameter type for Excel reader option: "
             f"{type(value)!r}"
         )
         raise TypeError(msg)

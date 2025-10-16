@@ -1,5 +1,6 @@
 from dataclasses import FrozenInstanceError
 
+import duckdb
 import pytest
 
 from duckplus import DuckCon, Relation
@@ -80,6 +81,70 @@ def test_relation_from_odbc_table_requires_active_connection() -> None:
 
     with pytest.raises(RuntimeError):
         Relation.from_odbc_table(manager, "Driver=sqlite", "example")
+
+
+def test_relation_from_excel_requires_active_connection() -> None:
+    manager = DuckCon()
+
+    with pytest.raises(RuntimeError):
+        Relation.from_excel(manager, "workbook.xlsx")
+
+
+def test_relation_from_excel_loads_extension_and_projects(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    manager = DuckCon()
+    called: dict[str, object] = {}
+
+    def fake_load_excel(self: DuckCon, install: bool = True) -> None:
+        called["install"] = install
+
+    monkeypatch.setattr(DuckCon, "_load_excel", fake_load_excel)
+
+    original_sql = duckdb.DuckDBPyConnection.sql
+
+    def fake_sql(self: duckdb.DuckDBPyConnection, sql: str):
+        called["sql"] = sql
+        return original_sql(self, "SELECT 1::INTEGER AS value")
+
+    monkeypatch.setattr(duckdb.DuckDBPyConnection, "sql", fake_sql)
+
+    with manager:
+        relation = Relation.from_excel(
+            manager,
+            "data.xlsx",
+            sheet="Sheet1",
+            header=True,
+            skip=2,
+            limit=5,
+            names=("a", "b"),
+            dtype={"a": "INTEGER"},
+            all_varchar=False,
+        )
+        rows = relation.relation.fetchall()
+
+    assert called["install"] is True
+    assert called["sql"] == (
+        "SELECT * FROM read_excel('data.xlsx', sheet='Sheet1', header=TRUE, "
+        "skip=2, limit=5, names=['a', 'b'], dtype={'a': 'INTEGER'}, "
+        "all_varchar=FALSE)"
+    )
+    assert relation.columns == ("value",)
+    assert rows == [(1,)]
+
+
+def test_relation_from_excel_rejects_conflicting_skip(monkeypatch: pytest.MonkeyPatch) -> None:
+    manager = DuckCon()
+    monkeypatch.setattr(DuckCon, "_load_excel", lambda self, install=True: None)
+
+    with manager:
+        with pytest.raises(ValueError, match="skip"):
+            Relation.from_excel(
+                manager,
+                "data.xlsx",
+                skip=1,
+                skiprows=2,
+            )
 
 
 def test_transform_replaces_column_values() -> None:

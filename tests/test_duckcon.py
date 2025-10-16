@@ -41,10 +41,10 @@ def test_duckcon_helper_extension_point() -> None:
 def test_extra_extensions_loads_on_enter(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[tuple[str, str]] = []
 
-    def install_extension(self: duckdb.DuckDBPyConnection, name: str) -> None:
+    def install_extension(_connection: duckdb.DuckDBPyConnection, name: str) -> None:
         calls.append(("install", name))
 
-    def load_extension(self: duckdb.DuckDBPyConnection, name: str) -> None:
+    def load_extension(_connection: duckdb.DuckDBPyConnection, name: str) -> None:
         calls.append(("load", name))
 
     monkeypatch.setattr(DuckCon, "_install_via_duckdb_extensions", lambda self, name: False)
@@ -63,13 +63,51 @@ def test_extra_extensions_loads_on_enter(monkeypatch: pytest.MonkeyPatch) -> Non
 def test_extra_extension_failure_recommends_parameter(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    def load_extension(self: duckdb.DuckDBPyConnection, name: str) -> None:
+    def load_extension(_connection: duckdb.DuckDBPyConnection, name: str) -> None:
         raise duckdb.IOException("offline")
 
     monkeypatch.setattr(DuckCon, "_install_via_duckdb_extensions", lambda self, name: False)
     monkeypatch.setattr(duckdb.DuckDBPyConnection, "load_extension", load_extension)
 
     manager = DuckCon(extra_extensions=("nanodbc",))
+
+    with pytest.raises(RuntimeError, match="extra_extensions"):
+        with manager:
+            pass
+
+
+def test_extra_extensions_loads_excel(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[tuple[str, str]] = []
+
+    def install_extension(_connection: duckdb.DuckDBPyConnection, name: str) -> None:
+        calls.append(("install", name))
+
+    def load_extension(_connection: duckdb.DuckDBPyConnection, name: str) -> None:
+        calls.append(("load", name))
+
+    monkeypatch.setattr(DuckCon, "_install_via_duckdb_extensions", lambda self, name: False)
+    monkeypatch.setattr(duckdb.DuckDBPyConnection, "install_extension", install_extension)
+    monkeypatch.setattr(duckdb.DuckDBPyConnection, "load_extension", load_extension)
+
+    manager = DuckCon(extra_extensions=("excel",))
+
+    with manager:
+        pass
+
+    assert ("install", "excel") in calls
+    assert ("load", "excel") in calls
+
+
+def test_extra_extensions_excel_failure_recommends_parameter(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def load_extension(_connection: duckdb.DuckDBPyConnection, name: str) -> None:
+        raise duckdb.IOException("offline")
+
+    monkeypatch.setattr(DuckCon, "_install_via_duckdb_extensions", lambda self, name: False)
+    monkeypatch.setattr(duckdb.DuckDBPyConnection, "load_extension", load_extension)
+
+    manager = DuckCon(extra_extensions=("excel",))
 
     with pytest.raises(RuntimeError, match="extra_extensions"):
         with manager:

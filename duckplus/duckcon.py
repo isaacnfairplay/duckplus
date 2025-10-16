@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import importlib
 from dataclasses import dataclass
 from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any, Optional
@@ -39,7 +40,8 @@ class DuckCon:
         The database path to connect to. Defaults to an in-memory database.
     extra_extensions:
         Optional iterable of community extensions to install and load when the
-        connection opens. Supported values currently include ``"nanodbc"``.
+        connection opens. Supported values currently include ``"nanodbc"`` and
+        ``"excel"``.
     **connect_kwargs:
         Additional keyword arguments forwarded to :func:`duckdb.connect`.
     """
@@ -222,9 +224,7 @@ class DuckCon:
             if extension == "nanodbc":
                 self._load_nano_odbc()
             elif extension == "excel":
-                raise NotImplementedError(
-                    "Excel extension loading is planned but not yet implemented."
-                )
+                self._load_excel()
             else:  # pragma: no cover - exhaustive guard for Literal handling
                 raise ValueError(f"Unsupported extension '{extension}'.")
 
@@ -259,10 +259,45 @@ class DuckCon:
             )
             raise RuntimeError(msg) from exc
 
+    def _load_excel(self, *, install: bool = True) -> None:
+        if not self.is_open:
+            msg = (
+                "DuckCon connection must be open to load extensions. "
+                "Use DuckCon as a context manager."
+            )
+            raise RuntimeError(msg)
+
+        connection = self.connection
+
+        if install:
+            self._install_via_duckdb_extensions("excel")
+            try:
+                connection.install_extension("excel")
+            except duckdb.Error:
+                # Installation failures can occur when the extension is already
+                # installed for the user profile. DuckDB keeps community
+                # extensions in a shared location, so we silently ignore these
+                # cases to keep the helper idempotent.
+                pass
+
+        try:
+            connection.load_extension("excel")
+        except duckdb.Error as exc:  # pragma: no cover - error class coverage
+            msg = (
+                "Failed to load the Excel extension. Install it manually via the DuckDB CLI "
+                "or the duckdb-extensions package before creating the connection with "
+                "DuckCon(extra_extensions=(\"excel\",))."
+            )
+            raise RuntimeError(msg) from exc
+
     def _install_via_duckdb_extensions(self, extension: str) -> bool:
         try:
-            from duckdb_extensions import import_extension  # type: ignore[import-not-found]
+            module = importlib.import_module("duckdb_extensions")
         except ModuleNotFoundError:  # pragma: no cover - optional dependency
+            return False
+
+        import_extension = getattr(module, "import_extension", None)
+        if import_extension is None:
             return False
 
         try:

@@ -12,10 +12,10 @@ from duckplus import DuckCon, io as io_helpers
 def _write_parquet(path: Path) -> None:
     connection = duckdb.connect()
     try:
+        escaped = str(path).replace("'", "''")
         connection.execute(
             "COPY (SELECT 1 AS value, 'a' AS label UNION ALL SELECT 2, 'b') "
-            "TO ? (FORMAT 'parquet')",
-            [str(path)],
+            f"TO '{escaped}' (FORMAT 'parquet')"
         )
     finally:
         connection.close()
