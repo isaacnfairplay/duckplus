@@ -22,6 +22,9 @@ dev = [
 [tool.pytest.ini_options]
 addopts = "-ra"
 pythonpath = ["."]
+markers = [
+    "integration: marks integration tests that require external services",
+]
 
 [tool.pylint.'MESSAGES CONTROL']
 disable = [

@@ -143,7 +143,7 @@ Answer these before starting any TODO item to confirm the work is understood and
 - [x] Add regression tests that instantiate each reader via keyword arguments to guard against accidental signature regressions.
 
 ## Extension Integrations
-- [ ] Package nano-ODBC community extension support with a `DuckCon.load_nano_odbc()` helper and usage docs.
+- [x] Package nano-ODBC community extension support with a `DuckCon.load_nano_odbc()` helper and usage docs.
 - [ ] Surface the Excel community extension through a `Relation.from_excel` convenience that loads and documents available parameters.
 - [ ] Audit DuckDB bundled extensions (e.g. HTTPFS, Spatial) and queue helpers for any not yet wrapped by the relation API.
 
@@ -153,6 +153,7 @@ Answer these before starting any TODO item to confirm the work is understood and
 3. Review DuckDB's extension loading docs plus community guidance for nano-ODBC and Excel to mirror configuration nuances.
 4. Ensure helpers surface clear errors when extensions are unavailable, offer idempotent loading, and integrate with the IO roadmap entries.
 5. Validate behaviour with targeted pytest cases using DuckDB's extension availability flags and document manual installation steps when needed.
+6. Offline environments require pre-installed community bundles; nano-ODBC tests look for `DUCKPLUS_TEST_ODBC_*` environment variables to target a real data source before running.
 
 ## File-backed Table Operations
 - [ ] Expose `Relation.append_file` and `Relation.distinct_append_file` helpers that treat Parquet/CSV/JSON datasets like managed tables.
