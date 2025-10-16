@@ -133,7 +133,7 @@ Answer these before starting any TODO item to confirm the work is understood and
 - [x] Apply the explicit keyword signature pattern to Parquet, JSON, and other file readers to guarantee parity with DuckDB defaults.
   - DuckDB's connection helpers sometimes rename table-function arguments (`compression`, `binary_as_string`, etc.), so audit the accepted Python keywords before codifying aliases to avoid the mismatch we saw on CSV.
 - [x] Document each reader's callable signature within `docs/io.md`, emphasising IDE support and providing examples for keyword usage.
-- [ ] Add regression tests that instantiate each reader via keyword arguments to guard against accidental signature regressions.
+- [x] Add regression tests that instantiate each reader via keyword arguments to guard against accidental signature regressions.
 
 ## Extension Integrations
 - [ ] Package nano-ODBC community extension support with a `DuckCon.load_nano_odbc()` helper and usage docs.
