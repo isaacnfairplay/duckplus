@@ -144,6 +144,11 @@ Answer these before starting any TODO item to confirm the work is understood and
 - [x] Document each reader's callable signature within `docs/io.md`, emphasising IDE support and providing examples for keyword usage.
 - [x] Add regression tests that instantiate each reader via keyword arguments to guard against accidental signature regressions.
 
+## Known needed extension additions
+- [x] Package nano-ODBC community extension support with a `DuckCon.load_nano_odbc()` helper and usage docs.
+- [x] Surface the Excel community extension through a `Relation.from_excel` convenience that loads and documents available parameters.
+- [x] Audit DuckDB bundled extensions (e.g. HTTPFS, Spatial) and queue helpers for any not yet wrapped by the relation API.
+
 ## File-backed IO Operations
 - [x] Add `Relation.append_csv` and `Relation.append_parquet` helpers that append directly to files with optional unique-id or all-column deduplication.
 - [x] Ensure Parquet appends rewrite targets via temporary files and document the mutate defaults across formats.
@@ -160,12 +165,21 @@ Answer these before starting any TODO item to confirm the work is understood and
 - [ ] Remove or refactor legacy helpers that bypass typed expressions, updating docs and deprecation notes accordingly.
 - [ ] Document migration guidance, highlighting how the typed expression API replaces prior untyped entry points.
 
+## Prepare for 1.0 release ##
+- [ ] Check for bugs with extensive additional testing
+- [ ] Fix bugs
+- [ ] Make sure we will not need to make any api engine changes as we add future extensions (open closed principle)
+- [ ] Develop deep and easy to read documentation and demos across the entire api and put in a versioned folder
+- [ ] Setup release to pypi for project with settings Repository: `isaacnfairplay/duckplus` Workflow: `python-publish.yml` Environment name: `pypi`
+- [ ] Make sure package can be installed and used as a package and ensure imports resolve correcty when installed (test in an environment, use pip install git `repo_path.git`
+- [ ] setup sphinx docs to show the 1.0 documentation but also support having multiple doc versions
+- [ ] setup shinx to use github pages (independent of release, users will be directed to the latest numbered version released but have toggle)
+- [ ] update pyproject.toml with new tags
+
+# hopefully stop for a while
 ## Extension Integrations
 
 _Deprioritised until preceding roadmap items land; revisit once core ergonomics are delivered._
-- [x] Package nano-ODBC community extension support with a `DuckCon.load_nano_odbc()` helper and usage docs.
-- [x] Surface the Excel community extension through a `Relation.from_excel` convenience that loads and documents available parameters.
-- [x] Audit DuckDB bundled extensions (e.g. HTTPFS, Spatial) and queue helpers for any not yet wrapped by the relation API.
   - [ ] Add relation helpers for the bundled extensions documented in `docs/extensions_audit.md` starting with HTTPFS support.
   - [ ] Design spatial data helpers that wrap DuckDB's `spatial` extension capabilities.
   - [ ] Provide full-text search helpers aligned with the `fts` extension.
