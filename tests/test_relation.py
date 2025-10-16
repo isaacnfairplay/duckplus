@@ -1309,6 +1309,77 @@ def test_relation_append_csv_writes_rows(tmp_path: Path) -> None:
     assert rows == [["id", "region"], ["1", "north"], ["2", "south"]]
 
 
+def test_relation_append_csv_handles_large_batches(tmp_path: Path) -> None:
+    target = tmp_path / "large.csv"
+
+    manager = DuckCon()
+    with manager as connection:
+        large_relation = Relation.from_relation(
+            manager,
+            connection.sql(
+                """
+                SELECT
+                    range AS id,
+                    CONCAT('value_', range::VARCHAR) AS label
+                FROM range(0, 2000) AS data(range)
+                """.strip(),
+            ),
+        )
+
+        large_relation.append_csv(target)
+
+    with target.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.reader(handle))
+
+    assert rows[0] == ["id", "label"]
+    assert len(rows) == 2001
+    assert rows[1] == ["0", "value_0"]
+    assert rows[-1] == ["1999", "value_1999"]
+
+
+def test_relation_append_csv_match_all_columns_deduplicates_large_files(
+    tmp_path: Path,
+) -> None:
+    target = tmp_path / "dedupe.csv"
+
+    manager = DuckCon()
+    with manager as connection:
+        initial = Relation.from_relation(
+            manager,
+            connection.sql(
+                """
+                SELECT
+                    range AS id,
+                    CONCAT('value_', range::VARCHAR) AS label
+                FROM range(0, 1000) AS data(range)
+                """.strip(),
+            ),
+        )
+        initial.append_csv(target)
+
+        update = Relation.from_relation(
+            manager,
+            connection.sql(
+                """
+                SELECT
+                    range AS id,
+                    CONCAT('value_', range::VARCHAR) AS label
+                FROM range(500, 1500) AS data(range)
+                """.strip(),
+            ),
+        )
+        update.append_csv(target, match_all_columns=True)
+
+    with target.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.reader(handle))
+
+    assert rows[0] == ["id", "label"]
+    data_rows = rows[1:]
+    ids = {int(row[0]) for row in data_rows}
+    assert len(data_rows) == 1500
+    assert ids == set(range(1500))
+
+
 def test_relation_append_csv_unique_id_skips_duplicates(tmp_path: Path) -> None:
     target = tmp_path / "data.csv"
     target.write_text("id,region\n1,north\n", encoding="utf-8")
@@ -1410,6 +1481,52 @@ def test_relation_append_parquet_mutate_false_returns_rows(tmp_path: Path) -> No
 
     rows = duckdb.read_parquet(str(target)).fetchall()
     assert rows == [(1, "north")]
+
+
+def test_relation_append_parquet_large_batches_use_temp_directory(tmp_path: Path) -> None:
+    target = tmp_path / "large.parquet"
+    temp_directory = tmp_path / "staging"
+
+    manager = DuckCon()
+    with manager as connection:
+        initial = Relation.from_relation(
+            manager,
+            connection.sql(
+                """
+                SELECT
+                    range AS id,
+                    CONCAT('value_', range::VARCHAR) AS label
+                FROM range(0, 750) AS data(range)
+                """.strip(),
+            ),
+        )
+        initial.append_parquet(target, mutate=True)
+
+        update = Relation.from_relation(
+            manager,
+            connection.sql(
+                """
+                SELECT
+                    range AS id,
+                    CONCAT('value_', range::VARCHAR) AS label
+                FROM range(500, 1250) AS data(range)
+                """.strip(),
+            ),
+        )
+        update.append_parquet(
+            target,
+            unique_id_column="id",
+            mutate=True,
+            temp_directory=temp_directory,
+        )
+
+    rows = duckdb.read_parquet(str(target)).order("id").fetchall()
+    assert len(rows) == 1250
+    assert rows[0] == (0, "value_0")
+    assert rows[-1] == (1249, "value_1249")
+    assert target.exists()
+    assert temp_directory.exists()
+    assert list(temp_directory.iterdir()) == []
 
 
 def test_relation_append_parquet_rejects_directory(tmp_path: Path) -> None:

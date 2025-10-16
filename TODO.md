@@ -131,6 +131,13 @@ Answer these before starting any TODO item to confirm the work is understood and
 4. Cover the workflows with new pytest scenarios and update `docs/relation.md`/`docs/io.md` to point at the relation-based appenders.
 5. Continue running mypy, uvx, pylint, and pytest per repository policy to guard against regressions.
 
+### Preflight Answers – File append helper integration tests
+1. Extend the `Relation.append_csv` and `Relation.append_parquet` coverage with integration scenarios that write sizeable batches while exercising deduplication and mutation options.
+2. The relation helpers live in `duckplus/relation.py`, so tests belong in `tests/test_relation.py` alongside the existing append coverage.
+3. Review the prior append helper tests plus the Parquet/CSV documentation to mirror header behaviour, deduplication semantics, and temporary file handling expectations.
+4. Confirm large appends keep headers stable, skip duplicates when `match_all_columns` or `unique_id_column` arguments are provided, and respect custom temporary directories during Parquet rewrites without leaving artifacts behind.
+5. Validate via pytest together with the repository-standard mypy, uvx, and pylint runs.
+
 ### Preflight Answers – Table interfacing API
 1. Managed table helpers should live alongside `DuckCon` and reuse the existing relation metadata, ensuring inserts only run when the connection is open and the relation originates from the same manager.
 2. Shared utilities in `duckplus/_table_utils.py` handle identifier quoting, column normalisation, and transactional inserts so future appenders and table wrappers stay consistent.
@@ -147,7 +154,7 @@ Answer these before starting any TODO item to confirm the work is understood and
 - [x] Add `Relation.append_csv` and `Relation.append_parquet` helpers that append directly to files with optional unique-id or all-column deduplication.
 - [x] Ensure Parquet appends rewrite targets via temporary files and document the mutate defaults across formats.
 - [x] Refresh the documentation to highlight the relation-first append workflow and its duplicate-avoidance options.
-- [ ] Expand integration tests to stress large append batches and edge cases for the new file helpers.
+- [x] Expand integration tests to stress large append batches and edge cases for the new file helpers.
 
 ## Practitioner Quality-of-Life Utilities
 - [ ] Provide lightweight data profiling helpers (row counts, null ratios) to aid exploratory analysis directly from relations.
