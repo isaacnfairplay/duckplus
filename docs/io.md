@@ -90,3 +90,75 @@ io.read_json(
 JSON helpers are flexible enough to cover both JSON Lines and nested JSON
 inputs. As with the CSV and Parquet helpers, only provided keyword arguments are
 forwarded to DuckDB to avoid masking typos.
+
+## CSV appenders
+
+```
+io.append_csv(
+    duckcon,
+    table,
+    source,
+    *,
+    target_columns=None,
+    create=False,
+    overwrite=False,
+    header=True,
+    delimiter=",",
+    quotechar='"',
+    escapechar=None,
+    sample_size=None,
+    auto_detect=True,
+    columns=None,
+)
+```
+
+* **table** – Target DuckDB table (optionally schema-qualified) to receive rows.
+* **target_columns** – Optional list of column names to insert into, allowing
+  tables with defaults to be populated without explicitly projecting every
+  field.
+* **create** / **overwrite** – Control whether the helper should create the
+  table when it does not exist or replace its current contents before
+  inserting.
+* Remaining keyword arguments mirror :func:`io.read_csv` for schema inference.
+
+The helper registers a temporary view for the source relation so the same
+connection can execute the necessary ``INSERT`` or ``CREATE TABLE AS SELECT``
+statement safely.
+
+## NDJSON appenders
+
+```
+io.append_ndjson(
+    duckcon,
+    table,
+    source,
+    *,
+    target_columns=None,
+    create=False,
+    overwrite=False,
+    columns=None,
+    sample_size=None,
+    maximum_depth=None,
+    records="auto",
+    format=None,
+    date_format=None,
+    timestamp_format=None,
+    compression=None,
+    maximum_object_size=None,
+    ignore_errors=None,
+    convert_strings_to_integers=None,
+    field_appearance_threshold=None,
+    map_inference_threshold=None,
+    maximum_sample_files=None,
+    filename=None,
+    hive_partitioning=None,
+    union_by_name=None,
+    hive_types=None,
+    hive_types_autocast=None,
+)
+```
+
+By default the NDJSON helper processes one JSON object per line (``records="auto"``)
+before delegating to the same insertion pipeline as the CSV variant. All
+keyword arguments are forwarded explicitly to DuckDB's ``read_json`` table
+function so schema hints and parsing options remain discoverable in IDEs.
