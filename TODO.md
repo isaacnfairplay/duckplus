@@ -104,7 +104,7 @@ Answer these before starting any TODO item to confirm the work is understood and
 ## IO and Appenders
 - [x] Provide IO helpers for CSV, Parquet, and other common formats, reusing `DuckCon` where possible.
 - [x] Add appenders for CSV and NDJSON plus specialised insert tooling (consult long-term Git history for reference patterns).
-- [ ] Create a table interfacing API for managed inserts into DuckDB tables.
+- [x] Create a table interfacing API for managed inserts into DuckDB tables.
 
 ### Preflight Answers – IO reader keyword fidelity
 1. Ensure each reader helper continues to expose the documented keyword arguments explicitly instead of forwarding `**kwargs`, keeping IDE completions reliable.
@@ -119,6 +119,11 @@ Answer these before starting any TODO item to confirm the work is understood and
 3. Review DuckDB's relation `.create` and `.insert_into` helpers plus the existing CSV/JSON wrappers to mirror option normalisation and error handling patterns.
 4. Ensure append helpers validate target column lists, clean up temporary views, and raise clear errors when tables or schemas are missing.
 5. Validate via new pytest coverage and run the repository-standard mypy, uvx, and pylint checks to keep toolchain expectations satisfied.
+
+### Preflight Answers – Table interfacing API
+1. Managed table helpers should live alongside `DuckCon` and reuse the existing relation metadata, ensuring inserts only run when the connection is open and the relation originates from the same manager.
+2. Shared utilities in `duckplus/_table_utils.py` handle identifier quoting, column normalisation, and transactional inserts so future appenders and table wrappers stay consistent.
+3. Tests in `tests/test_table.py` cover create/overwrite behaviour, default-respecting target columns, raw DuckDB relations, and cross-connection validation scenarios for regression coverage.
 
 ### IO reader ergonomics
 - [ ] Mirror DuckDB's CSV reader signature explicitly (e.g. `filename`, `header`, `delim`, etc.) and share a typed alias for reuse across helpers without masking keyword visibility.
