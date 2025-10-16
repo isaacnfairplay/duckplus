@@ -146,6 +146,31 @@ def test_read_parquet_returns_relation(tmp_path: Path) -> None:
         ]
 
 
+def test_read_parquet_supports_keyword_passthrough(tmp_path: Path) -> None:
+    first = tmp_path / "first.parquet"
+    second = tmp_path / "second.parquet"
+    _write_parquet(first)
+    _write_parquet(second)
+
+    manager = DuckCon()
+    with manager:
+        relation = io_helpers.read_parquet(
+            manager,
+            [first, second],
+            binary_as_string=False,
+            file_row_number=True,
+            filename=True,
+            hive_partitioning=False,
+            union_by_name=True,
+            compression="snappy",
+        )
+
+        assert relation.columns[-2:] == ("file_row_number", "filename")
+        rows = relation.relation.fetchall()
+        assert rows[:2] == [(1, "a", 0, str(first)), (2, "b", 1, str(first))]
+        assert rows[2:] == [(1, "a", 0, str(second)), (2, "b", 1, str(second))]
+
+
 def test_read_json_returns_relation(tmp_path: Path) -> None:
     json_path = tmp_path / "data.json"
     _write_json(json_path)
@@ -155,6 +180,27 @@ def test_read_json_returns_relation(tmp_path: Path) -> None:
         relation = io_helpers.read_json(manager, json_path)
 
         assert relation.columns == ("value", "label")
+        assert relation.relation.fetchall() == [
+            (1, "alpha"),
+            (2, "beta"),
+        ]
+
+
+def test_read_json_allows_explicit_columns(tmp_path: Path) -> None:
+    json_path = tmp_path / "data.json"
+    _write_json(json_path)
+
+    manager = DuckCon()
+    with manager:
+        relation = io_helpers.read_json(
+            manager,
+            json_path,
+            columns={"value": "INTEGER", "label": "VARCHAR"},
+            maximum_object_size=1024,
+            union_by_name=False,
+        )
+
+        assert relation.types == ("INTEGER", "VARCHAR")
         assert relation.relation.fetchall() == [
             (1, "alpha"),
             (2, "beta"),
