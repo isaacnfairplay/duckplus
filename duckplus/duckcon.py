@@ -4,10 +4,30 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from dataclasses import dataclass
+from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any, Optional
+from typing import Literal
 
 import duckdb  # type: ignore[import-not-found]
+
+
+ExtraExtensionName = Literal["nanodbc", "excel"]
+
+
+@dataclass(frozen=True)
+class ExtensionInfo:
+    """Metadata describing DuckDB extension installation state."""
+
+    name: str
+    loaded: bool
+    installed: bool
+    install_path: str | None
+    description: str | None
+    aliases: tuple[str, ...]
+    version: str | None
+    install_mode: str | None
+    installed_from: str | None
 
 
 class DuckCon:
@@ -17,12 +37,34 @@ class DuckCon:
     ----------
     database:
         The database path to connect to. Defaults to an in-memory database.
+    extra_extensions:
+        Optional iterable of community extensions to install and load when the
+        connection opens. Supported values currently include ``"nanodbc"``.
     **connect_kwargs:
         Additional keyword arguments forwarded to :func:`duckdb.connect`.
     """
 
-    def __init__(self, database: str = ":memory:", **connect_kwargs: Any) -> None:
+    def __init__(
+        self,
+        database: str = ":memory:",
+        *,
+        extra_extensions: Sequence[ExtraExtensionName] | None = None,
+        **connect_kwargs: Any,
+    ) -> None:
         self.database = database
+        if extra_extensions is None:
+            extensions: tuple[ExtraExtensionName, ...] = ()
+        else:
+            # Preserve order but avoid duplicate installation attempts.
+            seen: set[ExtraExtensionName] = set()
+            ordered: list[ExtraExtensionName] = []
+            for extension in extra_extensions:
+                if extension in seen:
+                    continue
+                seen.add(extension)
+                ordered.append(extension)
+            extensions = tuple(ordered)
+        self.extra_extensions = extensions
         self.connect_kwargs = connect_kwargs
         self._connection: Optional[duckdb.DuckDBPyConnection] = None
         self._helpers: dict[str, Callable[[duckdb.DuckDBPyConnection, Any], Any]] = {}
@@ -30,8 +72,17 @@ class DuckCon:
     def __enter__(self) -> duckdb.DuckDBPyConnection:
         if self._connection is not None:
             raise RuntimeError("DuckDB connection is already open.")
-        self._connection = duckdb.connect(database=self.database, **self.connect_kwargs)
-        return self._connection
+        connection = duckdb.connect(database=self.database, **self.connect_kwargs)
+        self._connection = connection
+
+        try:
+            self._initialise_extra_extensions()
+        except Exception:  # pragma: no cover - defensive clean-up
+            connection.close()
+            self._connection = None
+            raise
+
+        return connection
 
     def __exit__(
         self,
@@ -93,6 +144,132 @@ class DuckCon:
             raise KeyError(f"Helper '{name}' is not registered.")
         helper = self._helpers[name]
         return helper(self.connection, *args, **kwargs)
+
+    def load_nano_odbc(self, *, install: bool = True) -> None:
+        """Install and load the nano-ODBC community extension.
+
+        .. deprecated:: 0.0
+            Use :class:`DuckCon`'s ``extra_extensions`` parameter instead. The
+            method remains for backwards compatibility and forwards to the
+            internal loader.
+        """
+
+        import warnings
+
+        warnings.warn(
+            "DuckCon.load_nano_odbc() is deprecated. Pass "
+            "extra_extensions=(\"nanodbc\",) when constructing DuckCon instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
+        self._load_nano_odbc(install=install)
+
+    def extensions(self) -> tuple[ExtensionInfo, ...]:
+        """Return metadata about available DuckDB extensions."""
+
+        if not self.is_open:
+            msg = (
+                "DuckCon connection must be open to list extensions. Use DuckCon "
+                "as a context manager."
+            )
+            raise RuntimeError(msg)
+
+        columns = (
+            "extension_name",
+            "loaded",
+            "installed",
+            "install_path",
+            "description",
+            "aliases",
+            "extension_version",
+            "install_mode",
+            "installed_from",
+        )
+        query = "SELECT {} FROM duckdb_extensions()".format(
+            ", ".join(columns)
+        )
+        rows = self.connection.execute(query).fetchall()
+        infos = []
+        for row in rows:
+            (  # pragma: no branch - row unpack for clarity
+                name,
+                loaded,
+                installed,
+                install_path,
+                description,
+                aliases,
+                version,
+                install_mode,
+                installed_from,
+            ) = row
+            info = ExtensionInfo(
+                name=name,
+                loaded=bool(loaded),
+                installed=bool(installed),
+                install_path=install_path,
+                description=description,
+                aliases=tuple(aliases or ()),
+                version=version,
+                install_mode=install_mode,
+                installed_from=installed_from,
+            )
+            infos.append(info)
+        return tuple(infos)
+
+    def _initialise_extra_extensions(self) -> None:
+        for extension in self.extra_extensions:
+            if extension == "nanodbc":
+                self._load_nano_odbc()
+            elif extension == "excel":
+                raise NotImplementedError(
+                    "Excel extension loading is planned but not yet implemented."
+                )
+            else:  # pragma: no cover - exhaustive guard for Literal handling
+                raise ValueError(f"Unsupported extension '{extension}'.")
+
+    def _load_nano_odbc(self, *, install: bool = True) -> None:
+        if not self.is_open:
+            msg = (
+                "DuckCon connection must be open to load extensions. "
+                "Use DuckCon as a context manager."
+            )
+            raise RuntimeError(msg)
+
+        connection = self.connection
+
+        if install:
+            self._install_via_duckdb_extensions("nano_odbc")
+            try:
+                connection.install_extension("nano_odbc")
+            except duckdb.Error:
+                # Installation failures are tolerated because the extension
+                # might already exist on the machine from a prior run. DuckDB
+                # installs community extensions globally per user profile.
+                pass
+
+        try:
+            connection.load_extension("nano_odbc")
+        except duckdb.Error as exc:  # pragma: no cover - error class coverage
+            msg = (
+                "Failed to load the nano-ODBC extension. Because DuckDB installs "
+                "extensions per user profile, install nano_odbc manually via the "
+                "DuckDB CLI or the duckdb-extensions package before creating the "
+                "connection with DuckCon(extra_extensions=(\"nanodbc\",))."
+            )
+            raise RuntimeError(msg) from exc
+
+    def _install_via_duckdb_extensions(self, extension: str) -> bool:
+        try:
+            from duckdb_extensions import import_extension  # type: ignore[import-not-found]
+        except ModuleNotFoundError:  # pragma: no cover - optional dependency
+            return False
+
+        try:
+            import_extension(extension)
+        except Exception:  # pragma: no cover - install helper failure
+            return False
+        return True
 
     def table(self, name: str) -> "Table":
         """Return a managed table wrapper bound to this connection."""

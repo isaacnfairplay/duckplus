@@ -2,6 +2,7 @@ import duckdb
 import pytest
 
 from duckplus import DuckCon
+from duckplus.duckcon import ExtensionInfo
 
 
 def test_duckcon_context_opens_and_closes_connection() -> None:
@@ -35,3 +36,68 @@ def test_duckcon_helper_extension_point() -> None:
     manager.register_helper("echo", echo_helper, overwrite=True)
     with manager:
         assert manager.apply_helper("echo", 7) == 7
+
+
+def test_extra_extensions_loads_on_enter(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[tuple[str, str]] = []
+
+    def install_extension(self: duckdb.DuckDBPyConnection, name: str) -> None:
+        calls.append(("install", name))
+
+    def load_extension(self: duckdb.DuckDBPyConnection, name: str) -> None:
+        calls.append(("load", name))
+
+    monkeypatch.setattr(DuckCon, "_install_via_duckdb_extensions", lambda self, name: False)
+    monkeypatch.setattr(duckdb.DuckDBPyConnection, "install_extension", install_extension)
+    monkeypatch.setattr(duckdb.DuckDBPyConnection, "load_extension", load_extension)
+
+    manager = DuckCon(extra_extensions=("nanodbc",))
+
+    with manager:
+        pass
+
+    assert ("install", "nano_odbc") in calls
+    assert ("load", "nano_odbc") in calls
+
+
+def test_extra_extension_failure_recommends_parameter(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def load_extension(self: duckdb.DuckDBPyConnection, name: str) -> None:
+        raise duckdb.IOException("offline")
+
+    monkeypatch.setattr(DuckCon, "_install_via_duckdb_extensions", lambda self, name: False)
+    monkeypatch.setattr(duckdb.DuckDBPyConnection, "load_extension", load_extension)
+
+    manager = DuckCon(extra_extensions=("nanodbc",))
+
+    with pytest.raises(RuntimeError, match="extra_extensions"):
+        with manager:
+            pass
+
+
+def test_extensions_requires_open_connection() -> None:
+    manager = DuckCon()
+
+    with pytest.raises(RuntimeError, match="open"):
+        manager.extensions()
+
+
+def test_extensions_returns_metadata() -> None:
+    manager = DuckCon()
+
+    with manager:
+        infos = manager.extensions()
+
+    assert infos
+    assert all(isinstance(info, ExtensionInfo) for info in infos)
+    assert any(info.name for info in infos)
+
+
+def test_load_nano_odbc_emits_deprecation(monkeypatch: pytest.MonkeyPatch) -> None:
+    manager = DuckCon()
+    monkeypatch.setattr(DuckCon, "_load_nano_odbc", lambda self, install=True: None)
+
+    with manager:
+        with pytest.warns(DeprecationWarning):
+            manager.load_nano_odbc(install=False)

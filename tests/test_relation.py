@@ -68,6 +68,20 @@ def test_relation_from_sql_requires_active_connection() -> None:
         Relation.from_sql(manager, "SELECT 1")
 
 
+def test_relation_from_odbc_query_requires_active_connection() -> None:
+    manager = DuckCon()
+
+    with pytest.raises(RuntimeError):
+        Relation.from_odbc_query(manager, "Driver=sqlite", "SELECT 1")
+
+
+def test_relation_from_odbc_table_requires_active_connection() -> None:
+    manager = DuckCon()
+
+    with pytest.raises(RuntimeError):
+        Relation.from_odbc_table(manager, "Driver=sqlite", "example")
+
+
 def test_transform_replaces_column_values() -> None:
     manager = DuckCon()
     with manager as connection:

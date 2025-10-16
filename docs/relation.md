@@ -5,6 +5,54 @@ API ergonomic while enforcing immutability. Column helpers like
 [`Relation.add`](../duckplus/relation.py) let callers extend a relation with new
 expressions without mutating the original instance.
 
+## Working with ODBC data sources
+
+DuckPlus wraps the DuckDB nano-ODBC community extension so relations can be
+created directly from external databases. Pass ``extra_extensions=("nanodbc",)``
+when constructing [:class:`~duckplus.duckcon.DuckCon`] to ensure the extension
+is installed and loaded as the connection opens. DuckDB installs community
+extensions per user profile; the first load may download the bundle, and offline
+environments should pre-install it via the DuckDB CLI or the
+``duckdb-extensions`` package before creating the connection.
+
+```python
+from duckplus import DuckCon, Relation
+
+manager = DuckCon(extra_extensions=("nanodbc",))
+with manager:
+    # nano-ODBC is ready once the connection is open.
+
+    sales = Relation.from_odbc_query(
+        manager,
+        "Driver={DuckDB};Database=/data/sales.duckdb",
+        "SELECT * FROM annual_sales",
+    )
+    customers = Relation.from_odbc_table(
+        manager,
+        "Driver={SQLite3};Database=/data/crm.sqlite",
+        "customers",
+    )
+```
+
+Both helpers validate that the managed connection is open and raise a helpful
+``RuntimeError`` when the extension has not been loaded yet, recommending the
+``extra_extensions`` workflow. Queries can supply
+parameter bindings via the ``parameters`` keyword, e.g.
+``Relation.from_odbc_query(..., parameters=[2024])`` to avoid string
+interpolation.
+
+Call ``manager.extensions()`` inside the context manager to audit which
+extensions are installed, their versions, and whether they are currently loaded
+in the session. The information is sourced from DuckDB's ``duckdb_extensions()``
+table function and reflects the machine-level installation DuckDB maintains for
+community bundles.
+
+DuckPlus' own integration tests rely on the environment variables
+``DUCKPLUS_TEST_ODBC_CONNECTION``, ``DUCKPLUS_TEST_ODBC_QUERY``, and
+``DUCKPLUS_TEST_ODBC_TABLE`` to point at an accessible data source. Configure
+these variables locally to exercise the helpers end-to-end; otherwise the tests
+will be skipped automatically in offline environments.
+
 ## Adding computed columns
 
 `Relation.add` accepts keyword arguments mapping new column names to SQL

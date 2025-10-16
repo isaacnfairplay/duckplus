@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 import warnings
-from typing import Iterable, Mapping, TypeVar, overload
+from typing import Any, Iterable, Mapping, TypeVar, overload
 from typing import Literal
 
 import duckdb  # type: ignore[import-not-found]
@@ -82,6 +82,121 @@ class Relation:
         connection = duckcon.connection
         relation = connection.sql(query)
         return cls.from_relation(duckcon, relation)
+
+    @classmethod
+    def from_odbc_query(
+        cls,
+        duckcon: DuckCon,
+        connection_string: str,
+        query: str,
+        *,
+        parameters: Iterable[Any] | None = None,
+    ) -> "Relation":
+        """Create a relation from an ODBC query executed via nano-ODBC."""
+
+        if not duckcon.is_open:
+            msg = (
+                "DuckCon connection must be open to call from_odbc_query. "
+                "Use DuckCon as a context manager."
+            )
+            raise RuntimeError(msg)
+
+        connection = duckcon.connection
+        sql = cls._build_odbc_query_sql(connection_string, query, parameters)
+
+        try:
+            relation = connection.sql(sql)
+        except duckdb.CatalogException as exc:
+            message = str(exc)
+            if "odbc_query" in message or "nano_odbc" in message:
+                msg = (
+                    "nano-ODBC extension is not loaded. Create DuckCon with "
+                    "extra_extensions=(\"nanodbc\",) before querying ODBC sources."
+                )
+                raise RuntimeError(msg) from exc
+            raise
+
+        return cls.from_relation(duckcon, relation)
+
+    @classmethod
+    def from_odbc_table(
+        cls,
+        duckcon: DuckCon,
+        connection_string: str,
+        table: str,
+    ) -> "Relation":
+        """Create a relation by scanning an ODBC table via nano-ODBC."""
+
+        if not duckcon.is_open:
+            msg = (
+                "DuckCon connection must be open to call from_odbc_table. "
+                "Use DuckCon as a context manager."
+            )
+            raise RuntimeError(msg)
+
+        connection = duckcon.connection
+
+        sql = cls._build_odbc_scan_sql(connection_string, table)
+
+        try:
+            relation = connection.sql(sql)
+        except duckdb.CatalogException as exc:
+            message = str(exc)
+            if "odbc_scan" in message or "nano_odbc" in message:
+                msg = (
+                    "nano-ODBC extension is not loaded. Create DuckCon with "
+                    "extra_extensions=(\"nanodbc\",) before scanning ODBC tables."
+                )
+                raise RuntimeError(msg) from exc
+            raise
+
+        return cls.from_relation(duckcon, relation)
+
+    @staticmethod
+    def _build_odbc_query_sql(
+        connection_string: str,
+        query: str,
+        parameters: Iterable[Any] | None,
+    ) -> str:
+        connection_literal = Relation._quote_sql_string(connection_string)
+        query_literal = Relation._quote_sql_string(query)
+
+        if parameters is None:
+            return f"SELECT * FROM odbc_query({connection_literal}, {query_literal})"
+
+        rendered = ", ".join(Relation._serialise_odbc_parameter(value) for value in parameters)
+        return (
+            "SELECT * FROM odbc_query("
+            f"{connection_literal}, {query_literal}, [{rendered}]"
+            ")"
+        )
+
+    @staticmethod
+    def _build_odbc_scan_sql(connection_string: str, table: str) -> str:
+        connection_literal = Relation._quote_sql_string(connection_string)
+        table_literal = Relation._quote_sql_string(table)
+        return f"SELECT * FROM odbc_scan({connection_literal}, {table_literal})"
+
+    @staticmethod
+    def _quote_sql_string(value: str) -> str:
+        escaped = value.replace("'", "''")
+        return f"'{escaped}'"
+
+    @staticmethod
+    def _serialise_odbc_parameter(value: Any) -> str:
+        if isinstance(value, bool):
+            return "TRUE" if value else "FALSE"
+        if value is None:
+            return "NULL"
+        if isinstance(value, (int, float)):
+            return repr(value)
+        if isinstance(value, str):
+            return Relation._quote_sql_string(value)
+        msg = (
+            "Unsupported parameter type for ODBC query bindings: "
+            f"{type(value)!r}"
+        )
+        raise TypeError(msg)
 
     @overload
     def transform(self, **replacements: str) -> "Relation":
