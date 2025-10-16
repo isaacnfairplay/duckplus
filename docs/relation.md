@@ -1,5 +1,10 @@
 # Relation helpers
 
+> **Note**
+> The up-to-date 1.0 documentation lives under
+> {doc}`versions/1.0/core/relations <versions/1.0/core/relations>` in the Sphinx
+> site. This legacy Markdown file is retained for historical reference.
+
 The `duckplus.relation.Relation` wrapper keeps the lightweight DuckDB relation
 API ergonomic while enforcing immutability. Column helpers like
 [`Relation.add`](../duckplus/relation.py) let callers extend a relation with new

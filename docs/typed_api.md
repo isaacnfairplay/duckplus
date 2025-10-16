@@ -1,5 +1,9 @@
 # Typed API Overview
 
+> **Note**
+> Updated typed expression documentation is hosted at
+> {doc}`versions/1.0/core/typed_expressions <versions/1.0/core/typed_expressions>`.
+
 DuckPlus exposes a typed expression builder that mirrors DuckDB's type system. Expressions record their DuckDB type metadata and column or table dependencies so downstream helpers can validate usage across complex queries.
 
 ## Core Factories
