@@ -143,19 +143,6 @@ Answer these before starting any TODO item to confirm the work is understood and
 - [x] Document each reader's callable signature within `docs/io.md`, emphasising IDE support and providing examples for keyword usage.
 - [x] Add regression tests that instantiate each reader via keyword arguments to guard against accidental signature regressions.
 
-## Extension Integrations
-- [x] Package nano-ODBC community extension support with a `DuckCon.load_nano_odbc()` helper and usage docs.
-- [x] Surface the Excel community extension through a `Relation.from_excel` convenience that loads and documents available parameters.
-- [ ] Audit DuckDB bundled extensions (e.g. HTTPFS, Spatial) and queue helpers for any not yet wrapped by the relation API.
-
-### Preflight Answers – Extension enablement
-1. Provide thin wrappers that manage extension installation/registration while keeping connection lifecycle rules intact.
-2. Changes will live near `duckplus/extensions.py` (or equivalent) and integrate with `DuckCon` so sessions can opt-in cleanly.
-3. Review DuckDB's extension loading docs plus community guidance for nano-ODBC and Excel to mirror configuration nuances.
-4. Ensure helpers surface clear errors when extensions are unavailable, offer idempotent loading, and integrate with the IO roadmap entries.
-5. Validate behaviour with targeted pytest cases using DuckDB's extension availability flags and document manual installation steps when needed.
-6. Offline environments require pre-installed community bundles; nano-ODBC tests look for `DUCKPLUS_TEST_ODBC_*` environment variables to target a real data source before running.
-
 ## File-backed Table Operations
 - [ ] Expose `Relation.append_file` and `Relation.distinct_append_file` helpers that treat Parquet/CSV/JSON datasets like managed tables.
 - [ ] Reuse the existing table appender abstractions so file-backed append operations share validation and transaction semantics.
@@ -171,6 +158,49 @@ Answer these before starting any TODO item to confirm the work is understood and
 - [ ] Ensure column construction and aggregation helpers exclusively depend on the typed expression API across the relation surface.
 - [ ] Remove or refactor legacy helpers that bypass typed expressions, updating docs and deprecation notes accordingly.
 - [ ] Document migration guidance, highlighting how the typed expression API replaces prior untyped entry points.
+
+## Extension Integrations
+
+_Deprioritised until preceding roadmap items land; revisit once core ergonomics are delivered._
+- [x] Package nano-ODBC community extension support with a `DuckCon.load_nano_odbc()` helper and usage docs.
+- [x] Surface the Excel community extension through a `Relation.from_excel` convenience that loads and documents available parameters.
+- [x] Audit DuckDB bundled extensions (e.g. HTTPFS, Spatial) and queue helpers for any not yet wrapped by the relation API.
+  - [ ] Add relation helpers for the bundled extensions documented in `docs/extensions_audit.md` starting with HTTPFS support.
+  - [ ] Design spatial data helpers that wrap DuckDB's `spatial` extension capabilities.
+  - [ ] Provide full-text search helpers aligned with the `fts` extension.
+  - [ ] Explore inet/address utilities that light up the `inet` extension within the relation API.
+  - [ ] ~~Determine whether autocomplete exposure is worthwhile for DuckPlus and implement or document accordingly.~~ (Not pursuing: CLI-only Linux shell extension.)
+  - [ ] ~~Evaluate TPC-H/TPC-DS wrapper expectations and add ergonomic helpers if they fit the roadmap.~~ (Not pursuing: benchmark data generation helpers fall outside DuckPlus scope.)
+  - [ ] ~~Investigate UI/encodings extension ergonomics and codify helper coverage or document exclusions.~~ (Not pursuing: bundled UI/encoding workflows do not translate to the relation API.)
+  - [ ] Prioritise community extension integrations that materially extend DuckPlus ergonomics. See `docs/community_extension_targets.md` for the API impact plan that keeps these bullets scoped.
+    - [ ] Provide archive helpers around the `zipfs` extension.
+      - Targets: `_load_zipfs` on `DuckCon`, `duckplus.io` reader enhancements for `zip://` URIs, relation factories for archived CSV/Parquet assets.
+    - [ ] Surface YAML ingestion helpers for the `yaml` extension.
+      - Targets: `_load_yaml` on `DuckCon`, `Relation.from_yaml`/`duckplus.io.read_yaml`, typed schema mapping utilities.
+    - [ ] Explore HTML/XML scraping helpers leveraging the `webbed` extension.
+      - Targets: `_load_webbed` on `DuckCon`, `duckplus.io` scraping helpers (e.g. `read_html` wrappers), typed XPath/CSS expression helpers.
+    - [ ] Package stochastic distribution helpers from the `stochastic` extension.
+      - Targets: typed expression library for distribution and sampling functions, relation helper coverage for stochastic result columns.
+    - [ ] Integrate the `msolap` extension for Analysis Services connectivity.
+      - Targets: `_load_msolap` on `DuckCon`, connection/IO helpers that return relations bound to remote cube queries.
+    - [ ] Add Markdown document ingestion via the `markdown` extension.
+      - Targets: `_load_markdown` on `DuckCon`, `duckplus.io` readers for Markdown tables/sections, relation transformation utilities for structured content.
+    - [ ] Evaluate miniplot visualisation helpers from the `miniplot` extension.
+      - Targets: typed expression formatting helpers, relation export utilities that render ASCII/Unicode plots.
+    - [ ] Surface trie-backed lookup ergonomics through the `marisa` extension.
+      - Targets: typed expression DSL for MARISA functions, relation helpers for building/applying trie indexes.
+    - [ ] Provide HDF5 ingestion support with the `hdf5` extension.
+      - Targets: `_load_hdf5` on `DuckCon`, `Relation.from_hdf5`/`duckplus.io.read_hdf5`, schema mapping for dataset selection.
+    - [ ] Wrap RapidFuzz similarity functions via the `rapidfuzz` extension.
+      - Targets: typed expression wrappers for fuzzy comparisons, relation filter/sort helpers that compose similarity scores.
+
+### Preflight Answers – Extension enablement
+1. Provide thin wrappers that manage extension installation/registration while keeping connection lifecycle rules intact.
+2. Changes will live near `duckplus/extensions.py` (or equivalent) and integrate with `DuckCon` so sessions can opt-in cleanly.
+3. Review DuckDB's extension loading docs plus community guidance for nano-ODBC and Excel to mirror configuration nuances.
+4. Ensure helpers surface clear errors when extensions are unavailable, offer idempotent loading, and integrate with the IO roadmap entries.
+5. Validate behaviour with targeted pytest cases using DuckDB's extension availability flags and document manual installation steps when needed.
+6. Offline environments require pre-installed community bundles; nano-ODBC tests look for `DUCKPLUS_TEST_ODBC_*` environment variables to target a real data source before running.
 
 ## Demo Showcase Expansion
 - [ ] Curate a catalogue of 40 opinionated demos that highlight relation immutability, typed expressions, IO parity, and appender workflows.
