@@ -82,10 +82,10 @@ arguments—``sheet``, ``header``, ``skip``, ``limit``, ``names``, ``dtype``, an
 
 ## Adding computed columns
 
-`Relation.add` accepts keyword arguments mapping new column names to SQL
-expressions or typed expressions from :mod:`duckplus.typed`. When typed
-expressions are provided, their dependency metadata allows DuckPlus to validate
-that references only target columns already present on the relation.
+`Relation.add` accepts keyword arguments mapping new column names to typed
+expressions from :mod:`duckplus.typed`. Their dependency metadata allows
+DuckPlus to validate that references only target columns already present on the
+relation.
 
 ```python
 from duckplus import DuckCon, Relation
@@ -98,9 +98,12 @@ with manager as connection:
         connection.sql("SELECT 3::INTEGER AS value, 5::INTEGER AS other"),
     )
 
+    value = ducktype.Numeric("value")
+    other = ducktype.Numeric("other")
+
     extended = base.add(
-        total=ducktype.Numeric("value") + ducktype.Numeric("other"),
-        delta="value - other",
+        total=value + other,
+        delta=value - other,
     )
 
 assert extended.columns == ("value", "other", "total", "delta")
@@ -116,8 +119,8 @@ creation deterministic.
 ## Grouping and aggregating data
 
 `Relation.aggregate` groups rows by a set of existing columns and computes
-named aggregate expressions. Aggregations can be provided as raw SQL strings or
-typed expressions, and optional filter predicates limit the input rows before
+named aggregate expressions. Aggregations must be provided as typed expressions
+from :mod:`duckplus.typed`, and optional filter predicates limit the input rows before
 aggregation. Grouping columns are validated against the original relation so
 typos surface immediately.
 
@@ -141,8 +144,8 @@ with manager as connection:
     summary = base.aggregate(
         ("category",),
         ducktype.Boolean.raw("amount > 1", dependencies=["amount"]),
-        total_sales=ducktype.Numeric.Aggregate.sum("amount"),
-        average_sale="avg(amount)",
+        total_sales=ducktype.Numeric("amount").sum(),
+        average_sale=ducktype.Numeric("amount").avg(),
     )
 
 assert summary.columns == ("category", "total_sales", "average_sale")

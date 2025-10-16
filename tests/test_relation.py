@@ -306,7 +306,11 @@ def test_add_appends_new_columns() -> None:
             connection.sql("SELECT 2::INTEGER AS value"),
         )
 
-        extended = relation.add(double="value * 2", triple="value * 3")
+        value = ducktype.Numeric("value")
+        extended = relation.add(
+            double=value * ducktype.Numeric.literal(2),
+            triple=value * ducktype.Numeric.literal(3),
+        )
 
         assert extended.columns == ("value", "double", "triple")
         assert extended.types == ("INTEGER", "INTEGER", "INTEGER")
@@ -322,7 +326,10 @@ def test_add_rejects_forward_references() -> None:
         )
 
         with pytest.raises(ValueError, match="unknown columns"):
-            relation.add(double="quadruple * 2", quadruple="value * 4")
+            relation.add(
+                double=ducktype.Numeric("quadruple") * ducktype.Numeric.literal(2),
+                quadruple=ducktype.Numeric("value") * ducktype.Numeric.literal(4),
+            )
 
 
 def test_add_rejects_dependent_expressions() -> None:
@@ -334,7 +341,10 @@ def test_add_rejects_dependent_expressions() -> None:
         )
 
         with pytest.raises(ValueError, match="unknown columns"):
-            relation.add(double="value * 2", quadruple="double * 2")
+            relation.add(
+                double=ducktype.Numeric("value") * ducktype.Numeric.literal(2),
+                quadruple=ducktype.Numeric("double") * ducktype.Numeric.literal(2),
+            )
 
 
 def test_add_rejects_dependent_expressions_with_quoted_aliases() -> None:
@@ -345,15 +355,15 @@ def test_add_rejects_dependent_expressions_with_quoted_aliases() -> None:
             connection.sql("SELECT 4::INTEGER AS value"),
         )
 
-        expressions = dict(
-            [
-                ("spaced name", '"value" * 2'),
-                ("other alias", '"spaced name" * 2'),
-            ]
-        )
-
         with pytest.raises(ValueError, match="unknown columns"):
-            relation.add(**expressions)
+            relation.add(
+                **{
+                    "spaced name": ducktype.Numeric("value")
+                    * ducktype.Numeric.literal(2),
+                    "other alias": ducktype.Numeric("spaced name")
+                    * ducktype.Numeric.literal(2),
+                }
+            )
 
 
 def test_add_rejects_existing_columns_case_insensitively() -> None:
@@ -365,7 +375,7 @@ def test_add_rejects_existing_columns_case_insensitively() -> None:
         )
 
         with pytest.raises(ValueError, match="already exist"):
-            relation.add(VALUE="value + 1")
+            relation.add(VALUE=ducktype.Numeric("value") + ducktype.Numeric.literal(1))
 
 
 def test_add_rejects_existing_columns() -> None:
@@ -377,7 +387,7 @@ def test_add_rejects_existing_columns() -> None:
         )
 
         with pytest.raises(ValueError, match="already exist"):
-            relation.add(value="value + 1")
+            relation.add(value=ducktype.Numeric("value") + ducktype.Numeric.literal(1))
 
 
 def test_add_rejects_invalid_expression_types() -> None:
@@ -388,20 +398,8 @@ def test_add_rejects_invalid_expression_types() -> None:
             connection.sql("SELECT 1::INTEGER AS value"),
         )
 
-        with pytest.raises(TypeError, match="SQL strings"):
-            relation.add(double=123)
-
-
-def test_add_rejects_blank_expressions() -> None:
-    manager = DuckCon()
-    with manager as connection:
-        relation = Relation.from_relation(
-            manager,
-            connection.sql("SELECT 1::INTEGER AS value"),
-        )
-
-        with pytest.raises(ValueError, match="cannot be empty"):
-            relation.add(double="   ")
+        with pytest.raises(TypeError, match="typed expressions"):
+            relation.add(double="value * 2")
 
 
 def test_add_accepts_typed_expressions() -> None:
@@ -442,7 +440,7 @@ def test_add_requires_open_connection() -> None:
     relation = _make_relation(manager, "SELECT 1::INTEGER AS value")
 
     with pytest.raises(RuntimeError):
-        relation.add(double="value * 2")
+        relation.add(double=ducktype.Numeric("value") * ducktype.Numeric.literal(2))
 
 
 def test_add_validates_expression_references() -> None:
@@ -454,7 +452,12 @@ def test_add_validates_expression_references() -> None:
         )
 
         with pytest.raises(ValueError, match="unknown columns"):
-            relation.add(double="missing + 1")
+            relation.add(
+                double=ducktype.Numeric.raw(
+                    "missing + 1",
+                    dependencies=["missing"],
+                )
+            )
 
 
 def test_rename_updates_column_names() -> None:
@@ -716,8 +719,8 @@ def test_aggregate_groups_rows_and_computes_aggregates() -> None:
 
         aggregated = relation.aggregate(
             ("category",),
-            total="sum(amount)",
-            average="avg(amount)",
+            total=ducktype.Numeric("amount").sum(),
+            average=ducktype.Numeric("amount").avg(),
         )
 
         ordered = aggregated.relation.order("category").fetchall()
@@ -735,7 +738,7 @@ def test_aggregate_accepts_typed_expressions() -> None:
 
         aggregated = relation.aggregate(
             ("CATEGORY",),
-            total=ducktype.Numeric.Aggregate.sum("amount"),
+            total=ducktype.Numeric("amount").sum(),
         )
 
         assert aggregated.columns == ("category", "total")
@@ -756,18 +759,30 @@ def test_aggregate_supports_filters() -> None:
         string_filtered = relation.aggregate(
             ("category",),
             "amount > 1",
-            total="sum(amount)",
+            total=ducktype.Numeric("amount").sum(),
         )
 
         typed_filtered = relation.aggregate(
             ("category",),
             ducktype.Boolean.raw("amount > 1", dependencies=["amount"]),
-            total="sum(amount)",
+            total=ducktype.Numeric("amount").sum(),
         )
 
         expected = [("a", 2), ("b", 3)]
         assert string_filtered.relation.order("category").fetchall() == expected
         assert typed_filtered.relation.order("category").fetchall() == expected
+
+
+def test_aggregate_rejects_raw_sql_strings() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(_AGGREGATE_SOURCE_SQL),
+        )
+
+        with pytest.raises(TypeError, match="typed expressions"):
+            relation.aggregate(("category",), total="sum(amount)")
 
 
 def test_aggregate_rejects_unknown_group_by_columns() -> None:
@@ -779,7 +794,7 @@ def test_aggregate_rejects_unknown_group_by_columns() -> None:
         )
 
         with pytest.raises(KeyError):
-            relation.aggregate(("missing",), total="sum(amount)")
+            relation.aggregate(("missing",), total=ducktype.Numeric("amount").sum())
 
 
 def test_aggregate_rejects_unknown_aggregation_columns() -> None:
@@ -791,7 +806,10 @@ def test_aggregate_rejects_unknown_aggregation_columns() -> None:
         )
 
         with pytest.raises(ValueError, match="unknown columns"):
-            relation.aggregate(("category",), total="sum(missing)")
+            relation.aggregate(
+                ("category",),
+                total=ducktype.Numeric("missing").sum(),
+            )
 
 
 def test_aggregate_rejects_typed_expression_with_unknown_columns() -> None:
@@ -805,7 +823,7 @@ def test_aggregate_rejects_typed_expression_with_unknown_columns() -> None:
         with pytest.raises(ValueError, match="unknown columns"):
             relation.aggregate(
                 ("category",),
-                total=ducktype.Numeric.Aggregate.sum("missing"),
+                total=ducktype.Numeric("missing").sum(),
             )
 
 
@@ -818,7 +836,11 @@ def test_aggregate_rejects_non_boolean_filters() -> None:
         )
 
         with pytest.raises(TypeError):
-            relation.aggregate(("category",), ducktype.Numeric("amount"), total="sum(amount)")
+            relation.aggregate(
+                ("category",),
+                ducktype.Numeric("amount"),
+                total=ducktype.Numeric("amount").sum(),
+            )
 
 
 def test_aggregate_rejects_blank_filters() -> None:
@@ -830,7 +852,11 @@ def test_aggregate_rejects_blank_filters() -> None:
         )
 
         with pytest.raises(ValueError):
-            relation.aggregate(("category",), "   ", total="sum(amount)")
+            relation.aggregate(
+                ("category",),
+                "   ",
+                total=ducktype.Numeric("amount").sum(),
+            )
 
 
 def test_aggregate_requires_aggregations() -> None:
@@ -850,7 +876,7 @@ def test_aggregate_requires_open_connection() -> None:
     relation = _make_relation(manager, _SINGLE_ROW_SQL)
 
     with pytest.raises(RuntimeError):
-        relation.aggregate(("category",), total="sum(amount)")
+        relation.aggregate(("category",), total=ducktype.Numeric("amount").sum())
 
 
 def test_aggregate_rejects_duplicate_aggregation_names() -> None:
@@ -862,7 +888,11 @@ def test_aggregate_rejects_duplicate_aggregation_names() -> None:
         )
 
         with pytest.raises(ValueError, match="specified multiple times"):
-            relation.aggregate(("category",), total="sum(amount)", TOTAL="avg(amount)")
+            relation.aggregate(
+                ("category",),
+                total=ducktype.Numeric("amount").sum(),
+                TOTAL=ducktype.Numeric("amount").avg(),
+            )
 
 
 def test_aggregate_rejects_mismatched_alias_typed_expressions() -> None:
@@ -873,7 +903,7 @@ def test_aggregate_rejects_mismatched_alias_typed_expressions() -> None:
             connection.sql(_SINGLE_ROW_SQL),
         )
 
-        expression = ducktype.Numeric.Aggregate.sum("amount").alias("other")
+        expression = ducktype.Numeric("amount").sum().alias("other")
 
         with pytest.raises(ValueError, match="aggregate must use the same alias"):
             relation.aggregate(("category",), total=expression)
