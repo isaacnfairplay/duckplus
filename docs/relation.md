@@ -358,3 +358,88 @@ an informative error so call sites keep connection ownership explicit. When
 `create=True`, the helper requires inserting every column to keep table schemas
 deterministic; during append operations, specify `target_columns` to rely on
 table defaults for any omitted values.
+
+## Appending file-backed datasets into tables
+
+Relations sourced from `duckplus.io` helpers can be treated like managed tables
+when loading their rows into DuckDB. Call
+[:meth:`Relation.append_file`][duckplus.relation.Relation.append_file] to insert
+the dataset into an existing table or create a new one on demand:
+
+```python
+from pathlib import Path
+
+from duckplus import DuckCon, io
+
+manager = DuckCon()
+with manager as connection:
+    connection.execute(
+        "CREATE TABLE staging.events(id INTEGER, payload VARCHAR, created TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"
+    )
+    records = io.read_json(manager, Path("events.ndjson"), records=True)
+
+    records.append_file(
+        "staging.events",
+        target_columns=("id", "payload"),
+    )
+```
+
+The helper shares the same validation as :meth:`Table.insert`, including
+`target_columns` normalisation and transactional overwrites. For append
+workflows that should ignore duplicate rows, use
+[:meth:`Relation.distinct_append_file`][duckplus.relation.Relation.distinct_append_file]
+to materialise unique records only:
+
+```python
+records.distinct_append_file("staging.events", overwrite=True)
+```
+
+Both helpers require the managed connection to remain open and raise clear
+errors when the underlying dataset depends on a different `DuckCon` instance.
+
+## Writing partitioned Parquet datasets
+
+When working with immutable file stores it is often preferable to maintain one
+Parquet file per logical partition. :meth:`Relation.write_parquet_dataset`
+persists a relation into a directory of Parquet files using a column to derive
+the partition key. The helper creates the directory when needed and accepts a
+filename template so pipelines can keep the existing naming convention:
+
+```python
+target = Path("/data/events")
+
+relation.write_parquet_dataset(
+    target,
+    partition_column="partition_key",
+    filename_template="{partition}.parquet",
+)
+```
+
+By default the helper overwrites the Parquet file associated with each
+partition. Provide ``partition_actions`` to mix append and overwrite behaviour
+within the same batch. In the following example new rows for the ``north``
+partition are appended while ``west`` is rebuilt from scratch:
+
+```python
+relation.write_parquet_dataset(
+    target,
+    partition_column="partition_key",
+    partition_actions={"north": "append", "west": "overwrite"},
+)
+```
+
+Set ``immutable=True`` to enforce append-only semantics. Existing partition
+files trigger an error so ingestion jobs can guarantee that each run only adds
+new partitions:
+
+```python
+relation.write_parquet_dataset(
+    target,
+    partition_column="partition_key",
+    immutable=True,
+)
+```
+
+All strategies require the underlying connection to remain open. The helper
+relies on DuckDB's Parquet writer so compression and existing schema inference
+behaviour mirror DuckDB's native commands.

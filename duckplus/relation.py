@@ -1,11 +1,12 @@
 """Utilities for working with DuckDB relations."""
 
-# pylint: disable=import-error
+# pylint: disable=import-error,too-many-lines
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from os import PathLike
+from pathlib import Path
 from collections.abc import Sequence
 import warnings
 from typing import Any, Iterable, Mapping, TypeVar, overload
@@ -13,6 +14,11 @@ from typing import Literal
 
 import duckdb  # type: ignore[import-not-found]
 
+from ._table_utils import (
+    append_relation_data,
+    normalise_target_columns,
+    require_connection,
+)
 from .duckcon import DuckCon
 from .typed.select import SelectStatementBuilder
 from .typed.dependencies import ExpressionDependency
@@ -775,6 +781,162 @@ class Relation:
             raise ValueError(msg) from error
 
         return type(self).from_relation(self.duckcon, relation)
+
+    def append_file(
+        self,
+        table: str,
+        *,
+        target_columns: Sequence[str] | None = None,
+        create: bool = False,
+        overwrite: bool = False,
+    ) -> None:
+        """Append the relation's rows into a DuckDB table."""
+
+        connection = require_connection(self.duckcon, "Relation.append_file")
+        target_column_list = normalise_target_columns(
+            target_columns, "Relation.append_file"
+        )
+        append_relation_data(
+            connection,
+            self._relation,
+            table,
+            "Relation.append_file",
+            target_columns=target_column_list,
+            create=create,
+            overwrite=overwrite,
+        )
+
+    def distinct_append_file(
+        self,
+        table: str,
+        *,
+        target_columns: Sequence[str] | None = None,
+        create: bool = False,
+        overwrite: bool = False,
+    ) -> None:
+        """Append distinct rows from the relation into a DuckDB table."""
+
+        connection = require_connection(
+            self.duckcon, "Relation.distinct_append_file"
+        )
+        target_column_list = normalise_target_columns(
+            target_columns, "Relation.distinct_append_file"
+        )
+        append_relation_data(
+            connection,
+            self._relation.distinct(),
+            table,
+            "Relation.distinct_append_file",
+            target_columns=target_column_list,
+            create=create,
+            overwrite=overwrite,
+        )
+
+    def write_parquet_dataset(
+        self,
+        directory: Path | PathLike[str] | str,
+        *,
+        partition_column: str,
+        filename_template: str = "{partition}.parquet",
+        partition_actions: Mapping[object, Literal["append", "overwrite"]]
+        | None = None,
+        default_action: Literal["append", "overwrite"] = "overwrite",
+        immutable: bool = False,
+    ) -> None:
+        """Persist rows into a partitioned Parquet dataset."""
+
+        _connection = require_connection(
+            self.duckcon, "Relation.write_parquet_dataset"
+        )
+
+        resolved_column = self._resolve_column(partition_column)
+        if resolved_column is None:
+            msg = f"Partition column '{partition_column}' does not exist on the relation"
+            raise ValueError(msg)
+
+        if default_action not in {"append", "overwrite"}:
+            msg = "default_action must be either 'append' or 'overwrite'"
+            raise ValueError(msg)
+
+        if immutable and partition_actions is not None:
+            msg = "partition_actions cannot be provided when immutable=True"
+            raise ValueError(msg)
+
+        actions: dict[object, Literal["append", "overwrite"]]
+        actions = {}
+        if partition_actions is not None:
+            for key, action in partition_actions.items():
+                if action not in {"append", "overwrite"}:
+                    msg = "partition_actions values must be 'append' or 'overwrite'"
+                    raise ValueError(msg)
+                actions[key] = action
+
+        target_directory = Path(directory)
+        target_directory.mkdir(parents=True, exist_ok=True)
+
+        column_identifier = self._quote_identifier(resolved_column)
+        partitions = [
+            row[0]
+            for row in self._relation.project(column_identifier).distinct().fetchall()
+        ]
+
+        def quote_literal(value: object) -> str:
+            if value is None:
+                return "NULL"
+            if isinstance(value, bool):
+                return "TRUE" if value else "FALSE"
+            if isinstance(value, (int, float)):
+                return repr(value)
+            text = str(value)
+            escaped = text.replace("'", "''")
+            return f"'{escaped}'"
+
+        for partition_value in partitions:
+            try:
+                file_name = filename_template.format(partition=partition_value)
+            except Exception as error:  # pragma: no cover - defensive conversion guard
+                msg = (
+                    "Failed to render filename_template for partition value "
+                    f"{partition_value!r}"
+                )
+                raise ValueError(msg) from error
+
+            if not file_name:
+                msg = "filename_template must produce a non-empty file name"
+                raise ValueError(msg)
+
+            file_path = target_directory / file_name
+
+            if immutable and file_path.exists():
+                msg = (
+                    "Partition '{partition}' already exists; immutable datasets "
+                    "only support inserting new partitions"
+                ).format(partition=partition_value)
+                raise ValueError(msg)
+
+            action = actions.get(partition_value, default_action)
+            if immutable:
+                action = "overwrite"
+
+            if partition_value is None:
+                predicate = f"{column_identifier} IS NULL"
+            else:
+                literal = quote_literal(partition_value)
+                predicate = f"{column_identifier} = {literal}"
+
+            partition_relation = self._relation.filter(predicate)
+
+            file_name = str(file_path)
+
+            if action == "append":
+                if file_path.exists():
+                    existing = _connection.read_parquet(file_name)
+                    combined = existing.union(partition_relation)
+                    combined.write_parquet(file_name, overwrite=True)
+                else:
+                    partition_relation.write_parquet(file_name)
+            else:
+                partition_relation.write_parquet(file_name, overwrite=True)
 
     def rename(self, **renames: str) -> "Relation":
         """Return a new relation with selected columns renamed."""
