@@ -922,32 +922,57 @@ class Relation:
             match_all_columns=match_all_columns,
         )
 
-        result = type(self).from_relation(self.duckcon, append_subset)
+        view_name = f"duckplus_append_view_{uuid4().hex}"
+        table_name = f"duckplus_append_{uuid4().hex}"
+        quoted_view = self._quote_identifier(view_name)
+        quoted_table = self._quote_identifier(table_name)
+        append_subset.create_view(view_name)
+        try:
+            connection.execute(
+                f"CREATE TEMP TABLE {quoted_table} AS SELECT * FROM {quoted_view}"
+            )
+        finally:
+            connection.execute(f"DROP VIEW {quoted_view}")
 
-        if mutate:
-            rows = append_subset.fetchall()
-            file_exists = target_path.exists()
-            file_size = target_path.stat().st_size if file_exists else 0
-            if not rows and file_size > 0:
-                return result
+        materialised = connection.sql(f"SELECT * FROM {quoted_table}")
+        result = type(self).from_relation(self.duckcon, materialised)
 
-            target_path.parent.mkdir(parents=True, exist_ok=True)
-            should_write_header = header and file_size == 0
-            mode = "a" if file_size > 0 else "w"
-            if rows or should_write_header:
-                with target_path.open(mode, encoding=encoding, newline="") as handle:
-                    if quotechar:
-                        writer = csv.writer(
-                            handle,
-                            delimiter=delimiter,
-                            quotechar=quotechar,
-                        )
-                    else:
-                        writer = csv.writer(handle, delimiter=delimiter)
-                    if should_write_header:
-                        writer.writerow(result.columns)
-                    if rows:
-                        writer.writerows(rows)
+        if not mutate:
+            materialised.execute()
+            return result
+
+        file_exists = target_path.exists()
+        file_size = target_path.stat().st_size if file_exists else 0
+        should_write_header = header and file_size == 0
+        has_new_rows = materialised.limit(1).fetchone() is not None
+
+        if not has_new_rows and not should_write_header:
+            materialised.execute()
+            return result
+
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        mode = "a" if file_size > 0 else "w"
+
+        try:
+            with target_path.open(mode, encoding=encoding, newline="") as handle:
+                if quotechar:
+                    writer = csv.writer(
+                        handle,
+                        delimiter=delimiter,
+                        quotechar=quotechar,
+                    )
+                else:
+                    writer = csv.writer(handle, delimiter=delimiter)
+                if should_write_header:
+                    writer.writerow(result.columns)
+                if has_new_rows:
+                    while True:
+                        chunk = materialised.fetchmany(1024)
+                        if not chunk:
+                            break
+                        writer.writerows(chunk)
+        finally:
+            materialised.execute()
 
         return result
 

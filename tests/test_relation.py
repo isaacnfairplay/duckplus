@@ -1512,6 +1512,26 @@ def test_relation_append_csv_large_batch(tmp_path: Path) -> None:
     assert row_count == 5000
 
 
+def test_relation_append_csv_resets_relation_after_streaming(tmp_path: Path) -> None:
+    target = tmp_path / "data.csv"
+
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(
+                """
+                SELECT * FROM (VALUES
+                    (1::INTEGER, 'north'::VARCHAR),
+                    (2::INTEGER, 'south'::VARCHAR)
+                ) AS data(id, region)
+                """.strip()
+            ),
+        )
+
+        result = relation.append_csv(target)
+        assert result.relation.fetchall() == [(1, "north"), (2, "south")]
+
 def test_relation_append_parquet_appends_rows(tmp_path: Path) -> None:
     target = tmp_path / "data.parquet"
     connection = duckdb.connect()

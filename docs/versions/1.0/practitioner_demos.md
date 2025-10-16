@@ -3,6 +3,13 @@
 Real-world workflows highlight how DuckPlus integrates with editors and data
 science tooling.
 
+```{toctree}
+:maxdepth: 1
+:hidden:
+
+sales_pipeline_demo
+```
+
 ## Language server walkthrough
 
 The {file}`docs/language_server_demo.md` notebook demonstrates how the typed
@@ -23,6 +30,14 @@ Pair :meth:`Relation.schema_diff <duckplus.relation.Relation.schema_diff>` with
 an editor that supports ``pytest`` integration to build automated regression
 checks. The curated tests in :mod:`tests.test_schema` provide a blueprint for
 validating pipelines in CI.
+
+## Sales analytics pipeline
+
+The :doc:`sales_pipeline_demo` walkthrough composes relations, typed
+expressions, and aggregation helpers to produce leadership-ready metrics. The
+documentation captures the deterministic region and channel summaries along
+with the generated SELECT statement so the demo's assertions and prose stay in
+sync.
 
 ## Contributing demos
 
