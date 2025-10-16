@@ -280,10 +280,15 @@ class Relation:
             )
             raise RuntimeError(msg)
 
+        original_casefolded = dict(self._casefolded_columns)
+        original_column_sql = [
+            self._quote_identifier(column) for column in self.columns
+        ]
+
         existing_matches = {
             column
             for alias in expressions
-            for column in self._casefolded_columns.get(alias.casefold(), ())
+            for column in original_casefolded.get(alias.casefold(), ())
         }
         if existing_matches:
             formatted = self._format_column_list(existing_matches)
@@ -311,9 +316,15 @@ class Relation:
                 alias, expression
             )
             if dependencies is not None:
-                self._assert_add_dependencies(alias, dependencies)
+                self._assert_add_dependencies(
+                    alias,
+                    dependencies,
+                    casefolded_columns=original_casefolded,
+                )
 
-            validation_builder = SelectStatementBuilder().star()
+            validation_builder = SelectStatementBuilder()
+            for column_sql in original_column_sql:
+                validation_builder.column(column_sql)
             validation_builder.column(expression_sql, alias=alias)
 
             try:
@@ -327,7 +338,9 @@ class Relation:
 
             prepared.append((alias, expression_sql))
 
-        builder = SelectStatementBuilder().star()
+        builder = SelectStatementBuilder()
+        for column_sql in original_column_sql:
+            builder.column(column_sql)
         for alias, expression_sql in prepared:
             builder.column(expression_sql, alias=alias)
 
@@ -1287,18 +1300,25 @@ class Relation:
 
         return clauses
 
-    def _resolve_column(self, column: str) -> str | None:
-        matches = self._casefolded_columns.get(column.casefold())
+    @staticmethod
+    def _resolve_column_from_casefolded(
+        column: str,
+        casefolded_columns: Mapping[str, tuple[str, ...]],
+    ) -> str | None:
+        matches = casefolded_columns.get(column.casefold())
         if matches is None:
             return None
         if len(matches) > 1:
-            formatted = self._format_column_list(matches)
+            formatted = Relation._format_column_list(matches)
             msg = (
                 f"Column reference '{column}' is ambiguous; multiple columns match ignoring "
                 f"case: {formatted}"
             )
             raise ValueError(msg)
         return matches[0]
+
+    def _resolve_column(self, column: str) -> str | None:
+        return self._resolve_column_from_casefolded(column, self._casefolded_columns)
 
     def _resolve_column_items(
         self, items: Iterable[tuple[str, T]]
@@ -1465,10 +1485,13 @@ class Relation:
         self,
         alias: str,
         dependencies: frozenset[ExpressionDependency],
+        *,
+        casefolded_columns: Mapping[str, tuple[str, ...]] | None = None,
     ) -> None:
         self._assert_dependencies_exist(
             dependencies,
             error_prefix=f"add expression for column '{alias}'",
+            casefolded_columns=casefolded_columns,
         )
 
     def _assert_dependencies_exist(
@@ -1476,13 +1499,15 @@ class Relation:
         dependencies: frozenset[ExpressionDependency],
         *,
         error_prefix: str,
+        casefolded_columns: Mapping[str, tuple[str, ...]] | None = None,
     ) -> None:
+        lookup = self._casefolded_columns if casefolded_columns is None else casefolded_columns
         for dependency in dependencies:
             column = dependency.column_name
             if column is None:
                 continue
             try:
-                resolved = self._resolve_column(column)
+                resolved = self._resolve_column_from_casefolded(column, lookup)
             except ValueError as error:  # pragma: no cover - defensive
                 msg = (
                     f"{error_prefix} references ambiguous column '{column}'"
