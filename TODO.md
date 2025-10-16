@@ -102,7 +102,7 @@ Answer these before starting any TODO item to confirm the work is understood and
 - [x] Implement "asof" join leveraging the expression API for ordering and tolerance configuration.
 
 ## IO and Appenders
-- [ ] Provide IO helpers for CSV, Parquet, and other common formats, reusing `DuckCon` where possible.
+- [x] Provide IO helpers for CSV, Parquet, and other common formats, reusing `DuckCon` where possible.
 - [ ] Add appenders for CSV and NDJSON plus specialised insert tooling (consult long-term Git history for reference patterns).
 - [ ] Create a table interfacing API for managed inserts into DuckDB tables.
 
