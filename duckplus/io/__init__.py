@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 from os import PathLike, fspath
+from pathlib import Path
 from collections.abc import Mapping, Sequence
 from typing import Any, TypedDict, cast
 
@@ -25,7 +26,30 @@ __all__ = [
     "append_ndjson",
 ]
 
-PathType = str | PathLike[str]
+PathLikeInput = Path | PathLike[str] | str
+
+
+def _ensure_path(value: PathLikeInput) -> Path | str:
+    """Normalise a supported path-like input into a DuckDB-compatible path."""
+
+    if isinstance(value, Path):
+        return value
+
+    if isinstance(value, str):
+        return value
+
+    return Path(fspath(value))
+
+
+def _normalise_path_argument(
+    source: PathLikeInput | Sequence[PathLikeInput],
+) -> str | list[str]:
+    """Return a DuckDB-compatible path or sequence of paths."""
+
+    if isinstance(source, Sequence) and not isinstance(source, (str, bytes, bytearray)):
+        return [str(_ensure_path(item)) for item in source]
+
+    return str(_ensure_path(source))
 
 
 class CSVReadKeywordOptions(TypedDict, total=False):
@@ -245,14 +269,11 @@ class ParquetReadKeywordOptions(TypedDict, total=False):
 
 
 def _normalise_parquet_source(
-    source: PathType | Sequence[PathType],
+    source: Path | Sequence[Path],
 ) -> str | list[str]:
     """Return a DuckDB-compatible Parquet glob or list of globs."""
 
-    if isinstance(source, (str, bytes, PathLike)):
-        return fspath(source)
-
-    return [fspath(item) for item in source]
+    return _normalise_path_argument(source)
 
 
 def _build_parquet_options(
@@ -360,7 +381,7 @@ def _build_json_options(
 
 def read_csv(
     duckcon: DuckCon,
-    source: PathType,
+    source: Path | Sequence[Path],
     *,
     header: bool | None = None,
     delimiter: str | None = None,
@@ -409,7 +430,7 @@ def read_csv(
     """Load a CSV file into a :class:`Relation`."""
 
     connection = require_connection(duckcon, "read_csv")
-    path = fspath(source)
+    path = _normalise_path_argument(source)
 
     kwargs = _build_csv_options(
         header=header,
@@ -463,7 +484,7 @@ def read_csv(
 
 def read_parquet(
     duckcon: DuckCon,
-    source: PathType | Sequence[PathType],
+    source: Path | Sequence[Path],
     *,
     binary_as_string: bool | None = None,
     file_row_number: bool | None = None,
@@ -492,7 +513,7 @@ def read_parquet(
 
 def read_json(
     duckcon: DuckCon,
-    source: PathType,
+    source: Path | Sequence[Path],
     *,
     columns: object | None = None,
     sample_size: object | None = None,
@@ -517,7 +538,7 @@ def read_json(
     """Load a JSON document or JSON Lines file into a :class:`Relation`."""
 
     connection = require_connection(duckcon, "read_json")
-    path = fspath(source)
+    path = _normalise_path_argument(source)
 
     kwargs = _build_json_options(
         columns=columns,
@@ -548,7 +569,7 @@ def read_json(
 def append_csv(
     duckcon: DuckCon,
     table: str,
-    source: PathType,
+    source: Path | Sequence[Path],
     *,
     target_columns: Sequence[str] | None = None,
     create: bool = False,
@@ -601,7 +622,7 @@ def append_csv(
 
     connection = require_connection(duckcon, "append_csv")
     target_column_list = normalise_target_columns(target_columns, "append_csv")
-    path = fspath(source)
+    path = _normalise_path_argument(source)
 
     kwargs = _build_csv_options(
         header=header,
@@ -664,7 +685,7 @@ def append_csv(
 def append_ndjson(
     duckcon: DuckCon,
     table: str,
-    source: PathType,
+    source: Path | Sequence[Path],
     *,
     target_columns: Sequence[str] | None = None,
     create: bool = False,
@@ -693,7 +714,7 @@ def append_ndjson(
 
     connection = require_connection(duckcon, "append_ndjson")
     target_column_list = normalise_target_columns(target_columns, "append_ndjson")
-    path = fspath(source)
+    path = _normalise_path_argument(source)
 
     kwargs = _build_json_options(
         columns=columns,

@@ -66,6 +66,28 @@ def test_append_csv_target_columns_respects_defaults(tmp_path: Path) -> None:
     assert rows == [(1, "a", True)]
 
 
+def test_append_csv_accepts_path_sequence(tmp_path: Path) -> None:
+    first = tmp_path / "first.csv"
+    second = tmp_path / "second.csv"
+    _write_file(first, "1,a\n")
+    _write_file(second, "2,b\n")
+
+    manager = DuckCon()
+    with manager as connection:
+        connection.execute("CREATE TABLE data(id INTEGER, value VARCHAR)")
+        io.append_csv(
+            manager,
+            "data",
+            (first, second),
+            header=False,
+            names=("id", "value"),
+        )
+
+        rows = connection.sql("SELECT * FROM data ORDER BY id").fetchall()
+
+    assert rows == [(1, "a"), (2, "b")]
+
+
 def test_append_ndjson_creates_table(tmp_path: Path) -> None:
     ndjson_path = tmp_path / "events.ndjson"
     with ndjson_path.open("w", encoding="utf-8") as handle:
@@ -77,6 +99,31 @@ def test_append_ndjson_creates_table(tmp_path: Path) -> None:
     manager = DuckCon()
     with manager as connection:
         io.append_ndjson(manager, "events", ndjson_path, create=True, overwrite=True)
+
+        rows = connection.sql("SELECT * FROM events ORDER BY id").fetchall()
+
+    assert rows == [(1, "a"), (2, "b")]
+
+
+def test_append_ndjson_accepts_path_sequence(tmp_path: Path) -> None:
+    first = tmp_path / "first.ndjson"
+    second = tmp_path / "second.ndjson"
+    with first.open("w", encoding="utf-8") as handle:
+        json.dump({"id": 1, "value": "a"}, handle)
+        handle.write("\n")
+    with second.open("w", encoding="utf-8") as handle:
+        json.dump({"id": 2, "value": "b"}, handle)
+        handle.write("\n")
+
+    manager = DuckCon()
+    with manager as connection:
+        io.append_ndjson(
+            manager,
+            "events",
+            [first, second],
+            create=True,
+            overwrite=True,
+        )
 
         rows = connection.sql("SELECT * FROM events ORDER BY id").fetchall()
 

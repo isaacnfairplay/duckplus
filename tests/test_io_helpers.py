@@ -131,6 +131,24 @@ def test_read_csv_supports_dtype_alias(tmp_path: Path) -> None:
         assert relation.relation.fetchall() == [(1,), (2,)]
 
 
+def test_read_csv_accepts_path_sequence(tmp_path: Path) -> None:
+    first = tmp_path / "first.csv"
+    second = tmp_path / "second.csv"
+    first.write_text("1\n2\n", encoding="utf-8")
+    second.write_text("3\n4\n", encoding="utf-8")
+
+    manager = DuckCon()
+    with manager:
+        relation = io_helpers.read_csv(
+            manager,
+            [first, second],
+            header=False,
+            names=["value"],
+        )
+
+        assert relation.relation.fetchall() == [(1,), (2,), (3,), (4,)]
+
+
 def test_read_parquet_returns_relation(tmp_path: Path) -> None:
     parquet_path = tmp_path / "data.parquet"
     _write_parquet(parquet_path)
@@ -184,6 +202,22 @@ def test_read_json_returns_relation(tmp_path: Path) -> None:
             (1, "alpha"),
             (2, "beta"),
         ]
+
+
+def test_read_json_accepts_path_sequence(tmp_path: Path) -> None:
+    first = tmp_path / "first.json"
+    second = tmp_path / "second.json"
+    _write_json(first)
+    _write_json(second)
+
+    manager = DuckCon()
+    with manager:
+        relation = io_helpers.read_json(manager, (first, second))
+
+        rows = relation.relation.fetchall()
+        assert len(rows) == 4
+        assert rows.count((1, "alpha")) == 2
+        assert rows.count((2, "beta")) == 2
 
 
 def test_read_json_allows_explicit_columns(tmp_path: Path) -> None:

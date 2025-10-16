@@ -11,11 +11,13 @@ and type checkers surface the supported options. The ``duckcon`` manager and
 descriptive when desired.
 
 ```python
+from pathlib import Path
+
 from duckplus import DuckCon, io
 
 manager = DuckCon()
 with manager:
-    relation = io.read_csv(manager, "data.csv")
+    relation = io.read_csv(manager, Path("data.csv"))
     print(relation.columns)
 ```
 
@@ -64,6 +66,7 @@ io.read_csv(
 )
 ```
 
+* **source** – ``pathlib.Path`` instance or sequence of ``Path`` objects pointing at CSV files or buffers.
 ```python
 manager = DuckCon()
 with manager:
@@ -91,6 +94,24 @@ with the implementation and provides quick access to aliases such as
   explicitly so IDEs surface the available options. Aliases raise a descriptive
   `ValueError` when conflicting values are supplied.
 
+**Example**
+
+```python
+relation = io.read_csv(
+    manager,
+    Path("transactions.csv"),
+    delimiter="|",
+    header=True,
+    na_values=["NA", ""],
+    filename=True,
+)
+```
+
+Passing the alias keywords (`delim`, `quote`, `escape`, etc.) behaves identically
+to their primary counterparts so long as only one spelling is used for each
+option. Attempting to provide both will raise an error, making it obvious when a
+typo slipped through autocomplete suggestions.
+
 ## Parquet
 
 ```
@@ -108,6 +129,24 @@ io.read_parquet(
 ```
 
 These options map directly to DuckDB's [`read_parquet`](https://duckdb.org/docs/data/parquet)
+table function. The ``source`` may be a single ``Path`` or a sequence of ``Path`` objects/globs.
+Only explicitly provided keyword arguments are forwarded so callers can rely on
+IDE completions.
+
+**Example**
+
+```python
+relation = io.read_parquet(
+    manager,
+    [Path("/data/sales_2024.parquet"), Path("/data/sales_2025.parquet")],
+    filename=True,
+    union_by_name=True,
+)
+```
+
+Because the signature is spelled out explicitly, editors can suggest the
+available options—such as `binary_as_string` for forcing binary columns into
+`VARCHAR`—without resorting to `**kwargs` guesswork.
 table function. The ``source`` may be a single path or a sequence of paths/globs,
 and explicit keyword-only arguments ensure unexpected options are surfaced at
 call time instead of being silently ignored. The positional ``duckcon`` and
@@ -163,7 +202,9 @@ io.read_json(
 ```
 
 JSON helpers are flexible enough to cover both JSON Lines and nested JSON
-inputs. ``columns`` accepts the same mappings and sequences that DuckDB's
+inputs. ``source`` accepts either a single ``Path`` or any ``collections.abc.Sequence``
+of ``Path`` objects, mirroring DuckDB's flexibility. ``columns`` accepts the same
+mappings and sequences that DuckDB's
 ``read_json`` table function understands and is normalised to built-in
 containers before forwarding. As with the CSV and Parquet helpers, only provided
 keyword arguments are forwarded to DuckDB to avoid masking typos.
@@ -187,6 +228,21 @@ with manager:
 * **convert_strings_to_integers** – Enable automatic integer coercion.
 * **maximum_* options** – Tune sampling depth, object size, and file counts.
 * **hive_types** / **hive_types_autocast** – Normalise Hive-partitioned datasets.
+
+**Example**
+
+```python
+relation = io.read_json(
+    manager,
+    Path("events.ndjson"),
+    records=True,
+    maximum_depth=4,
+    hive_types_autocast=True,
+)
+```
+
+The helper surfaces the full keyword list so features like
+`convert_strings_to_integers` are discoverable directly from IDE tooltips.
 
 ## CSV appenders
 
@@ -238,6 +294,7 @@ io.append_csv(
 ```
 
 * **table** – Target DuckDB table (optionally schema-qualified) to receive rows.
+* **source** – ``Path`` instance or sequence of ``Path`` objects supplying CSV data.
 * **target_columns** – Optional list of column names to insert into, allowing
   tables with defaults to be populated without explicitly projecting every
   field.
@@ -283,6 +340,9 @@ io.append_ndjson(
     hive_types_autocast=None,
 )
 ```
+
+* **table** – Target DuckDB table that should receive the appended rows.
+* **source** – ``Path`` instance or sequence of ``Path`` objects containing NDJSON records.
 
 By default the NDJSON helper processes one JSON object per line (``records="auto"``)
 before delegating to the same insertion pipeline as the CSV variant. All
