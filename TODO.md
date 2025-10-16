@@ -71,6 +71,7 @@ Answer these before starting any TODO item to confirm the work is understood and
   - [x] Add `rename_if_exists` soft variant that skips missing columns with warnings/logging.
 - [x] Column addition helpers
   - [x] Implement `Relation.add(**expressions)` using `SELECT *, <expr> AS <alias>`.
+  - [x] Validate `Relation.add` expressions against the original relation so newly added columns cannot be referenced in the same call.
 - [ ] Column subset helpers
   - [x] Implement `Relation.keep(*columns)` to project only requested columns, raising on unknown names by default.
   - [x] Provide `keep_if_exists` variant that tolerates absent columns.

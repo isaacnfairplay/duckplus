@@ -219,6 +219,25 @@ def test_add_rejects_dependent_expressions() -> None:
             relation.add(double="value * 2", quadruple="double * 2")
 
 
+def test_add_rejects_dependent_expressions_with_quoted_aliases() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 4::INTEGER AS value"),
+        )
+
+        expressions = dict(
+            [
+                ("spaced name", '"value" * 2'),
+                ("other alias", '"spaced name" * 2'),
+            ]
+        )
+
+        with pytest.raises(ValueError, match="unknown columns"):
+            relation.add(**expressions)
+
+
 def test_add_rejects_existing_columns_case_insensitively() -> None:
     manager = DuckCon()
     with manager as connection:
