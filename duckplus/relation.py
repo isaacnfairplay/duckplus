@@ -75,6 +75,38 @@ class Relation:
 
         return self._relation
 
+    def row_count(self) -> int:
+        """Return the number of rows produced by the relation."""
+
+        require_connection(self.duckcon, "Relation.row_count")
+        count_relation = self._relation.aggregate("COUNT(*) AS duckplus_row_count")
+        row = count_relation.fetchone()
+        if row is None:
+            return 0
+        return int(row[0])
+
+    def null_ratios(self) -> dict[str, float]:
+        """Return the ratio of ``NULL`` values for each column in the relation."""
+
+        require_connection(self.duckcon, "Relation.null_ratios")
+        if not self.columns:
+            return {}
+
+        expressions: list[str] = []
+        for column in self.columns:
+            quoted = self._quote_identifier(column)
+            expressions.append(
+                "COALESCE(AVG(CASE WHEN "
+                f"{quoted} IS NULL THEN 1.0 ELSE 0.0 END), 0.0)"
+            )
+
+        ratio_relation = self._relation.aggregate(", ".join(expressions))
+        row = ratio_relation.fetchone()
+        if row is None:
+            return {column: 0.0 for column in self.columns}
+
+        return {column: float(value) for column, value in zip(self.columns, row, strict=False)}
+
     @classmethod
     def from_relation(cls, duckcon: DuckCon, relation: duckdb.DuckDBPyRelation) -> "Relation":
         """Create a :class:`Relation` from an existing DuckDB relation."""

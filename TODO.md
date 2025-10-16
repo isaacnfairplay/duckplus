@@ -130,6 +130,7 @@ Answer these before starting any TODO item to confirm the work is understood and
 3. Document mutate semantics (CSV defaults to in-place append; Parquet requires an opt-in rewrite) and explain temporary file usage for Parquet safety.
 4. Cover the workflows with new pytest scenarios and update `docs/relation.md`/`docs/io.md` to point at the relation-based appenders.
 5. Continue running mypy, uvx, pylint, and pytest per repository policy to guard against regressions.
+6. Stress append helpers with large batch writes and ``match_all_columns`` deduplication scenarios to ensure file safety paths stay covered.
 
 ### Preflight Answers – Table interfacing API
 1. Managed table helpers should live alongside `DuckCon` and reuse the existing relation metadata, ensuring inserts only run when the connection is open and the relation originates from the same manager.
@@ -147,10 +148,10 @@ Answer these before starting any TODO item to confirm the work is understood and
 - [x] Add `Relation.append_csv` and `Relation.append_parquet` helpers that append directly to files with optional unique-id or all-column deduplication.
 - [x] Ensure Parquet appends rewrite targets via temporary files and document the mutate defaults across formats.
 - [x] Refresh the documentation to highlight the relation-first append workflow and its duplicate-avoidance options.
-- [ ] Expand integration tests to stress large append batches and edge cases for the new file helpers.
+- [x] Expand integration tests to stress large append batches and edge cases for the new file helpers.
 
 ## Practitioner Quality-of-Life Utilities
-- [ ] Provide lightweight data profiling helpers (row counts, null ratios) to aid exploratory analysis directly from relations.
+- [x] Provide lightweight data profiling helpers (row counts, null ratios) to aid exploratory analysis directly from relations.
 - [ ] Add schema diff utilities to compare relations or files and surface column-type drift warnings.
 - [ ] Offer sample data exporters (to Pandas/Arrow/Polars) with batching options for notebook workflows, mirroring the parity guarantees of other IO helpers such as Parquet and CSV readers.
 
