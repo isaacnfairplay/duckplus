@@ -132,7 +132,7 @@ Answer these before starting any TODO item to confirm the work is understood and
 - [x] Mirror DuckDB's CSV reader signature explicitly (e.g. `filename`, `header`, `delim`, etc.) and share a typed alias for reuse across helpers without masking keyword visibility.
 - [x] Apply the explicit keyword signature pattern to Parquet, JSON, and other file readers to guarantee parity with DuckDB defaults.
   - DuckDB's connection helpers sometimes rename table-function arguments (`compression`, `binary_as_string`, etc.), so audit the accepted Python keywords before codifying aliases to avoid the mismatch we saw on CSV.
-- [ ] Document each reader's callable signature within `docs/io.md`, emphasising IDE support and providing examples for keyword usage.
+- [x] Document each reader's callable signature within `docs/io.md`, emphasising IDE support and providing examples for keyword usage.
 - [ ] Add regression tests that instantiate each reader via keyword arguments to guard against accidental signature regressions.
 
 ## Extension Integrations
