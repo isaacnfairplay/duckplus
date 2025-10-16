@@ -359,67 +359,59 @@ an informative error so call sites keep connection ownership explicit. When
 deterministic; during append operations, specify `target_columns` to rely on
 table defaults for any omitted values.
 
-## Appending file-backed datasets into tables
+## Appending CSV and Parquet files
 
-Relations sourced from `duckplus.io` helpers can be treated like managed tables
-when loading their rows into DuckDB. Call
-[:meth:`Relation.append_file`][duckplus.relation.Relation.append_file] to insert
-the dataset into an existing table or create a new one on demand:
+DuckPlus now treats file appends as IO operations performed directly by a
+relation. Use :meth:`Relation.append_csv` to extend a CSV file with the relation
+content while keeping the helper intentionally lightweight:
 
 ```python
 from pathlib import Path
 
-from duckplus import DuckCon, io
+from duckplus import DuckCon, Relation
 
 manager = DuckCon()
-with manager as connection:
-    connection.execute(
-        "CREATE TABLE staging.events(id INTEGER, payload VARCHAR, created TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"
+with manager:
+    new_rows = Relation.from_sql(
+        manager,
+        "SELECT * FROM (VALUES (1, 'north'), (2, 'south')) AS data(id, region)",
     )
-    records = io.read_json(manager, Path("events.ndjson"), records=True)
 
-    records.append_file(
-        "staging.events",
-        target_columns=("id", "payload"),
-    )
+    # The CSV header is written automatically when the file does not exist.
+    new_rows.append_csv(Path("data.csv"))
 ```
 
-The helper shares the same validation as :meth:`Table.insert`, including
-`target_columns` normalisation and transactional overwrites. For append
-workflows that should ignore duplicate rows, use
-[:meth:`Relation.distinct_append_file`][duckplus.relation.Relation.distinct_append_file]
-to materialise unique records only:
+Existing files can be deduplicated before writing by either matching on a
+unique identifier column (or columns) or by checking every column for a
+duplicate match. Set ``unique_id_column="id"`` to perform an anti join on that
+column, or pass ``match_all_columns=True`` to only append rows that differ from
+all existing values. The helper returns a relation representing the rows that
+would be appended, which makes it easy to inspect the anti-joined results when
+``mutate=False``.
+
+Parquet appends follow the same interface via
+:meth:`Relation.append_parquet`, rewriting the target file through a temporary
+Parquet file whenever ``mutate=True``:
 
 ```python
-records.distinct_append_file("staging.events", overwrite=True)
+manager = DuckCon()
+with manager:
+    relation = Relation.from_sql(
+        manager,
+        "SELECT * FROM (VALUES (1, 'north'), (2, 'south')) AS data(id, region)",
+    )
+
+    # Rewrites data.parquet using a temporary file to keep Parquet immutable.
+    relation.append_parquet(Path("data.parquet"), unique_id_column="id", mutate=True)
 ```
 
-Both helpers require the managed connection to remain open and raise clear
-errors when the underlying dataset depends on a different `DuckCon` instance.
-
-### Parity with DuckDB's COPY and INSERT commands
-
-`Relation.append_file`, :meth:`Relation.distinct_append_file`, and
-:meth:`Table.insert` are thin wrappers around DuckDB's native ingestion
-commands. When `create=True`, the helper issues a `CREATE TABLE … AS SELECT`
-statement matching the rows exposed by the relation. Append operations rely on
-`INSERT INTO` under the hood so column-mapping semantics and constraint
-behaviour mirror DuckDB's SQL surface. Passing `overwrite=True` wraps the
-delete-and-insert sequence in an explicit transaction to provide the same
-atomicity guarantees as running the SQL manually.
-
-File-backed relations (`io.read_parquet`, `io.read_csv`, etc.) therefore carry
-the same expectations as issuing a DuckDB `COPY` command against the file with
-its detected schema. The helpers simply manage the temporary view lifecycle and
-parameter validation.
-
-Keep in mind that immutable formats—such as Parquet partitions written via
-:meth:`Relation.write_parquet_dataset`—cannot participate in database
-transactions when appending files. Once DuckDB writes a new file to disk the
-operation cannot be rolled back automatically. Treat append workflows as
-best-effort: stage results in a separate directory when recovery is important,
-or prefer table overwrites guarded by DuckDB's transactions when atomicity is a
-hard requirement.
+Because Parquet files are immutable, ``mutate`` defaults to ``False`` so callers
+opt into the rewrite explicitly. CSV appends default to ``mutate=True`` since
+they can extend the file without rebuilding existing rows. In both cases the
+helpers reject directory targets, ensuring folder-level relations are not used
+accidentally. DuckPlus keeps column comparisons case-insensitive and raises
+clear errors when a requested identifier cannot be found on the relation or the
+existing file.
 
 ## Writing partitioned Parquet datasets
 

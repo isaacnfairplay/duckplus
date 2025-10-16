@@ -4,21 +4,19 @@
 
 from __future__ import annotations
 
+import csv
 from dataclasses import dataclass, field
 from os import PathLike
 from pathlib import Path
 from collections.abc import Sequence
+from uuid import uuid4
 import warnings
-from typing import Any, Iterable, Mapping, TypeVar, overload
+from typing import Any, Iterable, Mapping, TypeVar, overload, cast
 from typing import Literal
 
 import duckdb  # type: ignore[import-not-found]
 
-from ._table_utils import (
-    append_relation_data,
-    normalise_target_columns,
-    require_connection,
-)
+from ._table_utils import require_connection
 from .duckcon import DuckCon
 from .typed.select import SelectStatementBuilder
 from .typed.dependencies import ExpressionDependency
@@ -782,55 +780,153 @@ class Relation:
 
         return type(self).from_relation(self.duckcon, relation)
 
-    def append_file(
+    def append_csv(
         self,
-        table: str,
+        target: Path | PathLike[str] | str,
         *,
-        target_columns: Sequence[str] | None = None,
-        create: bool = False,
-        overwrite: bool = False,
-    ) -> None:
-        """Append the relation's rows into a DuckDB table."""
+        unique_id_column: Sequence[str] | str | None = None,
+        match_all_columns: bool = False,
+        mutate: bool = True,
+        header: bool = True,
+        delimiter: str = ",",
+        quotechar: str = '"',
+        encoding: str = "utf-8",
+    ) -> "Relation":
+        """Append rows from the relation into a CSV file."""
 
-        connection = require_connection(self.duckcon, "Relation.append_file")
-        target_column_list = normalise_target_columns(
-            target_columns, "Relation.append_file"
-        )
-        append_relation_data(
-            connection,
-            self._relation,
-            table,
-            "Relation.append_file",
-            target_columns=target_column_list,
-            create=create,
-            overwrite=overwrite,
+        connection = require_connection(self.duckcon, "Relation.append_csv")
+        target_path = Path(target)
+        if target_path.exists() and target_path.is_dir():
+            msg = "Relation.append_csv requires a file path, not a directory"
+            raise ValueError(msg)
+
+        unique_columns = self._normalise_identifier_sequence(
+            unique_id_column,
+            helper="Relation.append_csv",
+            parameter="unique_id_column",
         )
 
-    def distinct_append_file(
+        existing_relation: duckdb.DuckDBPyRelation | None = None
+        if (
+            target_path.exists()
+            and (unique_columns is not None or match_all_columns)
+            and target_path.stat().st_size > 0
+        ):
+            existing_relation = connection.from_csv_auto(
+                str(target_path),
+                header=header,
+                delimiter=delimiter,
+                quotechar=quotechar,
+            )
+
+        append_subset = self._deduplicate_against_existing(
+            helper="Relation.append_csv",
+            existing_relation=existing_relation,
+            unique_id_columns=unique_columns,
+            match_all_columns=match_all_columns,
+        )
+
+        result = type(self).from_relation(self.duckcon, append_subset)
+
+        if mutate:
+            rows = append_subset.fetchall()
+            file_exists = target_path.exists()
+            file_size = target_path.stat().st_size if file_exists else 0
+            if not rows and file_size > 0:
+                return result
+
+            target_path.parent.mkdir(parents=True, exist_ok=True)
+            should_write_header = header and file_size == 0
+            mode = "a" if file_size > 0 else "w"
+            if rows or should_write_header:
+                with target_path.open(mode, encoding=encoding, newline="") as handle:
+                    if quotechar:
+                        writer = csv.writer(
+                            handle,
+                            delimiter=delimiter,
+                            quotechar=quotechar,
+                        )
+                    else:
+                        writer = csv.writer(handle, delimiter=delimiter)
+                    if should_write_header:
+                        writer.writerow(result.columns)
+                    if rows:
+                        writer.writerows(rows)
+
+        return result
+
+    def append_parquet(
         self,
-        table: str,
+        target: Path | PathLike[str] | str,
         *,
-        target_columns: Sequence[str] | None = None,
-        create: bool = False,
-        overwrite: bool = False,
-    ) -> None:
-        """Append distinct rows from the relation into a DuckDB table."""
+        unique_id_column: Sequence[str] | str | None = None,
+        match_all_columns: bool = False,
+        mutate: bool = False,
+        temp_directory: Path | PathLike[str] | str | None = None,
+        compression: str | None = None,
+    ) -> "Relation":
+        """Append rows from the relation into a Parquet file."""
 
-        connection = require_connection(
-            self.duckcon, "Relation.distinct_append_file"
+        connection = require_connection(self.duckcon, "Relation.append_parquet")
+        target_path = Path(target)
+        if target_path.exists() and target_path.is_dir():
+            msg = "Relation.append_parquet requires a Parquet file path"
+            raise ValueError(msg)
+
+        unique_columns = self._normalise_identifier_sequence(
+            unique_id_column,
+            helper="Relation.append_parquet",
+            parameter="unique_id_column",
         )
-        target_column_list = normalise_target_columns(
-            target_columns, "Relation.distinct_append_file"
+
+        existing_relation: duckdb.DuckDBPyRelation | None = None
+        if target_path.exists() and target_path.stat().st_size > 0:
+            existing_relation = connection.from_parquet(str(target_path))
+
+        append_subset = self._deduplicate_against_existing(
+            helper="Relation.append_parquet",
+            existing_relation=existing_relation,
+            unique_id_columns=unique_columns,
+            match_all_columns=match_all_columns,
         )
-        append_relation_data(
-            connection,
-            self._relation.distinct(),
-            table,
-            "Relation.distinct_append_file",
-            target_columns=target_column_list,
-            create=create,
-            overwrite=overwrite,
+
+        result = type(self).from_relation(self.duckcon, append_subset)
+
+        if not mutate:
+            return result
+
+        has_new_rows = append_subset.limit(1).fetchone() is not None
+        if not target_path.exists() and not has_new_rows:
+            return result
+        if target_path.exists() and not has_new_rows:
+            return result
+
+        combined_relation = append_subset
+        if existing_relation is not None and has_new_rows:
+            combined_relation = existing_relation.union(append_subset)
+
+        output_directory = (
+            Path(temp_directory)
+            if temp_directory is not None
+            else target_path.parent
         )
+        output_directory.mkdir(parents=True, exist_ok=True)
+        temp_name = target_path.stem + f"_{uuid4().hex}.parquet"
+        temp_path = output_directory / temp_name
+
+        try:
+            combined_relation.write_parquet(
+                str(temp_path),
+                compression=compression,
+                overwrite=True,
+            )
+            temp_path.replace(target_path)
+        except Exception:
+            if temp_path.exists():
+                temp_path.unlink()
+            raise
+
+        return result
 
     def write_parquet_dataset(
         self,
@@ -1613,9 +1709,130 @@ class Relation:
         return ", ".join(unique)
 
     @staticmethod
+    def _normalise_identifier_sequence(
+        columns: Sequence[str] | str | None,
+        *,
+        helper: str,
+        parameter: str,
+    ) -> tuple[str, ...] | None:
+        """Normalise identifier inputs used by file append helpers."""
+
+        if columns is None:
+            return None
+
+        if isinstance(columns, str):
+            values = [columns]
+        else:
+            if not isinstance(columns, Sequence):
+                msg = f"{helper} {parameter} must be a string or sequence of strings"
+                raise TypeError(msg)
+            values = list(columns)
+
+        normalised: list[str] = []
+        seen: set[str] = set()
+        for column in values:
+            if not isinstance(column, str):
+                msg = f"{helper} {parameter} must contain only strings"
+                raise TypeError(msg)
+            trimmed = column.strip()
+            if not trimmed:
+                msg = f"{helper} {parameter} entries cannot be empty"
+                raise ValueError(msg)
+            key = trimmed.casefold()
+            if key in seen:
+                msg = f"{helper} {parameter} '{column}' specified multiple times"
+                raise ValueError(msg)
+            seen.add(key)
+            normalised.append(trimmed)
+
+        if not normalised:
+            msg = f"{helper} {parameter} must contain at least one column"
+            raise ValueError(msg)
+
+        return tuple(normalised)
+
+    @staticmethod
     def _quote_identifier(identifier: str) -> str:
         escaped = identifier.replace("\"", "\"\"")
         return f'"{escaped}"'
+
+    def _deduplicate_against_existing(
+        self,
+        *,
+        helper: str,
+        existing_relation: duckdb.DuckDBPyRelation | None,
+        unique_id_columns: tuple[str, ...] | None,
+        match_all_columns: bool,
+    ) -> duckdb.DuckDBPyRelation:
+        if unique_id_columns is not None and match_all_columns:
+            msg = (
+                f"{helper} cannot specify both unique_id_column and match_all_columns"
+            )
+            raise ValueError(msg)
+
+        if existing_relation is None:
+            return self._relation
+
+        join_columns: list[str]
+        if unique_id_columns is not None:
+            join_columns = [
+                self._require_column(column, helper, parameter="unique_id_column")
+                for column in unique_id_columns
+            ]
+        elif match_all_columns:
+            join_columns = list(self.columns)
+        else:
+            return self._relation
+
+        if not join_columns:
+            return self._relation
+
+        existing_columns = tuple(existing_relation.columns)
+        existing_map = {column.casefold(): column for column in existing_columns}
+
+        missing = [
+            column for column in join_columns if column.casefold() not in existing_map
+        ]
+        if missing:
+            formatted = self._format_column_list(missing)
+            msg = f"{helper} columns missing from target file: {formatted}"
+            raise ValueError(msg)
+
+        if match_all_columns:
+            source_map = {column.casefold(): column for column in self.columns}
+            extra = [
+                column
+                for column in existing_columns
+                if column.casefold() not in source_map
+            ]
+            if extra:
+                formatted = self._format_column_list(extra)
+                msg = (
+                    f"{helper} target file contains columns not present on the relation:"
+                    f" {formatted}"
+                )
+                raise ValueError(msg)
+
+        try:
+            condition = cast(Any, join_columns)
+            return self._relation.join(existing_relation, condition, how="anti")
+        except duckdb.BinderException as error:
+            formatted = self._format_column_list(join_columns)
+            msg = f"{helper} could not compare rows using columns: {formatted}"
+            raise ValueError(msg) from error
+
+    def _require_column(
+        self,
+        column: str,
+        helper: str,
+        *,
+        parameter: str,
+    ) -> str:
+        resolved = self._resolve_column(column)
+        if resolved is None:
+            msg = f"{helper} {parameter} '{column}' does not exist on the relation"
+            raise ValueError(msg)
+        return resolved
 
     @classmethod
     def _normalise_transform_value(cls, column: str, value: object) -> str:
