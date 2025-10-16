@@ -192,6 +192,42 @@ assert filtered.relation.fetchall() == [("b", 3)]
 Like aggregation filters, blank conditions or references to unknown columns
 raise descriptive errors so mistakes surface quickly.
 
+## Sampling relation data for notebooks
+
+Notebook workflows often need a quick preview of relation data. DuckPlus now
+offers dedicated sampling helpers that stream results into popular dataframe
+libraries without mutating the original relation.
+
+```python
+from duckplus import DuckCon, Relation
+
+manager = DuckCon()
+with manager as connection:
+    source = Relation.from_relation(
+        manager,
+        connection.sql(
+            "SELECT * FROM (VALUES"
+            " (1::INTEGER, 'alpha'::VARCHAR),"
+            " (2::INTEGER, 'beta'::VARCHAR)"
+            ") AS data(id, label)"
+        ),
+    )
+
+preview = source.sample_pandas(limit=10)
+for arrow_batch in source.iter_arrow_batches(batch_size=100):
+    ...  # stream into analytics tooling
+
+for polars_frame in source.iter_polars_batches(batch_size=1_000):
+    ...  # process in polars without loading the full relation
+```
+
+`sample_pandas`, `sample_arrow`, and `sample_polars` return a single object
+containing up to ``limit`` rows (defaulting to 50), while the corresponding
+``iter_*_batches`` helpers yield generators that respect the requested
+``batch_size``. Each helper validates that the managed connection remains open
+and surfaces informative ``ModuleNotFoundError`` messages when optional
+dependencies such as pandas, PyArrow, or Polars have not been installed yet.
+
 ## Joining relations
 
 `Relation.join`, `left_join`, `right_join`, `outer_join`, and `semi_join` wrap

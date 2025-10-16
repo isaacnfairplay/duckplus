@@ -1,5 +1,6 @@
 from dataclasses import FrozenInstanceError
 from pathlib import Path
+from types import SimpleNamespace
 import csv
 
 import duckdb
@@ -1708,3 +1709,214 @@ def test_relation_write_parquet_dataset_immutable_enforces_new_partitions(
                 partition_column="partition_key",
                 immutable=True,
             )
+
+
+def test_relation_sample_pandas_requires_dependency(monkeypatch) -> None:
+    manager = DuckCon()
+
+    def raise_import(module: str) -> None:
+        raise ModuleNotFoundError(f"missing {module}")
+
+    monkeypatch.setattr("duckplus.relation.import_module", raise_import)
+
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager, connection.sql("SELECT 1 AS value")
+        )
+        with pytest.raises(
+            ModuleNotFoundError, match="Relation.sample_pandas requires pandas"
+        ):
+            relation.sample_pandas()
+
+
+def test_relation_sample_pandas_returns_stub_dataframe(monkeypatch) -> None:
+    manager = DuckCon()
+
+    monkeypatch.setattr(
+        Relation,
+        "_require_module",
+        staticmethod(lambda *args, **kwargs: None),
+    )
+
+    sentinel = SimpleNamespace(name="pandas_frame")
+
+    def fake_df(self):  # type: ignore[override]
+        return sentinel
+
+    monkeypatch.setattr(duckdb.DuckDBPyRelation, "df", fake_df, raising=False)
+
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager, connection.sql("SELECT 1 AS value")
+        )
+        result = relation.sample_pandas(limit=1)
+    assert result is sentinel
+
+
+def test_relation_iter_pandas_batches_yields_chunks(monkeypatch) -> None:
+    manager = DuckCon()
+
+    monkeypatch.setattr(
+        Relation,
+        "_require_module",
+        staticmethod(lambda *args, **kwargs: None),
+    )
+
+    class DummyFrame:
+        def __init__(self, size: int) -> None:
+            self._size = size
+
+        def __len__(self) -> int:  # pragma: no cover - trivial
+            return self._size
+
+    chunks = [DummyFrame(1), DummyFrame(1), None]
+
+    def fake_fetch(self, batch_size: int):  # type: ignore[override]
+        return chunks.pop(0)
+
+    monkeypatch.setattr(
+        duckdb.DuckDBPyRelation,
+        "fetch_df_chunk",
+        fake_fetch,
+        raising=False,
+    )
+
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(
+                "SELECT * FROM (VALUES (1::INTEGER), (2::INTEGER)) AS data(value)"
+            ),
+        )
+        batches = list(relation.iter_pandas_batches(batch_size=1, limit=2))
+    assert len(batches) == 2
+    assert all(isinstance(batch, DummyFrame) for batch in batches)
+
+
+def test_relation_sample_arrow_requires_dependency(monkeypatch) -> None:
+    manager = DuckCon()
+
+    def raise_import(module: str) -> None:
+        raise ModuleNotFoundError(f"missing {module}")
+
+    monkeypatch.setattr("duckplus.relation.import_module", raise_import)
+
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager, connection.sql("SELECT 1 AS value")
+        )
+        with pytest.raises(
+            ModuleNotFoundError, match="Relation.sample_arrow requires pyarrow"
+        ):
+            relation.sample_arrow()
+
+
+def test_relation_iter_arrow_batches_yields_tables(monkeypatch) -> None:
+    manager = DuckCon()
+
+    stub_arrow = SimpleNamespace(
+        Table=type(
+            "_Table",
+            (),
+            {"from_batches": staticmethod(lambda batches: tuple(batches))},
+        )
+    )
+
+    monkeypatch.setattr(
+        Relation,
+        "_require_module",
+        staticmethod(lambda *args, **kwargs: stub_arrow),
+    )
+
+    class StubReader:
+        def __init__(self) -> None:
+            self._batches = ["batch1", "batch2"]
+            self._index = 0
+
+        def read_next_batch(self):  # pragma: no cover - simple iterator
+            if self._index >= len(self._batches):
+                raise StopIteration
+            value = self._batches[self._index]
+            self._index += 1
+            return value
+
+    monkeypatch.setattr(
+        duckdb.DuckDBPyRelation,
+        "fetch_arrow_reader",
+        lambda self, batch_size: StubReader(),
+        raising=False,
+    )
+
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(
+                "SELECT * FROM (VALUES (1::INTEGER), (2::INTEGER)) AS data(value)"
+            ),
+        )
+        tables = list(relation.iter_arrow_batches(batch_size=1, limit=2))
+    assert tables == [("batch1",), ("batch2",)]
+
+
+def test_relation_sample_polars_builds_dataframe(monkeypatch) -> None:
+    manager = DuckCon()
+
+    class StubPolars:
+        def __init__(self) -> None:
+            self.calls: list[SimpleNamespace] = []
+
+        def DataFrame(self, rows, schema, orient):  # pylint: disable=invalid-name
+            frame = SimpleNamespace(rows=rows, schema=tuple(schema), orient=orient)
+            self.calls.append(frame)
+            return frame
+
+    stub_polars = StubPolars()
+
+    monkeypatch.setattr(
+        Relation,
+        "_require_module",
+        staticmethod(lambda *args, **kwargs: stub_polars),
+    )
+
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager, connection.sql("SELECT 1 AS value")
+        )
+        frame = relation.sample_polars(limit=1)
+    assert frame.schema == ("value",)
+    assert frame.orient == "row"
+    assert frame.rows
+
+
+def test_relation_iter_polars_batches_yields_frames(monkeypatch) -> None:
+    manager = DuckCon()
+
+    class StubPolars:
+        def __init__(self) -> None:
+            self.calls: list[SimpleNamespace] = []
+
+        def DataFrame(self, rows, schema, orient):  # pylint: disable=invalid-name
+            frame = SimpleNamespace(rows=tuple(rows), schema=tuple(schema), orient=orient)
+            self.calls.append(frame)
+            return frame
+
+    stub_polars = StubPolars()
+
+    monkeypatch.setattr(
+        Relation,
+        "_require_module",
+        staticmethod(lambda *args, **kwargs: stub_polars),
+    )
+
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(
+                "SELECT * FROM (VALUES (1::INTEGER), (2::INTEGER), (3::INTEGER)) AS data(value)"
+            ),
+        )
+        batches = list(relation.iter_polars_batches(batch_size=2, limit=3))
+    assert len(batches) == 2
+    assert stub_polars.calls[0].schema == ("value",)
+    assert stub_polars.calls[0].rows == ((1,), (2,))
+    assert stub_polars.calls[1].rows == ((3,),)
