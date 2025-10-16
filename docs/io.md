@@ -60,7 +60,8 @@ io.read_csv(
 ```
 
 ```python
-with DuckCon() as manager:
+manager = DuckCon()
+with manager:
     relation = io.read_csv(
         manager,
         "data.csv",
@@ -103,7 +104,8 @@ Only explicitly provided keyword arguments are forwarded so callers can rely on
 IDE completions.
 
 ```python
-with DuckCon() as manager:
+manager = DuckCon()
+with manager:
     relation = io.read_parquet(
         manager,
         ["part-*.parquet"],
@@ -155,7 +157,8 @@ containers before forwarding. As with the CSV and Parquet helpers, only provided
 keyword arguments are forwarded to DuckDB to avoid masking typos.
 
 ```python
-with DuckCon() as manager:
+manager = DuckCon()
+with manager:
     relation = io.read_json(
         manager,
         "events.json",
