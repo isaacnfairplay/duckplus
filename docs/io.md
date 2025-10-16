@@ -21,23 +21,54 @@ io.read_csv(
     duckcon,
     source,
     *,
-    header=True,
+    header=None,
     delimiter=",",
     quotechar='"',
     escapechar=None,
     sample_size=None,
-    auto_detect=True,
+    auto_detect=None,
     columns=None,
+    dtype=None,
+    names=None,
+    na_values=None,
+    null_padding=None,
+    force_not_null=None,
+    files_to_sniff=None,
+    decimal=None,
+    date_format=None,
+    timestamp_format=None,
+    encoding=None,
+    compression=None,
+    hive_types_autocast=None,
+    all_varchar=None,
+    hive_partitioning=None,
+    comment=None,
+    max_line_size=None,
+    store_rejects=None,
+    rejects_table=None,
+    rejects_limit=None,
+    rejects_scan=None,
+    union_by_name=None,
+    filename=None,
+    normalize_names=None,
+    ignore_errors=None,
+    allow_quoted_nulls=None,
+    auto_type_candidates=None,
+    parallel=None,
+    skiprows=None,
 )
 ```
 
 * **source** – String or `PathLike` pointing at a CSV file or buffer.
 * **header** – Treat the first row as column names.
-* **delimiter** – Single-character field separator.
-* **quotechar** / **escapechar** – Configure quoting behaviour.
-* **sample_size** – Rows DuckDB should sample when inferring types.
-* **auto_detect** – Whether DuckDB should attempt automatic schema detection.
-* **columns** – Optional mapping of column names to DuckDB type strings.
+* **delimiter** – Single-character field separator (aliases: `delim`).
+* **quotechar** / **escapechar** – Configure quoting behaviour (aliases: `quote`, `escape`).
+* **columns** / **dtype** – Optional mappings describing column types.
+* **names** / **na_values** – Override column names or provide strings considered nulls.
+* **filename** – Append the originating filename (as an absolute path) as an additional column when `True`.
+* Remaining keywords mirror DuckDB's `read_csv` table function and are forwarded
+  explicitly so IDEs surface the available options. Aliases raise a descriptive
+  `ValueError` when conflicting values are supplied.
 
 ## Parquet
 
@@ -102,13 +133,41 @@ io.append_csv(
     target_columns=None,
     create=False,
     overwrite=False,
-    header=True,
+    header=None,
     delimiter=",",
     quotechar='"',
     escapechar=None,
     sample_size=None,
-    auto_detect=True,
+    auto_detect=None,
     columns=None,
+    dtype=None,
+    names=None,
+    na_values=None,
+    null_padding=None,
+    force_not_null=None,
+    files_to_sniff=None,
+    decimal=None,
+    date_format=None,
+    timestamp_format=None,
+    encoding=None,
+    compression=None,
+    hive_types_autocast=None,
+    all_varchar=None,
+    hive_partitioning=None,
+    comment=None,
+    max_line_size=None,
+    store_rejects=None,
+    rejects_table=None,
+    rejects_limit=None,
+    rejects_scan=None,
+    union_by_name=None,
+    filename=None,
+    normalize_names=None,
+    ignore_errors=None,
+    allow_quoted_nulls=None,
+    auto_type_candidates=None,
+    parallel=None,
+    skiprows=None,
 )
 ```
 
@@ -119,7 +178,8 @@ io.append_csv(
 * **create** / **overwrite** – Control whether the helper should create the
   table when it does not exist or replace its current contents before
   inserting.
-* Remaining keyword arguments mirror :func:`io.read_csv` for schema inference.
+* Remaining keyword arguments mirror :func:`io.read_csv`, including the alias
+  handling rules described above.
 
 The helper registers a temporary view for the source relation so the same
 connection can execute the necessary ``INSERT`` or ``CREATE TABLE AS SELECT``
