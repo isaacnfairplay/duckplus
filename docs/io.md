@@ -81,13 +81,15 @@ io.read_parquet(
     file_row_number=None,
     filename=None,
     hive_partitioning=None,
-    columns=None,
+    union_by_name=None,
+    compression=None,
 )
 ```
 
 These options map directly to DuckDB's [`read_parquet`](https://duckdb.org/docs/data/parquet)
-table function. Only explicitly provided keyword arguments are forwarded so
-callers can rely on IDE completions.
+table function. The ``source`` may be a single path or a sequence of paths/globs.
+Only explicitly provided keyword arguments are forwarded so callers can rely on
+IDE completions.
 
 ## JSON
 
@@ -119,8 +121,10 @@ io.read_json(
 ```
 
 JSON helpers are flexible enough to cover both JSON Lines and nested JSON
-inputs. As with the CSV and Parquet helpers, only provided keyword arguments are
-forwarded to DuckDB to avoid masking typos.
+inputs. ``columns`` accepts the same mappings and sequences that DuckDB's
+``read_json`` table function understands and is normalised to built-in
+containers before forwarding. As with the CSV and Parquet helpers, only provided
+keyword arguments are forwarded to DuckDB to avoid masking typos.
 
 ## CSV appenders
 

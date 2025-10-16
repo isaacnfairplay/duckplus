@@ -233,6 +233,131 @@ def _build_csv_options(
     return cast(CSVReadKeywordOptions, options)
 
 
+class ParquetReadKeywordOptions(TypedDict, total=False):
+    """DuckDB ``read_parquet`` keyword arguments supported by duckplus wrappers."""
+
+    binary_as_string: bool
+    file_row_number: bool
+    filename: bool
+    hive_partitioning: bool
+    union_by_name: bool
+    compression: str
+
+
+def _normalise_parquet_source(
+    source: PathType | Sequence[PathType],
+) -> str | list[str]:
+    """Return a DuckDB-compatible Parquet glob or list of globs."""
+
+    if isinstance(source, (str, bytes, PathLike)):
+        return fspath(source)
+
+    return [fspath(item) for item in source]
+
+
+def _build_parquet_options(
+    *,
+    binary_as_string: bool | None = None,
+    file_row_number: bool | None = None,
+    filename: bool | None = None,
+    hive_partitioning: bool | None = None,
+    union_by_name: bool | None = None,
+    compression: str | None = None,
+) -> ParquetReadKeywordOptions:
+    """Normalise keyword arguments shared between Parquet readers."""
+
+    return cast(
+        ParquetReadKeywordOptions,
+        _filter_none(
+            binary_as_string=binary_as_string,
+            file_row_number=file_row_number,
+            filename=filename,
+            hive_partitioning=hive_partitioning,
+            union_by_name=union_by_name,
+            compression=compression,
+        ),
+    )
+
+
+class JSONReadKeywordOptions(TypedDict, total=False):
+    """DuckDB ``read_json`` keyword arguments supported by duckplus wrappers."""
+
+    columns: object
+    sample_size: object
+    maximum_depth: object
+    records: object
+    format: object
+    date_format: object
+    timestamp_format: object
+    compression: object
+    maximum_object_size: object
+    ignore_errors: object
+    convert_strings_to_integers: object
+    field_appearance_threshold: object
+    map_inference_threshold: object
+    maximum_sample_files: object
+    filename: object
+    hive_partitioning: object
+    union_by_name: object
+    hive_types: object
+    hive_types_autocast: object
+
+
+def _build_json_options(
+    *,
+    columns: object | None = None,
+    sample_size: object | None = None,
+    maximum_depth: object | None = None,
+    records: object | None = None,
+    format: object | None = None,
+    date_format: object | None = None,
+    timestamp_format: object | None = None,
+    compression: object | None = None,
+    maximum_object_size: object | None = None,
+    ignore_errors: object | None = None,
+    convert_strings_to_integers: object | None = None,
+    field_appearance_threshold: object | None = None,
+    map_inference_threshold: object | None = None,
+    maximum_sample_files: object | None = None,
+    filename: object | None = None,
+    hive_partitioning: object | None = None,
+    union_by_name: object | None = None,
+    hive_types: object | None = None,
+    hive_types_autocast: object | None = None,
+) -> JSONReadKeywordOptions:
+    """Normalise keyword arguments shared between JSON readers."""
+
+    options = _filter_none(
+        columns=columns,
+        sample_size=sample_size,
+        maximum_depth=maximum_depth,
+        records=records,
+        format=format,
+        date_format=date_format,
+        timestamp_format=timestamp_format,
+        compression=compression,
+        maximum_object_size=maximum_object_size,
+        ignore_errors=ignore_errors,
+        convert_strings_to_integers=convert_strings_to_integers,
+        field_appearance_threshold=field_appearance_threshold,
+        map_inference_threshold=map_inference_threshold,
+        maximum_sample_files=maximum_sample_files,
+        filename=filename,
+        hive_partitioning=hive_partitioning,
+        union_by_name=union_by_name,
+        hive_types=hive_types,
+        hive_types_autocast=hive_types_autocast,
+    )
+
+    if columns is not None:
+        if isinstance(columns, Mapping):
+            options["columns"] = dict(columns)
+        elif isinstance(columns, Sequence) and not isinstance(columns, (str, bytes, bytearray)):
+            options["columns"] = list(columns)
+
+    return cast(JSONReadKeywordOptions, options)
+
+
 def read_csv(
     duckcon: DuckCon,
     source: PathType,
@@ -338,28 +463,30 @@ def read_csv(
 
 def read_parquet(
     duckcon: DuckCon,
-    source: PathType,
+    source: PathType | Sequence[PathType],
     *,
     binary_as_string: bool | None = None,
     file_row_number: bool | None = None,
     filename: bool | None = None,
     hive_partitioning: bool | None = None,
-    columns: Sequence[str] | None = None,
+    union_by_name: bool | None = None,
+    compression: str | None = None,
 ) -> Relation:
     """Load a Parquet file into a :class:`Relation`."""
 
     connection = require_connection(duckcon, "read_parquet")
-    path = fspath(source)
+    path = _normalise_parquet_source(source)
 
-    kwargs = _filter_none(
+    kwargs = _build_parquet_options(
         binary_as_string=binary_as_string,
         file_row_number=file_row_number,
         filename=filename,
         hive_partitioning=hive_partitioning,
-        columns=list(columns) if columns is not None else None,
+        union_by_name=union_by_name,
+        compression=compression,
     )
 
-    relation = connection.read_parquet(path, **kwargs)  # type: ignore[call-overload]
+    relation = connection.read_parquet(path, **kwargs)  # type: ignore[arg-type]
     return Relation.from_relation(duckcon, relation)
 
 
@@ -392,7 +519,7 @@ def read_json(
     connection = require_connection(duckcon, "read_json")
     path = fspath(source)
 
-    kwargs = _filter_none(
+    kwargs = _build_json_options(
         columns=columns,
         sample_size=sample_size,
         maximum_depth=maximum_depth,
@@ -568,7 +695,7 @@ def append_ndjson(
     target_column_list = normalise_target_columns(target_columns, "append_ndjson")
     path = fspath(source)
 
-    kwargs = _filter_none(
+    kwargs = _build_json_options(
         columns=columns,
         sample_size=sample_size,
         maximum_depth=maximum_depth,
