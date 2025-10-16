@@ -59,6 +59,17 @@ io.read_csv(
 )
 ```
 
+```python
+with DuckCon() as manager:
+    relation = io.read_csv(
+        manager,
+        "data.csv",
+        header=True,
+        delimiter=",",
+        na_values=["NA", ""],
+    )
+```
+
 * **source** – String or `PathLike` pointing at a CSV file or buffer.
 * **header** – Treat the first row as column names.
 * **delimiter** – Single-character field separator (aliases: `delim`).
@@ -90,6 +101,23 @@ These options map directly to DuckDB's [`read_parquet`](https://duckdb.org/docs/
 table function. The ``source`` may be a single path or a sequence of paths/globs.
 Only explicitly provided keyword arguments are forwarded so callers can rely on
 IDE completions.
+
+```python
+with DuckCon() as manager:
+    relation = io.read_parquet(
+        manager,
+        ["part-*.parquet"],
+        union_by_name=True,
+        filename=True,
+    )
+```
+
+* **binary_as_string** – Cast DuckDB's binary columns to strings when `True`.
+* **file_row_number** – Include a running row number for each file when set.
+* **filename** – Append the source filename (absolute path) when enabled.
+* **hive_partitioning** – Interpret partitioned directory structures.
+* **union_by_name** – Align schemas with non-matching column order.
+* **compression** – Override DuckDB's decompression behaviour.
 
 ## JSON
 
@@ -125,6 +153,23 @@ inputs. ``columns`` accepts the same mappings and sequences that DuckDB's
 ``read_json`` table function understands and is normalised to built-in
 containers before forwarding. As with the CSV and Parquet helpers, only provided
 keyword arguments are forwarded to DuckDB to avoid masking typos.
+
+```python
+with DuckCon() as manager:
+    relation = io.read_json(
+        manager,
+        "events.json",
+        columns={"payload": "STRUCT"},
+        records=True,
+        maximum_depth=5,
+    )
+```
+
+* **records** – Control whether the input is JSON Lines (`True`) or arrays/objects.
+* **format** – Explicitly declare a format variant DuckDB should expect.
+* **convert_strings_to_integers** – Enable automatic integer coercion.
+* **maximum_* options** – Tune sampling depth, object size, and file counts.
+* **hive_types** / **hive_types_autocast** – Normalise Hive-partitioned datasets.
 
 ## CSV appenders
 
