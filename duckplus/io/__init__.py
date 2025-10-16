@@ -478,7 +478,7 @@ def read_csv(
         skip=skip,
     )
 
-    relation = connection.read_csv(path, **kwargs)  # type: ignore[arg-type]
+    relation = connection.read_csv(path, **kwargs)  # type: ignore[arg-type, misc]
     return Relation.from_relation(duckcon, relation)
 
 
@@ -670,7 +670,7 @@ def append_csv(
         skip=skip,
     )
 
-    relation = connection.read_csv(path, **kwargs)  # type: ignore[arg-type]
+    relation = connection.read_csv(path, **kwargs)  # type: ignore[arg-type, misc]
     append_relation_data(
         connection,
         relation,
