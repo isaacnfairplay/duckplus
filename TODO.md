@@ -140,7 +140,7 @@ Answer these before starting any TODO item to confirm the work is understood and
 - [x] Apply the explicit keyword signature pattern to Parquet, JSON, and other file readers to guarantee parity with DuckDB defaults.
   - DuckDB's connection helpers sometimes rename table-function arguments (`compression`, `binary_as_string`, etc.), so audit the accepted Python keywords before codifying aliases to avoid the mismatch we saw on CSV.
 - [x] Document each reader's callable signature within `docs/io.md`, emphasising IDE support and providing examples for keyword usage.
-- [ ] Add regression tests that instantiate each reader via keyword arguments to guard against accidental signature regressions.
+- [x] Add regression tests that instantiate each reader via keyword arguments to guard against accidental signature regressions.
 
 ## Extension Integrations
 - [ ] Package nano-ODBC community extension support with a `DuckCon.load_nano_odbc()` helper and usage docs.
@@ -155,17 +155,22 @@ Answer these before starting any TODO item to confirm the work is understood and
 5. Validate behaviour with targeted pytest cases using DuckDB's extension availability flags and document manual installation steps when needed.
 
 ## File-backed Table Operations
-- [ ] Expose `Relation.insert_file`/`delete_file`/`append_file` helpers that treat Parquet/CSV/JSON datasets like managed tables.
-- [ ] Reuse the existing table appender abstractions so file-backed operations share validation and transaction semantics.
-- [ ] Document parity expectations versus DuckDB's `COPY`/`INSERT` commands, including transactional caveats for immutable formats.
-- [ ] Add tests that round-trip data through each file format to confirm insert/delete/append workflows and schema drift handling.
+- [ ] Expose `Relation.append_file` and `Relation.distinct_append_file` helpers that treat Parquet/CSV/JSON datasets like managed tables.
+- [ ] Reuse the existing table appender abstractions so file-backed append operations share validation and transaction semantics.
+- [ ] Document parity expectations versus DuckDB's `COPY`/`INSERT` commands, including transactional caveats for immutable formats when appending files.
+- [ ] Add tests that round-trip data through each file format to confirm append and distinct-append workflows plus schema drift handling.
 
 ## Practitioner Quality-of-Life Utilities
 - [ ] Provide lightweight data profiling helpers (row counts, null ratios) to aid exploratory analysis directly from relations.
 - [ ] Add schema diff utilities to compare relations or files and surface column-type drift warnings.
-- [ ] Offer sample data exporters (to Pandas/Arrow) with batching options for notebook workflows.
+- [ ] Offer sample data exporters (to Pandas/Arrow/Polars) with batching options for notebook workflows, mirroring the parity guarantees of other IO helpers such as Parquet and CSV readers.
 
-## Future Web Service Enablement
-- [ ] Design an opt-in web service layer that mounts relations as JSON/CSV HTTP endpoints while reusing validation helpers.
-- [ ] Sketch authentication and request-shaping hooks so APIs can validate inputs before executing relation pipelines.
-- [ ] Explore ASGI integration (FastAPI/Starlette) for minimal deployment while keeping dependencies optional and documented as future work.
+## Typed Expression Enforcement
+- [ ] Ensure column construction and aggregation helpers exclusively depend on the typed expression API across the relation surface.
+- [ ] Remove or refactor legacy helpers that bypass typed expressions, updating docs and deprecation notes accordingly.
+- [ ] Document migration guidance, highlighting how the typed expression API replaces prior untyped entry points.
+
+## Demo Showcase Expansion
+- [ ] Curate a catalogue of 40 opinionated demos that highlight relation immutability, typed expressions, IO parity, and appender workflows.
+- [ ] Provide scenario grouping (analytics, data engineering, extension usage, interoperability) so each demo reinforces the tool's design pillars.
+- [ ] Outline validation criteria and storytelling beats for every demo to ensure they communicate the intended best practices.

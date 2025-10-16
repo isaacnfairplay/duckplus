@@ -205,3 +205,51 @@ def test_read_json_allows_explicit_columns(tmp_path: Path) -> None:
             (1, "alpha"),
             (2, "beta"),
         ]
+
+
+def test_read_csv_allows_keyword_invocation(tmp_path: Path) -> None:
+    csv_path = tmp_path / "keyword.csv"
+    csv_path.write_text("value\n1\n", encoding="utf-8")
+
+    manager = DuckCon()
+    with manager:
+        relation = io_helpers.read_csv(
+            duckcon=manager,
+            source=csv_path,
+            header=True,
+        )
+
+        assert relation.relation.fetchall() == [(1,)]
+
+
+def test_read_parquet_allows_keyword_invocation(tmp_path: Path) -> None:
+    parquet_path = tmp_path / "keyword.parquet"
+    _write_parquet(parquet_path)
+
+    manager = DuckCon()
+    with manager:
+        relation = io_helpers.read_parquet(
+            duckcon=manager,
+            source=parquet_path,
+            file_row_number=True,
+        )
+
+        assert relation.relation.fetchall() == [(1, "a", 0), (2, "b", 1)]
+
+
+def test_read_json_allows_keyword_invocation(tmp_path: Path) -> None:
+    json_path = tmp_path / "keyword.json"
+    _write_json(json_path)
+
+    manager = DuckCon()
+    with manager:
+        relation = io_helpers.read_json(
+            duckcon=manager,
+            source=json_path,
+            columns={"value": "INTEGER", "label": "VARCHAR"},
+        )
+
+        assert relation.relation.fetchall() == [
+            (1, "alpha"),
+            (2, "beta"),
+        ]
