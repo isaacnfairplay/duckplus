@@ -397,6 +397,30 @@ records.distinct_append_file("staging.events", overwrite=True)
 Both helpers require the managed connection to remain open and raise clear
 errors when the underlying dataset depends on a different `DuckCon` instance.
 
+### Parity with DuckDB's COPY and INSERT commands
+
+`Relation.append_file`, :meth:`Relation.distinct_append_file`, and
+:meth:`Table.insert` are thin wrappers around DuckDB's native ingestion
+commands. When `create=True`, the helper issues a `CREATE TABLE … AS SELECT`
+statement matching the rows exposed by the relation. Append operations rely on
+`INSERT INTO` under the hood so column-mapping semantics and constraint
+behaviour mirror DuckDB's SQL surface. Passing `overwrite=True` wraps the
+delete-and-insert sequence in an explicit transaction to provide the same
+atomicity guarantees as running the SQL manually.
+
+File-backed relations (`io.read_parquet`, `io.read_csv`, etc.) therefore carry
+the same expectations as issuing a DuckDB `COPY` command against the file with
+its detected schema. The helpers simply manage the temporary view lifecycle and
+parameter validation.
+
+Keep in mind that immutable formats—such as Parquet partitions written via
+:meth:`Relation.write_parquet_dataset`—cannot participate in database
+transactions when appending files. Once DuckDB writes a new file to disk the
+operation cannot be rolled back automatically. Treat append workflows as
+best-effort: stage results in a separate directory when recovery is important,
+or prefer table overwrites guarded by DuckDB's transactions when atomicity is a
+hard requirement.
+
 ## Writing partitioned Parquet datasets
 
 When working with immutable file stores it is often preferable to maintain one
