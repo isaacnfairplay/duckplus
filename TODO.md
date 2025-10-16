@@ -4,7 +4,7 @@
 Answer these before starting any TODO item to confirm the work is understood and scoped.
 1. What specific behaviour or feature does the TODO item request, and how does it fit into the existing API surface?
 2. Which modules, classes, or utilities appear to own this responsibility today, and where should changes likely live?
-3. What supporting documentation, tests, or historical implementations (including Git history) should be reviewed first?
+3. What supporting documentation, tests, or historical implementations (including Git history) should be reviewed first (remember to check the versioned Sphinx docs under `docs/versions/<release>/`)?
 4. What success criteria, edge cases, and failure behaviours must be exercised to consider the task complete?
 5. How will this change be validated (tests, linters, examples), and are new fixtures or sample data required?
 
@@ -166,15 +166,15 @@ Answer these before starting any TODO item to confirm the work is understood and
 - [x] Remove legacy code, since this is pre 1.0 breaking change is expected
 
 ## Prepare for 1.0 release ##
-- [ ] Check for bugs with extensive additional testing
+- [x] Check for bugs with extensive additional testing
 - [ ] Fix bugs
-- [ ] Make sure we will not need to make any api engine changes as we add future extensions (open closed principle)
-- [ ] Develop deep and easy to read documentation and demos across the entire api and put in a versioned folder
-- [ ] Setup release to pypi for project with settings Repository: `isaacnfairplay/duckplus` Workflow: `python-publish.yml` Environment name: `pypi`
-- [ ] Make sure package can be installed and used as a package and ensure imports resolve correcty when installed (test in an environment, use pip install git `repo_path.git`
-- [ ] setup sphinx docs to show the 1.0 documentation but also support having multiple doc versions
-- [ ] setup shinx to use github pages (independent of release, users will be directed to the latest numbered version released but have toggle)
-- [ ] update pyproject.toml with new tags
+- [x] Make sure we will not need to make any api engine changes as we add future extensions (open closed principle)
+- [x] Develop deep and easy to read documentation and demos across the entire api and put in a versioned folder
+- [x] Setup release to pypi for project with settings Repository: `isaacnfairplay/duckplus` Workflow: `python-publish.yml` Environment name: `pypi`
+- [x] Make sure package can be installed and used as a package and ensure imports resolve correcty when installed (test in an environment, use pip install git `repo_path.git`
+- [x] setup sphinx docs to show the 1.0 documentation but also support having multiple doc versions
+- [x] setup shinx to use github pages (independent of release, users will be directed to the latest numbered version released but have toggle)
+- [x] update pyproject.toml with new tags
 
 # hopefully stop for a while
 ## Extension Integrations

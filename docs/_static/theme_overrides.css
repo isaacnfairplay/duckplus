@@ -1,0 +1,13 @@
+/* Custom tweaks for the DuckPlus documentation theme. */
+:root {
+  --pst-color-primary: #2563eb;
+  --pst-color-secondary: #1e40af;
+}
+
+.navbar-brand {
+  font-weight: 600;
+}
+
+.bd-sidebar-primary .sidebar-primary-item { /* Improve spacing between nav entries */
+  margin-bottom: 0.35rem;
+}

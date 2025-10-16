@@ -1,5 +1,9 @@
 # Community extension integration targets
 
+> **Note**
+> A high-level summary for users now ships with the versioned docs at
+> {doc}`versions/1.0/community_extensions <versions/1.0/community_extensions>`.
+
 This planning note summarises the high-priority DuckDB community extensions
 identified for DuckPlus integration and records which pieces of the public API
 are expected to change when each extension is supported.
