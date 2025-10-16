@@ -112,6 +112,7 @@ Answer these before starting any TODO item to confirm the work is understood and
 3. Review prior reader implementations and DuckDB's Python API signatures to mirror names, defaults, and validation semantics.
 4. Validate that positional and keyword usage both function, that typos surface informative errors, and that auto-complete metadata remains intact.
 5. Cover the behaviour with targeted unit tests per format and exercise mypy/pylint/pytest along with any stub updates to keep editors happy.
+6. Remember that `DuckDBPyConnection.read_csv` prefers Python-specific names (`delimiter`, `quotechar`, `escapechar`, `decimal`, `skiprows`, etc.); table-function aliases like `delim` or `quote` must be normalised and should raise clear errors when conflicting values are provided.
 
 ### Preflight Answers – CSV/NDJSON appenders
 1. Provide append helpers that stream CSV and NDJSON files into DuckDB tables while supporting creation, overwrite, and target column mapping semantics compatible with existing relation helpers.
@@ -126,8 +127,9 @@ Answer these before starting any TODO item to confirm the work is understood and
 3. Tests in `tests/test_table.py` cover create/overwrite behaviour, default-respecting target columns, raw DuckDB relations, and cross-connection validation scenarios for regression coverage.
 
 ### IO reader ergonomics
-- [ ] Mirror DuckDB's CSV reader signature explicitly (e.g. `filename`, `header`, `delim`, etc.) and share a typed alias for reuse across helpers without masking keyword visibility.
+- [x] Mirror DuckDB's CSV reader signature explicitly (e.g. `filename`, `header`, `delim`, etc.) and share a typed alias for reuse across helpers without masking keyword visibility.
 - [ ] Apply the explicit keyword signature pattern to Parquet, JSON, and other file readers to guarantee parity with DuckDB defaults.
+  - DuckDB's connection helpers sometimes rename table-function arguments (`compression`, `binary_as_string`, etc.), so audit the accepted Python keywords before codifying aliases to avoid the mismatch we saw on CSV.
 - [ ] Document each reader's callable signature within `docs/io.md`, emphasising IDE support and providing examples for keyword usage.
 - [ ] Add regression tests that instantiate each reader via keyword arguments to guard against accidental signature regressions.
 

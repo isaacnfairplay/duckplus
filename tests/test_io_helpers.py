@@ -69,6 +69,68 @@ def test_read_csv_allows_explicit_schema(tmp_path: Path) -> None:
         assert relation.relation.fetchall() == [(1, "foo"), (2, "bar")]
 
 
+def test_read_csv_accepts_delim_alias(tmp_path: Path) -> None:
+    csv_path = tmp_path / "data.csv"
+    csv_path.write_text("value;other\n1;foo\n2;bar\n", encoding="utf-8")
+
+    manager = DuckCon()
+    with manager:
+        relation = io_helpers.read_csv(
+            manager,
+            csv_path,
+            delim=";",
+            quotechar="'",
+            auto_detect=True,
+        )
+
+        assert relation.relation.fetchall() == [(1, "foo"), (2, "bar")]
+
+
+def test_read_csv_rejects_conflicting_delimiters(tmp_path: Path) -> None:
+    csv_path = tmp_path / "data.csv"
+    csv_path.write_text("value\n1\n", encoding="utf-8")
+
+    manager = DuckCon()
+    with manager:
+        with pytest.raises(ValueError, match="Both 'delimiter' and alias 'delim'"):
+            io_helpers.read_csv(
+                manager,
+                csv_path,
+                delimiter=",",
+                delim=";",
+            )
+
+
+def test_read_csv_filename_column(tmp_path: Path) -> None:
+    csv_path = tmp_path / "data.csv"
+    csv_path.write_text("value\n1\n", encoding="utf-8")
+
+    manager = DuckCon()
+    with manager:
+        relation = io_helpers.read_csv(manager, csv_path, filename=True)
+
+        rows = relation.relation.fetchall()
+        assert rows == [(1, str(csv_path))]
+
+
+def test_read_csv_supports_dtype_alias(tmp_path: Path) -> None:
+    csv_path = tmp_path / "data.csv"
+    csv_path.write_text("1\n2\n", encoding="utf-8")
+
+    manager = DuckCon()
+    with manager:
+        relation = io_helpers.read_csv(
+            manager,
+            csv_path,
+            header=False,
+            names=["value"],
+            dtype={"value": "INTEGER"},
+        )
+
+        assert relation.types == ("INTEGER",)
+        assert relation.relation.fetchall() == [(1,), (2,)]
+
+
 def test_read_parquet_returns_relation(tmp_path: Path) -> None:
     parquet_path = tmp_path / "data.parquet"
     _write_parquet(parquet_path)

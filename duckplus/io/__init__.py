@@ -4,7 +4,8 @@
 
 from __future__ import annotations
 from os import PathLike, fspath
-from typing import Mapping, Sequence
+from collections.abc import Mapping, Sequence
+from typing import Any, TypedDict, cast
 
 import duckdb  # type: ignore[import-not-found]
 
@@ -27,41 +28,308 @@ __all__ = [
 PathType = str | PathLike[str]
 
 
+class CSVReadKeywordOptions(TypedDict, total=False):
+    """DuckDB ``read_csv`` keyword arguments supported by duckplus wrappers."""
+
+    header: bool
+    delimiter: str
+    quotechar: str
+    escapechar: str
+    sample_size: int
+    auto_detect: bool
+    columns: object
+    dtype: object
+    names: list[str]
+    na_values: list[str]
+    null_padding: bool
+    force_not_null: list[str]
+    files_to_sniff: int
+    decimal: str
+    date_format: str
+    timestamp_format: str
+    encoding: str
+    compression: str
+    hive_types_autocast: bool
+    all_varchar: bool
+    hive_partitioning: bool
+    comment: str
+    max_line_size: int
+    store_rejects: bool
+    rejects_table: str
+    rejects_limit: int
+    rejects_scan: str
+    union_by_name: bool
+    filename: bool
+    normalize_names: bool
+    ignore_errors: bool
+    allow_quoted_nulls: bool
+    auto_type_candidates: object
+    parallel: bool
+    skiprows: int
+
+
 def _filter_none(**options: object) -> dict[str, object]:
     """Return a dictionary containing only non-``None`` values."""
 
     return {key: value for key, value in options.items() if value is not None}
 
 
+def _build_csv_options(
+    *,
+    header: bool | None = None,
+    delimiter: str | None = None,
+    delim: str | None = None,
+    quotechar: str | None = None,
+    quote: str | None = None,
+    escapechar: str | None = None,
+    escape: str | None = None,
+    sample_size: int | None = None,
+    auto_detect: bool | None = None,
+    columns: object | None = None,
+    dtype: object | None = None,
+    names: Sequence[str] | None = None,
+    na_values: Sequence[str] | None = None,
+    null_padding: bool | None = None,
+    force_not_null: Sequence[str] | None = None,
+    files_to_sniff: int | None = None,
+    decimal: str | None = None,
+    decimal_separator: str | None = None,
+    date_format: str | None = None,
+    dateformat: str | None = None,
+    timestamp_format: str | None = None,
+    timestampformat: str | None = None,
+    encoding: str | None = None,
+    compression: str | None = None,
+    hive_types_autocast: bool | None = None,
+    all_varchar: bool | None = None,
+    hive_partitioning: bool | None = None,
+    comment: str | None = None,
+    max_line_size: int | None = None,
+    maximum_line_size: int | None = None,
+    store_rejects: bool | None = None,
+    rejects_table: str | None = None,
+    rejects_limit: int | None = None,
+    rejects_scan: str | None = None,
+    union_by_name: bool | None = None,
+    filename: bool | None = None,
+    normalize_names: bool | None = None,
+    ignore_errors: bool | None = None,
+    allow_quoted_nulls: bool | None = None,
+    auto_type_candidates: Sequence[str] | str | None = None,
+    parallel: bool | None = None,
+    skiprows: int | None = None,
+    skip: int | None = None,
+) -> CSVReadKeywordOptions:
+    """Normalise keyword arguments shared between CSV readers."""
+
+    if delim is not None:
+        if delimiter is not None and delimiter != delim:
+            msg = "Both 'delimiter' and alias 'delim' were provided"
+            raise ValueError(msg)
+        delimiter = delim
+
+    if quote is not None:
+        if quotechar is not None and quotechar != quote:
+            msg = "Both 'quotechar' and alias 'quote' were provided"
+            raise ValueError(msg)
+        quotechar = quote
+
+    if escape is not None:
+        if escapechar is not None and escapechar != escape:
+            msg = "Both 'escapechar' and alias 'escape' were provided"
+            raise ValueError(msg)
+        escapechar = escape
+
+    if decimal_separator is not None:
+        if decimal is not None:
+            msg = "Both 'decimal' and alias 'decimal_separator' were provided"
+            raise ValueError(msg)
+        decimal = decimal_separator
+
+    if dateformat is not None:
+        if date_format is not None:
+            msg = "Both 'date_format' and alias 'dateformat' were provided"
+            raise ValueError(msg)
+        date_format = dateformat
+
+    if timestampformat is not None:
+        if timestamp_format is not None:
+            msg = "Both 'timestamp_format' and alias 'timestampformat' were provided"
+            raise ValueError(msg)
+        timestamp_format = timestampformat
+
+    if maximum_line_size is not None:
+        if max_line_size is not None:
+            msg = "Both 'max_line_size' and alias 'maximum_line_size' were provided"
+            raise ValueError(msg)
+        max_line_size = maximum_line_size
+
+    if skip is not None:
+        if skiprows is not None:
+            msg = "Both 'skiprows' and alias 'skip' were provided"
+            raise ValueError(msg)
+        skiprows = skip
+
+    options: dict[str, object] = {}
+
+    def set_option(name: str, value: Any) -> None:
+        if isinstance(value, Mapping):
+            options[name] = dict(value)  # type: ignore[assignment]
+        elif isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+            options[name] = list(value)  # type: ignore[assignment]
+        else:
+            options[name] = value  # type: ignore[assignment]
+
+    simple_options: dict[str, object | None] = {
+        "header": header,
+        "delimiter": delimiter,
+        "quotechar": quotechar,
+        "escapechar": escapechar,
+        "sample_size": sample_size,
+        "auto_detect": auto_detect,
+        "columns": columns,
+        "dtype": dtype,
+        "null_padding": null_padding,
+        "files_to_sniff": files_to_sniff,
+        "decimal": decimal,
+        "date_format": date_format,
+        "timestamp_format": timestamp_format,
+        "encoding": encoding,
+        "compression": compression,
+        "hive_types_autocast": hive_types_autocast,
+        "all_varchar": all_varchar,
+        "hive_partitioning": hive_partitioning,
+        "comment": comment,
+        "max_line_size": max_line_size,
+        "store_rejects": store_rejects,
+        "rejects_table": rejects_table,
+        "rejects_limit": rejects_limit,
+        "rejects_scan": rejects_scan,
+        "union_by_name": union_by_name,
+        "filename": filename,
+        "normalize_names": normalize_names,
+        "ignore_errors": ignore_errors,
+        "allow_quoted_nulls": allow_quoted_nulls,
+        "parallel": parallel,
+        "skiprows": skiprows,
+    }
+
+    for key, value in simple_options.items():
+        if value is not None:
+            set_option(key, value)
+
+    if names is not None:
+        set_option("names", names)
+
+    if na_values is not None:
+        set_option("na_values", na_values)
+
+    if force_not_null is not None:
+        set_option("force_not_null", force_not_null)
+
+    if auto_type_candidates is not None:
+        set_option("auto_type_candidates", auto_type_candidates)
+
+    return cast(CSVReadKeywordOptions, options)
+
+
 def read_csv(
     duckcon: DuckCon,
     source: PathType,
     *,
-    header: bool = True,
-    delimiter: str = ",",
-    quotechar: str | None = '"',
+    header: bool | None = None,
+    delimiter: str | None = None,
+    delim: str | None = None,
+    quotechar: str | None = None,
+    quote: str | None = None,
     escapechar: str | None = None,
+    escape: str | None = None,
     sample_size: int | None = None,
-    auto_detect: bool = True,
-    columns: Mapping[str, str] | None = None,
+    auto_detect: bool | None = None,
+    columns: object | None = None,
+    dtype: object | None = None,
+    names: Sequence[str] | None = None,
+    na_values: Sequence[str] | None = None,
+    null_padding: bool | None = None,
+    force_not_null: Sequence[str] | None = None,
+    files_to_sniff: int | None = None,
+    decimal: str | None = None,
+    decimal_separator: str | None = None,
+    date_format: str | None = None,
+    dateformat: str | None = None,
+    timestamp_format: str | None = None,
+    timestampformat: str | None = None,
+    encoding: str | None = None,
+    compression: str | None = None,
+    hive_types_autocast: bool | None = None,
+    all_varchar: bool | None = None,
+    hive_partitioning: bool | None = None,
+    comment: str | None = None,
+    max_line_size: int | None = None,
+    maximum_line_size: int | None = None,
+    store_rejects: bool | None = None,
+    rejects_table: str | None = None,
+    rejects_limit: int | None = None,
+    rejects_scan: str | None = None,
+    union_by_name: bool | None = None,
+    filename: bool | None = None,
+    normalize_names: bool | None = None,
+    ignore_errors: bool | None = None,
+    allow_quoted_nulls: bool | None = None,
+    auto_type_candidates: Sequence[str] | str | None = None,
+    parallel: bool | None = None,
+    skiprows: int | None = None,
+    skip: int | None = None,
 ) -> Relation:
     """Load a CSV file into a :class:`Relation`."""
 
     connection = require_connection(duckcon, "read_csv")
     path = fspath(source)
 
-    kwargs: dict[str, object] = {
-        "header": header,
-        "delimiter": delimiter,
-        "auto_detect": auto_detect,
-    }
-    kwargs.update(
-        _filter_none(
-            quotechar=quotechar,
-            escapechar=escapechar,
-            sample_size=sample_size,
-            columns=dict(columns) if columns is not None else None,
-        )
+    kwargs = _build_csv_options(
+        header=header,
+        delimiter=delimiter,
+        delim=delim,
+        quotechar=quotechar,
+        quote=quote,
+        escapechar=escapechar,
+        escape=escape,
+        sample_size=sample_size,
+        auto_detect=auto_detect,
+        columns=columns,
+        dtype=dtype,
+        names=names,
+        na_values=na_values,
+        null_padding=null_padding,
+        force_not_null=force_not_null,
+        files_to_sniff=files_to_sniff,
+        decimal=decimal,
+        decimal_separator=decimal_separator,
+        date_format=date_format,
+        dateformat=dateformat,
+        timestamp_format=timestamp_format,
+        timestampformat=timestampformat,
+        encoding=encoding,
+        compression=compression,
+        hive_types_autocast=hive_types_autocast,
+        all_varchar=all_varchar,
+        hive_partitioning=hive_partitioning,
+        comment=comment,
+        max_line_size=max_line_size,
+        maximum_line_size=maximum_line_size,
+        store_rejects=store_rejects,
+        rejects_table=rejects_table,
+        rejects_limit=rejects_limit,
+        rejects_scan=rejects_scan,
+        union_by_name=union_by_name,
+        filename=filename,
+        normalize_names=normalize_names,
+        ignore_errors=ignore_errors,
+        allow_quoted_nulls=allow_quoted_nulls,
+        auto_type_candidates=auto_type_candidates,
+        parallel=parallel,
+        skiprows=skiprows,
+        skip=skip,
     )
 
     relation = connection.read_csv(path, **kwargs)  # type: ignore[arg-type]
@@ -158,13 +426,49 @@ def append_csv(
     target_columns: Sequence[str] | None = None,
     create: bool = False,
     overwrite: bool = False,
-    header: bool = True,
-    delimiter: str = ",",
-    quotechar: str | None = '"',
+    header: bool | None = None,
+    delimiter: str | None = None,
+    delim: str | None = None,
+    quotechar: str | None = None,
+    quote: str | None = None,
     escapechar: str | None = None,
+    escape: str | None = None,
     sample_size: int | None = None,
-    auto_detect: bool = True,
-    columns: Mapping[str, str] | None = None,
+    auto_detect: bool | None = None,
+    columns: object | None = None,
+    dtype: object | None = None,
+    names: Sequence[str] | None = None,
+    na_values: Sequence[str] | None = None,
+    null_padding: bool | None = None,
+    force_not_null: Sequence[str] | None = None,
+    files_to_sniff: int | None = None,
+    decimal: str | None = None,
+    decimal_separator: str | None = None,
+    date_format: str | None = None,
+    dateformat: str | None = None,
+    timestamp_format: str | None = None,
+    timestampformat: str | None = None,
+    encoding: str | None = None,
+    compression: str | None = None,
+    hive_types_autocast: bool | None = None,
+    all_varchar: bool | None = None,
+    hive_partitioning: bool | None = None,
+    comment: str | None = None,
+    max_line_size: int | None = None,
+    maximum_line_size: int | None = None,
+    store_rejects: bool | None = None,
+    rejects_table: str | None = None,
+    rejects_limit: int | None = None,
+    rejects_scan: str | None = None,
+    union_by_name: bool | None = None,
+    filename: bool | None = None,
+    normalize_names: bool | None = None,
+    ignore_errors: bool | None = None,
+    allow_quoted_nulls: bool | None = None,
+    auto_type_candidates: Sequence[str] | str | None = None,
+    parallel: bool | None = None,
+    skiprows: int | None = None,
+    skip: int | None = None,
 ) -> None:
     """Append rows from a CSV file into a DuckDB table."""
 
@@ -172,18 +476,50 @@ def append_csv(
     target_column_list = normalise_target_columns(target_columns, "append_csv")
     path = fspath(source)
 
-    kwargs: dict[str, object] = {
-        "header": header,
-        "delimiter": delimiter,
-        "auto_detect": auto_detect,
-    }
-    kwargs.update(
-        _filter_none(
-            quotechar=quotechar,
-            escapechar=escapechar,
-            sample_size=sample_size,
-            columns=dict(columns) if columns is not None else None,
-        )
+    kwargs = _build_csv_options(
+        header=header,
+        delimiter=delimiter,
+        delim=delim,
+        quotechar=quotechar,
+        quote=quote,
+        escapechar=escapechar,
+        escape=escape,
+        sample_size=sample_size,
+        auto_detect=auto_detect,
+        columns=columns,
+        dtype=dtype,
+        names=names,
+        na_values=na_values,
+        null_padding=null_padding,
+        force_not_null=force_not_null,
+        files_to_sniff=files_to_sniff,
+        decimal=decimal,
+        decimal_separator=decimal_separator,
+        date_format=date_format,
+        dateformat=dateformat,
+        timestamp_format=timestamp_format,
+        timestampformat=timestampformat,
+        encoding=encoding,
+        compression=compression,
+        hive_types_autocast=hive_types_autocast,
+        all_varchar=all_varchar,
+        hive_partitioning=hive_partitioning,
+        comment=comment,
+        max_line_size=max_line_size,
+        maximum_line_size=maximum_line_size,
+        store_rejects=store_rejects,
+        rejects_table=rejects_table,
+        rejects_limit=rejects_limit,
+        rejects_scan=rejects_scan,
+        union_by_name=union_by_name,
+        filename=filename,
+        normalize_names=normalize_names,
+        ignore_errors=ignore_errors,
+        allow_quoted_nulls=allow_quoted_nulls,
+        auto_type_candidates=auto_type_candidates,
+        parallel=parallel,
+        skiprows=skiprows,
+        skip=skip,
     )
 
     relation = connection.read_csv(path, **kwargs)  # type: ignore[arg-type]
