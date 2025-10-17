@@ -87,10 +87,12 @@ arguments—``sheet``, ``header``, ``skip``, ``limit``, ``names``, ``dtype``, an
 
 ## Adding computed columns
 
-`Relation.add` accepts keyword arguments mapping new column names to typed
-expressions from :mod:`duckplus.typed`. Their dependency metadata allows
-DuckPlus to validate that references only target columns already present on the
-relation.
+`Relation.add` accepts typed expressions from :mod:`duckplus.typed` that have
+been aliased with :meth:`~duckplus.typed.expressions.base.TypedExpression.alias`.
+The positional helpers avoid repeating column names while preserving dependency
+metadata so DuckPlus can validate that references only target columns already
+present on the relation. Keyword arguments remain supported for callers that
+prefer explicit mappings.
 
 ```python
 from duckplus import DuckCon, Relation
@@ -107,8 +109,8 @@ with manager as connection:
     other = ducktype.Numeric("other")
 
     extended = base.add(
-        total=value + other,
-        delta=value - other,
+        (value + other).alias("total"),
+        (value - other).alias("delta"),
     )
 
 assert extended.columns == ("value", "other", "total", "delta")
@@ -146,23 +148,34 @@ with manager as connection:
         ),
     )
 
+    total_sales = ducktype.Numeric("amount").sum().alias("total_sales")
+    average_sale = ducktype.Numeric("amount").avg().alias("average_sale")
     summary = base.aggregate(
-        ("category",),
-        ducktype.Numeric("amount") > 1,
-        total_sales=ducktype.Numeric("amount").sum(),
-        average_sale=ducktype.Numeric("amount").avg(),
+        ducktype.Varchar("category"),
+        "amount > 1",
+        total_sales,
+        average_sale,
+        ducktype.Numeric("amount").avg() > 2,
     )
 
 assert summary.columns == ("category", "total_sales", "average_sale")
-assert summary.order_by("category").relation.fetchall() == [
-    ("a", 2, 2.0),
-    ("b", 3, 3.0),
-]
+assert summary.relation.fetchall() == [("b", 3, 3.0)]
 ```
 
-Filters accept either SQL snippets or typed boolean expressions. If a filter or
-aggregate references an unknown column, DuckPlus raises a descriptive error
-before executing the query, keeping failures easy to diagnose.
+The helper inspects each positional expression to determine where it belongs:
+
+* Strings and non-aggregate boolean expressions apply pre-aggregation filters.
+* Non-boolean expressions without aggregate functions become additional
+  grouping expressions.
+* Aggregate expressions must be aliased, either by passing them positionally or
+  via keyword arguments, and they appear after the grouping columns in the
+  result.
+* Boolean expressions containing aggregates are treated as ``HAVING`` clauses
+  and rewritten to reference the projected aggregate aliases.
+
+If a filter, aggregate, or having clause references an unknown column, DuckPlus
+raises a descriptive error before executing the query, keeping failures easy to
+diagnose.
 
 ## Filtering rows
 

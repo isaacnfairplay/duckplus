@@ -27,7 +27,7 @@ with DuckCon() as con:
     relation = con.sql("SELECT 1 AS id, 42 AS value")
     enriched = (
         relation
-        .add(double_value=ducktype.Numeric("value") * 2)
+        .add((ducktype.Numeric("value") * 2).alias("double_value"))
         .transform(value=int)
     )
     print(enriched.to_df())

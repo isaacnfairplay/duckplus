@@ -60,19 +60,24 @@ one. The wrapper will capture the resulting metadata automatically.
 
 :meth:`Relation.aggregate <duckplus.relation.Relation.aggregate>` groups rows and
 computes aggregates with typed expressions. Column validation ensures typed
-expressions only reference the source relation. Use the ``distinct`` argument to
-mirror ``COUNT(DISTINCT ...)`` semantics, and ``having`` to filter aggregates
-with either SQL fragments or boolean typed expressions.
+expressions only reference the source relation. Pass strings or non-aggregate
+boolean expressions positionally to filter rows before grouping, and provide
+aliased aggregate expressions either positionally or as keyword arguments.
 
 ```python
 amount = ducktype.Numeric("amount")
 summary = base.aggregate(
-    ("category",),
-    total_sales=amount.sum(),
-    average_sale=amount.avg(),
-    having=(amount.sum() > 500),
+    ducktype.Varchar("category"),
+    "amount > 0",
+    amount.sum().alias("total_sales"),
+    amount.avg().alias("average_sale"),
+    amount.avg() > 25,
 )
 ```
+
+Aggregate boolean expressions are treated as ``HAVING`` clauses and rewritten to
+reference the projected aliases. Non-aggregate expressions become additional
+grouping expressions, keeping the aggregate SQL concise.
 
 Typed expressions expose window helpers via
 :meth:`duckplus.typed.expressions.base.TypedExpression.over`, enabling fluent
