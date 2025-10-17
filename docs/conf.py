@@ -21,6 +21,7 @@ version = "1.1"
 
 extensions = [
     "myst_parser",
+    "autoapi.extension",
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
     "sphinx.ext.todo",
@@ -30,6 +31,10 @@ extensions = [
     "sphinxext.opengraph",
     "sphinx_multiversion",
 ]
+
+autoapi_dirs = [os.path.join(ROOT, "duckplus")]
+autoapi_root = "reference"
+autoapi_python_class_content = "both"
 
 myst_enable_extensions = [
     "colon_fence",
