@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import csv
+import re
 from dataclasses import dataclass, field
 from os import PathLike
 from pathlib import Path
@@ -463,7 +464,11 @@ class Relation:
 
         return type(self).from_relation(self.duckcon, relation)
 
-    def add(self, **expressions: TypedExpression) -> "Relation":  # pylint: disable=too-many-locals
+    def add(
+        self,
+        *expressions: TypedExpression,
+        **named_expressions: TypedExpression,
+    ) -> "Relation":  # pylint: disable=too-many-locals
         """Return a new relation with additional computed columns.
 
         Expressions must be provided through :mod:`duckplus.typed`. Typed
@@ -471,7 +476,7 @@ class Relation:
         that references only target columns present on the original relation.
         """
 
-        if not expressions:
+        if not expressions and not named_expressions:
             msg = "add requires at least one expression"
             raise ValueError(msg)
 
@@ -487,9 +492,15 @@ class Relation:
             self._quote_identifier(column) for column in self.columns
         ]
 
+        collected: list[tuple[str, TypedExpression]] = []
+        for expression in expressions:
+            alias = self._extract_alias_from_expression(expression)
+            collected.append((alias, expression))
+        collected.extend(named_expressions.items())
+
         existing_matches = {
             column
-            for alias in expressions
+            for alias, _ in collected
             for column in original_casefolded.get(alias.casefold(), ())
         }
         if existing_matches:
@@ -499,8 +510,8 @@ class Relation:
 
         seen_aliases: set[str] = set()
         prepared: list[tuple[str, str]] = []
-        for alias, expression in expressions.items():
-            if not isinstance(alias, str):
+        for alias, expression in collected:
+            if not isinstance(alias, str):  # pragma: no cover - defensive
                 msg = "Column names must be strings"
                 raise TypeError(msg)
 
@@ -913,7 +924,7 @@ class Relation:
     def aggregate(  # pylint: disable=too-many-locals,keyword-arg-before-vararg
         self,
         group_by: Iterable[str] | str | None = None,
-        *filters: object,
+        *components: object,
         **aggregations: TypedExpression,
     ) -> "Relation":
         """Return a grouped relation with computed aggregate columns.
@@ -922,13 +933,97 @@ class Relation:
         can validate column dependencies before delegating to DuckDB.
         """
 
-        if not aggregations:
+        component_list = list(components)
+        if isinstance(group_by, TypedExpression):
+            component_list.insert(0, group_by)
+            group_by = None
+        elif (
+            isinstance(group_by, Iterable)
+            and not isinstance(group_by, str)
+        ):
+            extracted_group_by: list[str] = []
+            typed_group_components: list[TypedExpression] = []
+            for entry in group_by:
+                if isinstance(entry, TypedExpression):
+                    typed_group_components.append(entry)
+                else:
+                    extracted_group_by.append(entry)
+            for expression in reversed(typed_group_components):
+                component_list.insert(0, expression)
+            group_by = tuple(extracted_group_by)
+
+        positional_filters: list[object] = []
+        positional_aggregations: list[tuple[str, TypedExpression]] = []
+        positional_group_expressions: list[TypedExpression] = []
+        having_conditions: list[tuple[str, frozenset[ExpressionDependency]]]
+        having_conditions = []
+
+        for component in component_list:
+            if isinstance(component, str):
+                sql = component.strip()
+                if not sql:
+                    msg = "Aggregate string components cannot be empty"
+                    raise ValueError(msg)
+
+                if self._contains_aggregate_sql(sql.casefold()):
+                    having_conditions.append((sql, frozenset()))
+                else:
+                    positional_filters.append(component)
+                continue
+
+            if isinstance(component, TypedExpression):
+                if self._is_boolean_typed(component):
+                    boolean_expression = self._unwrap_boolean_expression(
+                        component,
+                        error_context="Aggregate conditions",
+                    )
+                    if self._contains_aggregate_expression(boolean_expression):
+                        condition_index = len(having_conditions) + 1
+                        if boolean_expression.dependencies is not None:
+                            self._assert_dependencies_exist(
+                                boolean_expression.dependencies,
+                                error_prefix=(
+                                    f"aggregate having condition {condition_index}"
+                                ),
+                            )
+                        having_conditions.append(
+                            (
+                                boolean_expression.render(),
+                                boolean_expression.dependencies,
+                            )
+                        )
+                    else:
+                        positional_filters.append(component)
+                    continue
+
+                base_expression, alias_name = self._peel_expression_alias(component)
+                if self._contains_aggregate_expression(base_expression):
+                    alias = alias_name or self._extract_alias_from_expression(component)
+                    positional_aggregations.append((alias, component))
+                    continue
+
+                if alias_name is not None:
+                    msg = (
+                        "Group expressions passed positionally to aggregate cannot "
+                        "define an alias; alias aggregate expressions instead"
+                    )
+                    raise ValueError(msg)
+
+                positional_group_expressions.append(base_expression)
+                continue
+
+            msg = (
+                "Aggregate components must be SQL strings or typed expressions"
+            )
+            raise TypeError(msg)
+
+        if not positional_aggregations and not aggregations:
             msg = "aggregate requires at least one aggregation expression"
             raise ValueError(msg)
 
         resolved_group_by = self._normalise_group_by(group_by)
         filter_clauses = self._normalise_filter_clauses(
-            filters,
+            tuple(positional_filters),
             label_prefix="aggregate filter",
             error_context="Aggregate filters",
         )
@@ -949,9 +1044,26 @@ class Relation:
                 )
             working_relation = working_relation.filter(clause_sql)
 
+        group_expression_sql: list[str] = []
+        for index, group_expression in enumerate(
+            positional_group_expressions, start=1
+        ):
+            dependencies = group_expression.dependencies
+            if dependencies is not None:
+                self._assert_dependencies_exist(
+                    dependencies,
+                    error_prefix=(
+                        f"aggregate group expression {index}"
+                    ),
+                )
+            group_expression_sql.append(group_expression.render())
+
         seen_aliases: set[str] = set()
         prepared: list[str] = []
-        for alias, expression in aggregations.items():
+        aggregate_sql_aliases: dict[str, str] = {}
+
+        collected_items = positional_aggregations + list(aggregations.items())
+        for alias, expression in collected_items:
             name = alias.strip()
             if not name:
                 msg = "Aggregation name cannot be empty"
@@ -972,21 +1084,33 @@ class Relation:
                     error_prefix=f"aggregate expression for column '{name}'",
                 )
 
+            aggregate_sql_aliases[expression_sql] = self._quote_identifier(name)
+
             quoted_alias = self._quote_identifier(name)
             prepared.append(f"{expression_sql} AS {quoted_alias}")
 
         select_entries = [
             self._quote_identifier(column) for column in resolved_group_by
         ]
+        select_entries.extend(group_expression_sql)
         select_entries.extend(prepared)
         aggregate_sql = ", ".join(select_entries)
-        group_clause = ", ".join(resolved_group_by)
+        group_clause_entries = list(resolved_group_by)
+        group_clause_entries.extend(group_expression_sql)
+        group_clause = ", ".join(group_clause_entries)
 
         try:
             relation = working_relation.aggregate(aggregate_sql, group_clause)
         except duckdb.BinderException as error:
             msg = "aggregate expressions reference unknown columns"
             raise ValueError(msg) from error
+
+        if having_conditions:
+            relation = self._apply_having_conditions(
+                relation,
+                having_conditions,
+                aggregate_sql_aliases,
+            )
 
         return type(self).from_relation(self.duckcon, relation)
 
@@ -2211,6 +2335,117 @@ class Relation:
             ),
         )
         return typed_expression.render(), typed_expression.dependencies
+
+    def _extract_alias_from_expression(self, expression: TypedExpression) -> str:
+        if not isinstance(expression, TypedExpression):
+            msg = (
+                "add expressions must be typed expressions representing the new "
+                f"column definition (got {type(expression)!r})"
+            )
+            raise TypeError(msg)
+
+        current = expression
+        alias_name: str | None = None
+        while isinstance(current, AliasedExpression):
+            alias_name = current.alias_name
+            current = current.base
+
+        if alias_name is None:
+            msg = (
+                "Expressions passed positionally must define an alias using "
+                "alias() before being provided to add or aggregate"
+            )
+            raise ValueError(msg)
+
+        if not isinstance(alias_name, str):  # pragma: no cover - defensive
+            msg = "Column names must be strings"
+            raise TypeError(msg)
+
+        return alias_name
+
+    def _peel_expression_alias(
+        self, expression: TypedExpression
+    ) -> tuple[TypedExpression, str | None]:
+        current = expression
+        alias_name: str | None = None
+        while isinstance(current, AliasedExpression):
+            alias_name = current.alias_name
+            current = current.base
+        return current, alias_name
+
+    @staticmethod
+    def _is_boolean_typed(expression: TypedExpression) -> bool:
+        if isinstance(expression, BooleanExpression):
+            return True
+        return isinstance(expression.duck_type, BooleanType)
+
+    def _contains_aggregate_expression(self, expression: TypedExpression) -> bool:
+        base_expression, _ = self._peel_expression_alias(expression)
+        sql = base_expression.render().casefold()
+        return self._contains_aggregate_sql(sql)
+
+    @staticmethod
+    def _contains_aggregate_sql(sql: str) -> bool:
+        aggregate_tokens = (
+            "count(",
+            "sum(",
+            "avg(",
+            "min(",
+            "max(",
+            "count_if(",
+            "max_by(",
+            "min_by(",
+        )
+        return any(token in sql for token in aggregate_tokens)
+
+    def _apply_having_conditions(
+        self,
+        relation: duckdb.DuckDBPyRelation,
+        conditions: Sequence[tuple[str, frozenset[ExpressionDependency]]],
+        aggregate_aliases: Mapping[str, str],
+    ) -> duckdb.DuckDBPyRelation:
+        sorted_aliases = [
+            (
+                self._compile_having_pattern(expression_sql),
+                alias,
+            )
+            for expression_sql, alias in sorted(
+                aggregate_aliases.items(), key=lambda item: len(item[0]), reverse=True
+            )
+        ]
+        working = relation
+        for index, (sql, _dependencies) in enumerate(conditions, start=1):
+            rewritten = sql.strip()
+            if not rewritten:
+                msg = f"aggregate having condition {index} cannot be empty"
+                raise ValueError(msg)
+
+            for pattern, alias in sorted_aliases:
+                rewritten = pattern.sub(alias, rewritten)
+
+            if self._contains_aggregate_sql(rewritten.casefold()):
+                msg = (
+                    f"aggregate having condition {index} references aggregates "
+                    "that are not projected; alias them when adding the aggregate"
+                )
+                raise ValueError(msg)
+
+            try:
+                working = working.filter(rewritten)
+            except duckdb.BinderException as error:
+                msg = (
+                    f"aggregate having condition {index} references unknown columns"
+                )
+                raise ValueError(msg) from error
+
+        return working
+
+    @staticmethod
+    def _compile_having_pattern(expression_sql: str) -> re.Pattern[str]:
+        pattern = re.escape(expression_sql)
+        pattern = pattern.replace(r"\ ", r"\s*")
+        pattern = pattern.replace('"', '"?')
+        return re.compile(pattern, flags=re.IGNORECASE)
 
     def _normalise_aggregate_expression(
         self, alias: str, expression: TypedExpression
