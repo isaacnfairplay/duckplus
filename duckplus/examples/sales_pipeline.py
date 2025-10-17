@@ -1,4 +1,128 @@
-"""Comprehensive sales analytics demo showcasing DuckPlus primitives."""
+"""Sales analytics pipeline demo showcasing DuckPlus primitives.
+
+This module mirrors the walkthrough that used to live in
+``docs/versions/1.1/sales_pipeline_demo.md``.  It seeds a managed
+:class:`~duckplus.duckcon.DuckCon` with deterministic ``orders`` and ``returns``
+relations, derives enriched metrics, and aggregates the results for leadership
+reporting.  The helpers return a
+:class:`~duckplus.examples.sales_pipeline.SalesDemoReport` dataclass so that
+tests and documentation can embed the generated artefacts directly.
+
+Running the walkthrough
+-----------------------
+
+Execute the module to build the in-memory dataset and print the captured
+summaries::
+
+    python -m duckplus.examples.sales_pipeline
+
+The command prints region-level and channel-level results followed by a sample
+``SELECT`` statement emitted by the typed builder.
+
+.. tip::
+
+   The demo requires no external data sources—the dataset is synthesised from
+   Python literals so it runs identically on every machine.  This makes it
+   ideal for onboarding sessions or quick smoke tests when you upgrade DuckDB.
+
+Preview rows
+------------
+
+The helper stores a compact preview to make doc examples reproducible.  The
+first five enriched rows are::
+
+    (1, 2024-06-01, 'north', 'acme', 'online', False, 120.0, 18.5, None,
+     101.5, 7.105, 94.395, False, 'starter', False)
+    (2, 2024-06-01, 'north', 'acme', 'field', True, 240.0, 22.0,
+     'Damaged packaging', 218.0, 15.26, 202.74, False, 'growth', True)
+    (3, 2024-06-02, 'west', 'venture', 'field', False, 310.0, 35.0, None,
+     275.0, 19.25, 255.75, True, 'growth', False)
+    (4, 2024-06-02, 'west', 'venture', 'online', False, 180.0, 15.0, None,
+     165.0, 11.55, 153.45, False, 'starter', False)
+    (5, 2024-06-03, 'south', 'nomad', 'online', True, 95.0, 9.0,
+     'Late delivery', 86.0, 6.02, 79.98, False, 'starter', True)
+
+The values mirror the tuples stored in
+:attr:`SalesDemoReport.preview_rows
+<duckplus.examples.sales_pipeline.SalesDemoReport.preview_rows>`.
+Because the dataclass captures both the enriched relation and its metadata, you
+can assert on ``report.preview_columns`` in tests to confirm column order and
+retain deterministic docs.
+
+Region performance
+------------------
+
+``SalesDemoReport.region_rows`` summarises return rates and revenue by sales
+region.  The deterministic output enables the documentation and tests to agree
+on the same numbers.  The aggregation uses typed expressions for ``sum`` and
+``count_if`` to demonstrate how numeric helpers compose:
+
+.. list-table:: Region metrics produced by :func:`summarise_by_region`.
+   :header-rows: 1
+
+   * - region
+     - total_orders
+     - net_revenue
+     - high_value_orders
+     - return_rate
+   * - east
+     - 2
+     - 301.0
+     - 1
+     - 0.50
+   * - north
+     - 2
+     - 319.5
+     - 0
+     - 0.50
+   * - south
+     - 2
+     - 448.0
+     - 1
+     - 0.50
+   * - west
+     - 2
+     - 440.0
+     - 1
+     - 0.00
+
+Channel performance
+-------------------
+
+The channel summary surfaces repeat behaviour and contribution averages::
+
+    ('field', 2, 1, 229.245)
+    ('online', 4, 1, 166.12125)
+    ('partner', 2, 1, 139.965)
+
+These rows correspond to
+:attr:`SalesDemoReport.channel_rows
+<duckplus.examples.sales_pipeline.SalesDemoReport.channel_rows>`.
+Call :func:`summarise_by_channel` when you need to recompute the relation for
+exploratory analysis.
+
+Typed projection example
+------------------------
+
+The demo emits the typed ``SELECT`` used to showcase ``if_exists`` clauses.  It
+replaces the ``service_tier`` column with a computed label while falling back to
+``fulfilled`` when ``return_reason`` is absent::
+
+    SELECT * REPLACE (
+        CASE WHEN "is_returned" THEN 'service'
+             WHEN "is_high_value" THEN 'priority'
+             ELSE "service_tier" END AS "service_tier",
+        CASE WHEN "return_reason" IS NULL THEN 'fulfilled'
+             ELSE "return_reason" END AS "return_reason"
+    ),
+    sum("net_revenue") AS "cumulative_net"
+    FROM enriched_orders
+
+Because the ``SELECT`` builder is dependency-aware, the optional clauses
+disappear if an upstream relation omits ``return_reason`` or ``net_revenue``.
+Reuse :func:`build_enriched_orders` in your own scripts when you want to add new
+metrics or persist the intermediate relation to disk.
+"""
 
 from __future__ import annotations
 
@@ -24,7 +148,14 @@ __all__ = [
 
 @dataclass(frozen=True)
 class SalesDemoData:
-    """Container holding the seed relations for the sales demo."""
+    """Container holding the seed relations for the sales demo.
+
+    The relations produced by :func:`load_demo_relations` mirror the literal
+    values embedded in the original documentation so every execution yields the
+    same results.  The ``orders`` table includes regions, customers, and
+    shipping metadata while ``returns`` captures the subset of orders that were
+    refunded.
+    """
 
     orders: Relation
     returns: Relation
@@ -32,7 +163,12 @@ class SalesDemoData:
 
 @dataclass(frozen=True)
 class SalesDemoReport:
-    """Structured output produced by :func:`run_sales_demo`."""
+    """Structured output produced by :func:`run_sales_demo`.
+
+    The dataclass mirrors the data embedded in the legacy Markdown guide.  Its
+    attributes store both the relation schemas (for regression testing) and the
+    deterministic tuples showcased in the module-level examples.
+    """
 
     region_columns: tuple[str, ...]
     region_rows: list[tuple[object, ...]]
@@ -44,7 +180,19 @@ class SalesDemoReport:
 
 
 def load_demo_relations(manager: DuckCon) -> SalesDemoData:
-    """Seed the demo database with deterministic orders and returns."""
+    """Seed the demo database with deterministic orders and returns.
+
+    The helper materialises two relations inside the provided connection:
+
+    - ``orders`` mirrors the preview rows shown in the module documentation with
+      repeat flags, order totals, and shipping costs.
+    - ``returns`` captures the subset of orders that were refunded so
+      :func:`build_enriched_orders` can showcase dependency-aware joins.
+
+    The literal SQL keeps the walkthrough portable—no external CSV files are
+    required and the generated :class:`SalesDemoReport` is stable across
+    platforms.
+    """
 
     connection = manager.connection
 
@@ -90,8 +238,22 @@ def load_demo_relations(manager: DuckCon) -> SalesDemoData:
     )
 
 
+# pylint: disable=too-many-locals
 def build_enriched_orders(orders: Relation, returns: Relation) -> Relation:
-    """Join orders with return metadata and compute derived metrics."""
+    """Join orders with return metadata and compute derived metrics.
+
+    The enriched relation preserves the columns surfaced in
+    :attr:`SalesDemoReport.preview_rows` and introduces additional metrics used
+    by the summaries:
+
+    - ``net_revenue`` subtracts shipping costs from the order total.
+    - ``tax_amount`` and ``contribution`` demonstrate how typed arithmetic keeps
+      dependency information intact for downstream ``sum`` aggregations.
+    - ``is_high_value`` and ``service_tier`` showcase ``CASE`` helpers with
+      dependency tracking for optional ``REPLACE`` clauses.
+    - ``is_returned`` flags rows present in the ``returns`` table so the return
+      rate calculation matches the published walkthrough.
+    """
 
     if orders.duckcon is not returns.duckcon:
         msg = "Orders and returns must originate from the same DuckCon"
@@ -171,7 +333,13 @@ def _count_if(expression: TypedExpression) -> TypedExpression:
 
 
 def summarise_by_region(enriched: Relation) -> Relation:
-    """Aggregate the enriched dataset by sales region."""
+    """Aggregate the enriched dataset by sales region.
+
+    ``SalesDemoReport.region_rows`` stores the output so tests and documentation
+    share the same deterministic numbers.  The list-table in the module docstring
+    mirrors the rendered tuples and demonstrates how ``count`` and ``count_if``
+    compose with manually constructed dependency graphs.
+    """
 
     total_orders = _count(ducktype.Numeric("order_id"))
     returned_orders = _count_if(ducktype.Boolean("is_returned"))
@@ -193,7 +361,13 @@ def summarise_by_region(enriched: Relation) -> Relation:
 
 
 def summarise_by_channel(enriched: Relation) -> Relation:
-    """Aggregate contribution and repeat metrics by channel."""
+    """Aggregate contribution and repeat metrics by channel.
+
+    The three tuples quoted in the module documentation correspond to this
+    relation when ordered by ``channel``.  ``repeat_orders`` and
+    ``average_contribution`` demonstrate how derived boolean and numeric
+    expressions can feed aggregation helpers without losing type information.
+    """
 
     return enriched.aggregate(
         "channel",
@@ -204,7 +378,14 @@ def summarise_by_channel(enriched: Relation) -> Relation:
 
 
 def render_projection_sql(enriched: Relation) -> str:
-    """Render a SELECT projection that exercises optional clauses."""
+    """Render a ``SELECT`` projection that exercises optional clauses.
+
+    The string output matches the snippet reproduced in the module docstring.
+    ``REPLACE`` entries use dependency-aware expressions so optional clauses are
+    omitted automatically when upstream columns are missing.  ``run_sales_demo``
+    exposes the rendered SQL via :attr:`SalesDemoReport.projection_sql` for easy
+    assertions in tests and docs.
+    """
 
     builder = ducktype.select()
     builder.star(
@@ -241,7 +422,11 @@ def render_projection_sql(enriched: Relation) -> str:
     return builder.build(available_columns=enriched.columns)
 
 
-def _capture_rows(relation: Relation, *, order_by: Iterable[str] | None = None) -> list[tuple[object, ...]]:
+def _capture_rows(
+    relation: Relation,
+    *,
+    order_by: Iterable[str] | None = None,
+) -> list[tuple[object, ...]]:
     if order_by is None:
         ordered = relation.relation
     else:
@@ -249,8 +434,16 @@ def _capture_rows(relation: Relation, *, order_by: Iterable[str] | None = None) 
     return list(ordered.fetchall())
 
 
+# pylint: disable=too-many-locals
 def run_sales_demo() -> SalesDemoReport:
-    """Execute the full sales pipeline and capture summary artifacts."""
+    """Execute the full sales pipeline and capture summary artefacts.
+
+    The returned :class:`SalesDemoReport` matches the walkthrough embedded in
+    this module.  ``preview_rows`` stores the first five enriched tuples, while
+    ``region_rows`` and ``channel_rows`` capture the tables rendered in the
+    documentation.  ``projection_sql`` mirrors the ``SELECT`` emitted by
+    :func:`render_projection_sql` so consumers can assert on the generated text.
+    """
 
     manager = DuckCon()
     with manager:

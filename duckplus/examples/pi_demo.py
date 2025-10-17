@@ -1,17 +1,39 @@
-"""Circle-math demo showcasing typed expressions with Pi-friendly calculations.
+"""Raspberry Pi typed-expression demo anchored around π calculations.
 
-This module highlights how DuckPlus typed expressions can be composed to build
-DuckDB SQL while retaining strong typing information.  It is designed to run on
-resource-constrained hosts (like a Raspberry Pi) without needing DuckDB at
-import time.  If DuckDB is available, :func:`run_duckdb_demo` executes the SQL
-that the expressions render so you can inspect real results.
+The prose that lived in :mod:`docs.pi_demo` now resides here so the code is the
+single source of truth.  The helpers show how to combine
+``duckplus.typed`` primitives to generate deterministic projection and
+aggregation SQL while preserving metadata such as dependencies and type
+annotations.  Everything runs without importing DuckDB at module load so the
+example stays friendly to resource-constrained hosts.
 
-To inspect the static typing feedback these helpers provide, run::
+Running the demo queries
+------------------------
+
+Execute the module directly to render the generated SQL and, when possible,
+fetch the results from DuckDB::
+
+    python -m duckplus.examples.pi_demo
+
+If DuckDB is unavailable the script prints installation guidance alongside the
+projection and aggregation statements so you can still inspect the generated
+queries.
+
+Type checker feedback
+---------------------
+
+The module includes ``reveal_type`` probes guarded by ``TYPE_CHECKING`` so tools
+like ``mypy`` can confirm the expression shapes.  Running::
 
     mypy -p duckplus.examples.pi_demo
 
-The module includes ``reveal_type`` probes guarded by ``TYPE_CHECKING`` so the
-type checker will surface the expression types when you run the command above.
+produces output similar to::
+
+    note: Revealed type is "duckplus.typed.expression.NumericExpression"
+    note: Revealed type is "duckplus.typed.expression.NumericExpression"
+
+This gives immediate assurance that downstream helpers receive strongly typed
+expressions with preserved dependencies.
 """
 
 # pylint: disable=duplicate-code
@@ -35,7 +57,13 @@ if TYPE_CHECKING:  # pragma: no cover - executed only during type checking
 
 @dataclass(frozen=True)
 class CircleExpressions:
-    """Reusable expressions describing circle metrics."""
+    """Reusable expressions describing circle metrics.
+
+    The trio of expressions—``radius``, ``area``, and ``circumference``—feed the
+    projections and aggregations showcased when you execute the module as a
+    script.  Each retains the dependency metadata expected by
+    :func:`summarise_circle_metrics`.
+    """
 
     radius: NumericExpression
     area: NumericExpression
@@ -49,6 +77,11 @@ def build_circle_expressions(radius_column: str = "radius") -> CircleExpressions
     ----------
     radius_column:
         Name of the column supplying circle radii.
+
+    The expressions power both the projection and aggregation queries described
+    in the module documentation.  They demonstrate how literal values—such as π
+    and the ``2`` used for circumference—can be embedded with explicit
+    ``duck_type`` metadata so downstream ``render`` calls remain deterministic.
     """
 
     radius = ducktype.Numeric(radius_column)
@@ -62,7 +95,12 @@ def build_circle_expressions(radius_column: str = "radius") -> CircleExpressions
 
 
 def project_circle_metrics(radius_column: str = "radius") -> Sequence[AliasedExpression]:
-    """Return aliased projections for radius, area, and circumference."""
+    """Return aliased projections for radius, area, and circumference.
+
+    These projections correspond to the "projection" query printed when the demo
+    runs.  Each alias ensures the rendered SQL lines up with the sample output in
+    the documentation and makes the resulting relation ergonomic to inspect.
+    """
 
     expressions = build_circle_expressions(radius_column)
     return (
@@ -73,7 +111,12 @@ def project_circle_metrics(radius_column: str = "radius") -> Sequence[AliasedExp
 
 
 def summarise_circle_metrics(radius_column: str = "radius") -> Sequence[AliasedExpression]:
-    """Produce aggregations that total area and circumference."""
+    """Produce aggregations that total area and circumference.
+
+    The aggregation is the second query executed by :func:`run_duckdb_demo`.  It
+    totals each derived metric while demonstrating how typed expressions compose
+    with aggregation helpers such as ``sum``.
+    """
 
     expressions = build_circle_expressions(radius_column)
     return (
@@ -86,14 +129,24 @@ def render_select_sql(
     select_list: Iterable[TypedExpression],
     relation_sql: str,
 ) -> str:
-    """Render a SELECT statement using the provided expressions."""
+    """Render a ``SELECT`` statement using the provided expressions.
+
+    ``build_demo_queries`` uses this helper to produce the projection and
+    aggregation SQL quoted in the module documentation.  The function keeps the
+    demo self-contained by avoiding reliance on higher-level relation objects.
+    """
 
     projections = ", ".join(expression.render() for expression in select_list)
     return f"SELECT {projections} FROM {relation_sql}"
 
 
 def build_demo_queries(radius_column: str = "radius") -> dict[str, str]:
-    """Generate demo SQL queries illustrating projection and aggregation."""
+    """Generate demo SQL queries illustrating projection and aggregation.
+
+    The returned dictionary includes ``projection`` and ``summary`` keys.  When
+    the module is executed as a script the queries are printed verbatim so they
+    can be compared to the ``mypy`` output captured in the documentation.
+    """
 
     projection = render_select_sql(project_circle_metrics(radius_column), "circles")
     summary = render_select_sql(summarise_circle_metrics(radius_column), "circles")
@@ -101,7 +154,14 @@ def build_demo_queries(radius_column: str = "radius") -> dict[str, str]:
 
 
 def run_duckdb_demo() -> Sequence[tuple[str, Sequence[tuple[object, ...]]]]:
-    """Execute the demo SQL against DuckDB if the package is installed."""
+    """Execute the demo SQL against DuckDB if the package is installed.
+
+    The helper returns a list of ``(name, rows)`` tuples that mirror the console
+    output produced by ``python -m duckplus.examples.pi_demo``.  A friendly
+    :class:`RuntimeError` guides readers towards ``pip install duckdb`` when the
+    dependency is missing, matching the behaviour described in the module
+    docstring.
+    """
 
     queries = build_demo_queries()
     try:
