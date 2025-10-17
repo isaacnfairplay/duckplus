@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+# pylint: disable=protected-access
+
 from decimal import Decimal
 from typing import Iterable
 

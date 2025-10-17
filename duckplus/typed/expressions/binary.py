@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+# pylint: disable=protected-access
+
 from typing import Iterable
 
 from ..dependencies import DependencyLike, ExpressionDependency

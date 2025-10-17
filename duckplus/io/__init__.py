@@ -1,6 +1,6 @@
 """File-based relation helpers built on top of :class:`duckplus.DuckCon`."""
 
-# pylint: disable=import-error,too-many-arguments,redefined-builtin,too-many-locals
+# pylint: disable=import-error,too-many-arguments,redefined-builtin,too-many-locals,too-many-branches,too-many-statements
 
 from __future__ import annotations
 from os import PathLike, fspath
@@ -552,9 +552,9 @@ def read_parquet(
         casefolded = {column.casefold() for column in relation.columns}
         if partition_id_column.casefold() in casefolded:
             msg = (
-                "Partition identifier column '{partition}' collides with existing "
-                "Parquet data column"
-            ).format(partition=partition_id_column)
+                f"Partition identifier column '{partition_id_column}' collides with "
+                "existing Parquet data column"
+            )
             raise ValueError(msg)
 
         identifier = quote_identifier(partition_id_column)

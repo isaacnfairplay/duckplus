@@ -27,22 +27,31 @@ with manager as connection:
     running = amount.sum().over(partition_by=(region,), order_by=(amount.desc(),))
 
     ranked = base.add(running_total=running)
-    pivoted = ranked.aggregate(
-        north_total=(
-            ducktype.Numeric.case()
-            .when(region == "north", amount)
-            .else_(ducktype.Numeric.literal(0))
-            .end()
-            .sum()
-        ),
-        south_total=(
-            ducktype.Numeric.case()
-            .when(region == "south", amount)
-            .else_(ducktype.Numeric.literal(0))
-            .end()
-            .sum()
-        ),
-    ).all()
+    pivoted = (
+        ranked.aggregate()
+        .start_agg()
+        .agg(
+            (
+                ducktype.Numeric.case()
+                .when(region == "north", amount)
+                .else_(ducktype.Numeric.literal(0))
+                .end()
+                .sum()
+            ),
+            alias="north_total",
+        )
+        .agg(
+            (
+                ducktype.Numeric.case()
+                .when(region == "south", amount)
+                .else_(ducktype.Numeric.literal(0))
+                .end()
+                .sum()
+            ),
+            alias="south_total",
+        )
+        .all()
+    )
     print(ranked.order_by("region", "amount").relation.fetchall())
     print(pivoted.relation.fetchall())
 ```

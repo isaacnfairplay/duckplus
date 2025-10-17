@@ -329,12 +329,18 @@ def summarise_by_region(enriched: Relation) -> Relation:
     denominator = total_orders.nullif(ducktype.Numeric.literal(0))
     return_rate = returned_orders / denominator
 
-    return enriched.aggregate(
-        total_orders=total_orders,
-        net_revenue=ducktype.Numeric("net_revenue").sum(),
-        high_value_orders=_count_if(ducktype.Boolean("is_high_value")),
-        return_rate=return_rate,
-    ).by("region")
+    return (
+        enriched.aggregate()
+        .start_agg()
+        .agg(total_orders, alias="total_orders")
+        .agg(ducktype.Numeric("net_revenue").sum(), alias="net_revenue")
+        .agg(
+            _count_if(ducktype.Boolean("is_high_value")),
+            alias="high_value_orders",
+        )
+        .agg(return_rate, alias="return_rate")
+        .by("region")
+    )
 
 
 def summarise_by_channel(enriched: Relation) -> Relation:
@@ -346,11 +352,20 @@ def summarise_by_channel(enriched: Relation) -> Relation:
     expressions can feed aggregation helpers without losing type information.
     """
 
-    return enriched.aggregate(
-        total_orders=_count(ducktype.Numeric("order_id")),
-        repeat_orders=_count_if(ducktype.Boolean("is_repeat")),
-        average_contribution=ducktype.Numeric("contribution").avg(),
-    ).by("channel")
+    return (
+        enriched.aggregate()
+        .start_agg()
+        .agg(_count(ducktype.Numeric("order_id")), alias="total_orders")
+        .agg(
+            _count_if(ducktype.Boolean("is_repeat")),
+            alias="repeat_orders",
+        )
+        .agg(
+            ducktype.Numeric("contribution").avg(),
+            alias="average_contribution",
+        )
+        .by("channel")
+    )
 
 
 def render_projection_sql(enriched: Relation) -> str:
