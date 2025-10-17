@@ -73,12 +73,32 @@ except ValueError:
 DEFAULT_HTML_BASEURL = f"https://{owner}.github.io/{repo_name}/"
 html_baseurl = os.environ.get("DUCKPLUS_DOCS_BASEURL", DEFAULT_HTML_BASEURL)
 
-switcher_path = "_static/version_switcher.json"
+smv_tag_whitelist = r"^v\d+\.\d+\.\d+$"
+smv_branch_whitelist = r".*"
+smv_remote_whitelist = r"^origin$"
+smv_latest_version = "1.1"
+smv_rename_latest_version = ("1.1", "latest")
+smv_released_pattern = r"^tags/v\d+\.\d+\.\d+$"
+smv_outputdir = "_build/html"
+
+# The version switcher JSON is served from the ``latest`` build so that all
+# historic versions can reference a single canonical copy. Without including the
+# ``latest`` prefix the generated pages attempt to fetch ``/_static`` from the
+# site root, which does not exist once the docs are published under versioned
+# subdirectories (e.g. ``.../duckplus/1.0``).  That empty response meant the
+# dropdown rendered with no options even though the JSON was present in each
+# build directory.
+latest_alias = "latest"
+if isinstance(smv_rename_latest_version, tuple) and len(smv_rename_latest_version) == 2:
+    latest_alias = smv_rename_latest_version[1]
+
+switcher_path = f"{latest_alias}/_static/version_switcher.json"
 DEFAULT_SWITCHER_URL = os.environ.get(
     "DUCKPLUS_DOCS_SWITCHER_URL",
     urljoin(html_baseurl, switcher_path),
 )
 
+# Theme configuration depends on the switcher configuration above.
 html_theme_options: Dict[str, Any] = {
     "logo": {
         "text": "DuckPlus",
@@ -98,14 +118,6 @@ html_theme_options: Dict[str, Any] = {
 html_context = {
     "default_mode": "light",
 }
-
-smv_tag_whitelist = r"^v\d+\.\d+\.\d+$"
-smv_branch_whitelist = r".*"
-smv_remote_whitelist = r"^origin$"
-smv_latest_version = "1.1"
-smv_rename_latest_version = ("1.1", "latest")
-smv_released_pattern = r"^tags/v\d+\.\d+\.\d+$"
-smv_outputdir = "_build/html"
 
 # Keep todo entries visible for unreleased features while still rendering cleanly.
 todo_include_todos = True
