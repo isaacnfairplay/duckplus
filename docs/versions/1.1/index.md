@@ -41,13 +41,13 @@ io/file_append
 community_extensions
 schema_management
 practitioner_demos
-api/index
+reference/index
 ```
 
 If you are upgrading from DuckPlus 1.0, the {doc}`getting_started` chapter
 highlights the stable import paths while the deep-dive guides explain how each
 helper composes with DuckDB. The derived :doc:`practitioner_demos` now include a
 DuckDB parity checklist that mirrors the interactive demo site, and the
-{doc}`api/index` reference documents every public class, method, and function in
+{doc}`reference/index` reference documents every public class, method, and function in
 the 1.1 API surface so static tooling and application developers can reason
 about DuckPlus without inspecting the source code.

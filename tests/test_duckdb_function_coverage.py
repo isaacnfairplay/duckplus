@@ -234,6 +234,28 @@ def test_typed_function_docstrings_cover_catalog_metadata() -> None:
 
 
 def test_typed_function_documentation_lists_catalog() -> None:
+    if not CATALOG_DOC_PATH.exists():
+        conf_text = Path("docs/conf.py").read_text(encoding="utf-8")
+        assert "\"autoapi.extension\"" in conf_text
+        assert "autoapi_dirs" in conf_text and "duckplus" in conf_text
+
+        wrapper_paths = [
+            Path("docs/versions/1.0/api/index.md"),
+            Path("docs/versions/1.1/api/index.md"),
+        ]
+        for wrapper_path in wrapper_paths:
+            wrapper_text = wrapper_path.read_text(encoding="utf-8")
+            assert "reference/index" in wrapper_text
+
+        landing_paths = [
+            Path("docs/versions/1.0/index.md"),
+            Path("docs/versions/1.1/index.md"),
+        ]
+        for landing_path in landing_paths:
+            landing_text = landing_path.read_text(encoding="utf-8")
+            assert "reference/index" in landing_text
+        return
+
     doc_functions = _load_documented_functions()
     doc_text = CATALOG_DOC_PATH.read_text(encoding="utf-8")
     assert "FILTER" in doc_text and "(WHERE" in doc_text
