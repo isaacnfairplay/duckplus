@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+# pylint: disable=protected-access
+
 from typing import Iterable
 
 from ..dependencies import DependencyLike, ExpressionDependency
@@ -87,8 +89,6 @@ class VarcharExpression(TypedExpression):
     def length(self) -> "NumericExpression":
         """Return the number of characters in the expression."""
 
-        from .numeric import NumericExpression
-
         sql = f"length({self.render()})"
         return NumericExpression._raw(sql, dependencies=self.dependencies)
 
@@ -113,8 +113,6 @@ class VarcharExpression(TypedExpression):
         """Return whether ``needle`` occurs within the expression."""
 
         operand = self._coerce_operand(needle)
-
-        from .numeric import NumericExpression
 
         sql = f"strpos({self.render()}, {operand.render()})"
         dependencies = self.dependencies.union(operand.dependencies)

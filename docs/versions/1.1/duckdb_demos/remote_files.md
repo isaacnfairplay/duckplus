@@ -17,10 +17,13 @@ with manager as connection:
         manager,
         "https://storage.googleapis.com/duckdb-blobs/nyc-taxi/trips.parquet",
     )
-    top_fares = nyc.aggregate(
-        trips=ducktype.Numeric.Aggregate.count(),
-        total=ducktype.Numeric("total_amount").sum(),
-    ).by("passenger_count")
+    top_fares = (
+        nyc.aggregate()
+        .start_agg()
+        .agg(ducktype.Numeric.Aggregate.count(), alias="trips")
+        .agg(ducktype.Numeric("total_amount").sum(), alias="total")
+        .by("passenger_count")
+    )
     print(top_fares.order_by("total DESC").relation.limit(5).fetchall())
 ```
 

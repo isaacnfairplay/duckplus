@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any, Optional
 from typing import Literal
+import warnings
 
 import duckdb  # type: ignore[import-not-found]
 
@@ -17,7 +18,7 @@ ExtraExtensionName = Literal["nanodbc", "excel"]
 
 
 @dataclass(frozen=True)
-class ExtensionInfo:
+class ExtensionInfo:  # pylint: disable=too-many-instance-attributes
     """Metadata describing DuckDB extension installation state."""
 
     name: str
@@ -31,7 +32,7 @@ class ExtensionInfo:
     installed_from: str | None
 
 
-class DuckCon:
+class DuckCon:  # pylint: disable=too-many-instance-attributes
     """Context manager for managing a DuckDB connection.
 
     Parameters
@@ -156,8 +157,6 @@ class DuckCon:
             internal loader.
         """
 
-        import warnings
-
         warnings.warn(
             "DuckCon.load_nano_odbc() is deprecated. Pass "
             "extra_extensions=(\"nanodbc\",) when constructing DuckCon instead.",
@@ -167,7 +166,7 @@ class DuckCon:
 
         self._load_nano_odbc(install=install)
 
-    def extensions(self) -> tuple[ExtensionInfo, ...]:
+    def extensions(self) -> tuple[ExtensionInfo, ...]:  # pylint: disable=too-many-locals
         """Return metadata about available DuckDB extensions."""
 
         if not self.is_open:
@@ -188,9 +187,8 @@ class DuckCon:
             "install_mode",
             "installed_from",
         )
-        query = "SELECT {} FROM duckdb_extensions()".format(
-            ", ".join(columns)
-        )
+        selected_columns = ", ".join(columns)
+        query = f"SELECT {selected_columns} FROM duckdb_extensions()"
         rows = self.connection.execute(query).fetchall()
         infos = []
         for row in rows:
@@ -302,7 +300,7 @@ class DuckCon:
 
         try:
             import_extension(extension)
-        except Exception:  # pragma: no cover - install helper failure
+        except Exception:  # pragma: no cover - install helper failure  # pylint: disable=broad-exception-caught
             return False
         return True
 

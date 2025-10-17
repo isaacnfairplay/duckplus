@@ -43,11 +43,14 @@ eligible = promotions & ~discounted
 Aggregation helpers live on the typed expression itself:
 
 ```python
-summary = base.aggregate(
-    total_sales=amount.sum(),
-    average_sale=amount.avg(),
-    largest_sale=amount.max(),
-).by("customer")
+summary = (
+    base.aggregate()
+    .start_agg()
+    .agg(amount.sum(), alias="total_sales")
+    .agg(amount.avg(), alias="average_sale")
+    .agg(amount.max(), alias="largest_sale")
+    .by("customer")
+)
 ```
 
 Aggregations can be filtered using :meth:`duckplus.typed.expressions.base.TypedExpression.filter` and

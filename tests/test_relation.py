@@ -734,10 +734,13 @@ def test_aggregate_groups_rows_and_computes_aggregates() -> None:
             connection.sql(_AGGREGATE_SOURCE_SQL),
         )
 
-        aggregated = relation.aggregate(
-            total=ducktype.Numeric("amount").sum(),
-            average=ducktype.Numeric("amount").avg(),
-        ).by("category")
+        aggregated = (
+            relation.aggregate()
+            .start_agg()
+            .agg(ducktype.Numeric("amount").sum(), alias="total")
+            .agg(ducktype.Numeric("amount").avg(), alias="average")
+            .by("category")
+        )
 
         ordered = aggregated.relation.order("category").fetchall()
         assert ordered == [("a", 3, 1.5), ("b", 3, 3.0)]
@@ -752,9 +755,11 @@ def test_aggregate_accepts_typed_expressions() -> None:
             connection.sql(_AGGREGATE_SOURCE_SQL),
         )
 
-        aggregated = relation.aggregate(
-            total=ducktype.Numeric("amount").sum(),
-        ).by("CATEGORY")
+        aggregated = (
+            relation.aggregate()
+            .agg(ducktype.Numeric("amount").sum(), alias="total")
+            .by("CATEGORY")
+        )
 
         assert aggregated.columns == ("category", "total")
         assert aggregated.relation.order("category").fetchall() == [
@@ -773,12 +778,14 @@ def test_aggregate_accepts_positional_aggregations_and_having() -> None:
 
         total = ducktype.Numeric("amount").sum().alias("total")
         average = ducktype.Numeric("amount").avg().alias("average")
-        aggregated = relation.aggregate(
-            ducktype.Varchar("category"),
-            total,
-            average,
-            ducktype.Numeric("amount").avg() > 2,
-        ).all()
+        aggregated = (
+            relation.aggregate()
+            .component(ducktype.Varchar("category"))
+            .agg(total)
+            .agg(average)
+            .component(ducktype.Numeric("amount").avg() > 2)
+            .all()
+        )
 
         assert aggregated.columns == ("category", "total", "average")
         assert aggregated.relation.fetchall() == [("b", 3, 3.0)]
@@ -795,11 +802,10 @@ def test_aggregate_having_method_accepts_boolean_expression() -> None:
         total = ducktype.Numeric("amount").sum().alias("total")
         average = ducktype.Numeric("amount").avg().alias("average")
         aggregated = (
-            relation.aggregate(
-                ducktype.Varchar("category"),
-                total,
-                average,
-            )
+            relation.aggregate()
+            .component(ducktype.Varchar("category"))
+            .agg(total)
+            .agg(average)
             .having(ducktype.Numeric("amount").avg() > 2)
             .all()
         )
@@ -816,9 +822,11 @@ def test_aggregate_supports_typed_group_expressions_in_group_by_argument() -> No
             connection.sql(_AGGREGATE_SOURCE_SQL),
         )
 
-        aggregated = relation.aggregate(
-            ducktype.Numeric("amount").sum().alias("total"),
-        ).by(ducktype.Varchar("category"))
+        aggregated = (
+            relation.aggregate()
+            .agg(ducktype.Numeric("amount").sum().alias("total"))
+            .by(ducktype.Varchar("category"))
+        )
 
         assert aggregated.columns == ("category", "total")
         assert aggregated.relation.order("category").fetchall() == [
@@ -835,15 +843,19 @@ def test_aggregate_supports_filters() -> None:
             connection.sql(_AGGREGATE_SOURCE_SQL),
         )
 
-        string_filtered = relation.aggregate(
-            "amount > 1",
-            total=ducktype.Numeric("amount").sum(),
-        ).by("category")
+        string_filtered = (
+            relation.aggregate()
+            .component("amount > 1")
+            .agg(ducktype.Numeric("amount").sum(), alias="total")
+            .by("category")
+        )
 
-        typed_filtered = relation.aggregate(
-            ducktype.Numeric("amount") > 1,
-            total=ducktype.Numeric("amount").sum(),
-        ).by("category")
+        typed_filtered = (
+            relation.aggregate()
+            .component(ducktype.Numeric("amount") > 1)
+            .agg(ducktype.Numeric("amount").sum(), alias="total")
+            .by("category")
+        )
 
         expected = [("a", 2), ("b", 3)]
         assert string_filtered.order_by("category").relation.fetchall() == expected
@@ -858,18 +870,22 @@ def test_aggregate_strings_with_aggregates_become_having_clauses() -> None:
             connection.sql(_AGGREGATE_SOURCE_SQL),
         )
 
-        aggregated = relation.aggregate(
-            "sum(amount) > 2",
-            total=ducktype.Numeric("amount").sum(),
-        ).by(ducktype.Varchar("category"))
+        aggregated = (
+            relation.aggregate()
+            .component("sum(amount) > 2")
+            .agg(ducktype.Numeric("amount").sum(), alias="total")
+            .by(ducktype.Varchar("category"))
+        )
 
         assert aggregated.columns == ("category", "total")
         assert sorted(aggregated.relation.fetchall()) == [("a", 3), ("b", 3)]
 
-        upper_aggregated = relation.aggregate(
-            'SUM("amount") > 2',
-            total=ducktype.Numeric("amount").sum(),
-        ).by(ducktype.Varchar("category"))
+        upper_aggregated = (
+            relation.aggregate()
+            .component('SUM("amount") > 2')
+            .agg(ducktype.Numeric("amount").sum(), alias="total")
+            .by(ducktype.Varchar("category"))
+        )
 
         assert upper_aggregated.columns == ("category", "total")
         assert sorted(upper_aggregated.relation.fetchall()) == [
@@ -887,7 +903,63 @@ def test_aggregate_rejects_raw_sql_strings() -> None:
         )
 
         with pytest.raises(TypeError, match="typed expressions"):
-            relation.aggregate(total="sum(amount)").by("category")
+            relation.aggregate().agg("sum(amount)", alias="total")
+
+
+def test_aggregate_rejects_blank_alias_argument() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(_AGGREGATE_SOURCE_SQL),
+        )
+
+        aggregation = ducktype.Numeric("amount").sum()
+        with pytest.raises(ValueError, match="cannot be empty"):
+            (
+                relation.aggregate()
+                .agg(aggregation, alias="   ")
+                .by("category")
+            )
+
+
+def test_aggregate_component_rejects_aggregate_expressions() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(_AGGREGATE_SOURCE_SQL),
+        )
+
+        aggregate_expression = ducktype.Numeric("amount").sum()
+
+        with pytest.raises(ValueError, match="call agg"):
+            relation.aggregate().component(aggregate_expression)
+
+
+def test_aggregate_builder_blocks_mutation_after_finalisation() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(_AGGREGATE_SOURCE_SQL),
+        )
+
+        builder = relation.aggregate()
+        assert builder.start_agg() is builder
+        builder.agg(ducktype.Numeric("amount").sum().alias("total"))
+        builder.agg(ducktype.Numeric("amount").avg().alias("average"))
+
+        aggregated = builder.by("category")
+        assert aggregated.columns == ("category", "total", "average")
+
+        with pytest.raises(RuntimeError, match="Cannot call agg"):
+            builder.agg(
+                ducktype.Numeric.Aggregate.min("amount").alias("minimum")
+            )
+
+        with pytest.raises(RuntimeError, match="Cannot call component"):
+            builder.component("amount > 0")
 
 
 def test_select_builder_projects_columns_and_typed_expressions() -> None:
@@ -983,6 +1055,47 @@ def test_select_builder_validates_replace_dependencies() -> None:
     assert replaced.columns == relation.columns
 
 
+def test_select_builder_rejects_blank_alias() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(_AGGREGATE_SOURCE_SQL),
+        )
+
+        expression = ducktype.Numeric("amount")
+        with pytest.raises(ValueError, match="alias cannot be empty"):
+            (
+                relation.select()
+                .column(expression, alias="   ")
+                .from_()
+            )
+
+
+def test_select_builder_blocks_mutation_after_materialisation() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(_AGGREGATE_SOURCE_SQL),
+        )
+
+        builder = relation.select()
+        builder.column(ducktype.Numeric("amount").alias("value"))
+        builder.star(exclude=("amount",))
+        projected = builder.from_()
+        assert projected.columns == ("value", "category")
+
+        with pytest.raises(RuntimeError, match="Cannot call column"):
+            builder.column("amount")
+
+        with pytest.raises(RuntimeError, match="Cannot call star"):
+            builder.star()
+
+        with pytest.raises(RuntimeError, match="Cannot call from"):
+            builder.from_()
+
+
 def test_aggregate_rejects_unknown_group_by_columns() -> None:
     manager = DuckCon()
     with manager as connection:
@@ -992,9 +1105,11 @@ def test_aggregate_rejects_unknown_group_by_columns() -> None:
         )
 
         with pytest.raises(KeyError):
-            relation.aggregate(
-                total=ducktype.Numeric("amount").sum(),
-            ).by("missing")
+            (
+                relation.aggregate()
+                .agg(ducktype.Numeric("amount").sum(), alias="total")
+                .by("missing")
+            )
 
 
 def test_aggregate_rejects_aliased_group_expression() -> None:
@@ -1007,10 +1122,7 @@ def test_aggregate_rejects_aliased_group_expression() -> None:
 
         group_expression = ducktype.Varchar("category").alias("label")
         with pytest.raises(ValueError, match="Group expressions"):
-            relation.aggregate(
-                group_expression,
-                ducktype.Numeric("amount").sum().alias("total"),
-            )
+            relation.aggregate().component(group_expression)
 
 
 def test_aggregate_rejects_unknown_aggregation_columns() -> None:
@@ -1022,9 +1134,11 @@ def test_aggregate_rejects_unknown_aggregation_columns() -> None:
         )
 
         with pytest.raises(ValueError, match="unknown columns"):
-            relation.aggregate(
-                total=ducktype.Numeric("missing").sum(),
-            ).by("category")
+            (
+                relation.aggregate()
+                .agg(ducktype.Numeric("missing").sum(), alias="total")
+                .by("category")
+            )
 
 
 def test_aggregate_rejects_typed_expression_with_unknown_columns() -> None:
@@ -1036,9 +1150,11 @@ def test_aggregate_rejects_typed_expression_with_unknown_columns() -> None:
         )
 
         with pytest.raises(ValueError, match="unknown columns"):
-            relation.aggregate(
-                total=ducktype.Numeric("missing").sum(),
-            ).by("category")
+            (
+                relation.aggregate()
+                .agg(ducktype.Numeric("missing").sum(), alias="total")
+                .by("category")
+            )
 
 
 def test_aggregate_non_boolean_expressions_extend_grouping() -> None:
@@ -1049,10 +1165,12 @@ def test_aggregate_non_boolean_expressions_extend_grouping() -> None:
             connection.sql(_AGGREGATE_SOURCE_SQL),
         )
 
-        aggregated = relation.aggregate(
-            ducktype.Numeric("amount"),
-            ducktype.Numeric("amount").sum().alias("total"),
-        ).by(ducktype.Varchar("category"))
+        aggregated = (
+            relation.aggregate()
+            .component(ducktype.Numeric("amount"))
+            .agg(ducktype.Numeric("amount").sum().alias("total"))
+            .by(ducktype.Varchar("category"))
+        )
 
         assert aggregated.columns == ("category", "amount", "total")
         assert aggregated.relation.order("category, amount").fetchall() == [
@@ -1071,10 +1189,7 @@ def test_aggregate_rejects_blank_filters() -> None:
         )
 
         with pytest.raises(ValueError):
-            relation.aggregate(
-                "   ",
-                total=ducktype.Numeric("amount").sum(),
-            ).by("category")
+            relation.aggregate().component("   ")
 
 
 def test_aggregate_requires_aggregations() -> None:
@@ -1094,9 +1209,11 @@ def test_aggregate_requires_open_connection() -> None:
     relation = _make_relation(manager, _SINGLE_ROW_SQL)
 
     with pytest.raises(RuntimeError):
-        relation.aggregate(
-            total=ducktype.Numeric("amount").sum(),
-        ).by("category")
+        (
+            relation.aggregate()
+            .agg(ducktype.Numeric("amount").sum(), alias="total")
+            .by("category")
+        )
 
 
 def test_aggregate_rejects_duplicate_aggregation_names() -> None:
@@ -1108,10 +1225,12 @@ def test_aggregate_rejects_duplicate_aggregation_names() -> None:
         )
 
         with pytest.raises(ValueError, match="specified multiple times"):
-            relation.aggregate(
-                total=ducktype.Numeric("amount").sum(),
-                TOTAL=ducktype.Numeric("amount").avg(),
-            ).by("category")
+            (
+                relation.aggregate()
+                .agg(ducktype.Numeric("amount").sum(), alias="total")
+                .agg(ducktype.Numeric("amount").avg(), alias="TOTAL")
+                .by("category")
+            )
 
 
 def test_aggregate_rejects_mismatched_alias_typed_expressions() -> None:
@@ -1124,8 +1243,12 @@ def test_aggregate_rejects_mismatched_alias_typed_expressions() -> None:
 
         expression = ducktype.Numeric("amount").sum().alias("other")
 
-        with pytest.raises(ValueError, match="aggregate must use the same alias"):
-            relation.aggregate(total=expression).by("category")
+        with pytest.raises(ValueError, match="agg must use the same alias"):
+            (
+                relation.aggregate()
+                .agg(expression, alias="total")
+                .by("category")
+            )
 
 
 def test_aggregate_having_requires_projected_aliases() -> None:
@@ -1137,10 +1260,12 @@ def test_aggregate_having_requires_projected_aliases() -> None:
         )
 
         with pytest.raises(ValueError, match="not projected"):
-            relation.aggregate(
-                ducktype.Numeric("amount").sum().alias("total"),
-                ducktype.Numeric("amount").avg() > 2,
-            ).by("category")
+            (
+                relation.aggregate()
+                .agg(ducktype.Numeric("amount").sum().alias("total"))
+                .component(ducktype.Numeric("amount").avg() > 2)
+                .by("category")
+            )
 
 
 def test_filter_applies_multiple_conditions() -> None:
@@ -1961,7 +2086,16 @@ def test_relation_append_parquet_large_batch(tmp_path: Path) -> None:
 
         relation.append_parquet(target, mutate=True)
 
-    count = duckdb.read_parquet(str(target)).aggregate("COUNT(*)").fetchone()[0]
+    connection = duckdb.connect()
+    try:
+        count = (
+            connection.execute(
+                "SELECT COUNT(*) FROM read_parquet(?)", [str(target)]
+            )
+            .fetchone()[0]
+        )
+    finally:
+        connection.close()
     assert int(count) == 4096
 
 

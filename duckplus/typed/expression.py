@@ -1,6 +1,6 @@
 """Public typed expression API built from modular components."""
 
-# pylint: disable=too-few-public-methods,invalid-name,import-outside-toplevel,cyclic-import
+# pylint: disable=too-few-public-methods,invalid-name,import-outside-toplevel,cyclic-import,protected-access
 
 from __future__ import annotations
 

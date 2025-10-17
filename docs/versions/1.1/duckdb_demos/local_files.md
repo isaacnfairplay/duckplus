@@ -48,10 +48,13 @@ with manager:
         "data/yellow_tripdata_2023-01.parquet",
         hive_partitioning=True,
     )
-    summary = trips.aggregate(
-        total_fare=ducktype.Numeric("total_amount").sum(),
-        avg_distance=ducktype.Numeric("trip_distance").avg(),
-    ).by("passenger_count")
+    summary = (
+        trips.aggregate()
+        .start_agg()
+        .agg(ducktype.Numeric("total_amount").sum(), alias="total_fare")
+        .agg(ducktype.Numeric("trip_distance").avg(), alias="avg_distance")
+        .by("passenger_count")
+    )
     print(summary.relation.order("passenger_count").limit(5).fetchall())
 ```
 

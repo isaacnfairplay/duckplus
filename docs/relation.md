@@ -197,11 +197,11 @@ with manager as connection:
     total_sales = ducktype.Numeric("amount").sum().alias("total_sales")
     average_sale = ducktype.Numeric("amount").avg().alias("average_sale")
     summary = (
-        base.aggregate(
-            "amount > 1",
-            total_sales,
-            average_sale,
-        )
+        base.aggregate()
+        .start_agg()
+        .component("amount > 1")
+        .agg(total_sales)
+        .agg(average_sale)
         .having(ducktype.Numeric("amount").avg() > 2)
         .by(ducktype.Varchar("category"))
     )
@@ -210,21 +210,23 @@ assert summary.columns == ("category", "total_sales", "average_sale")
 assert summary.relation.fetchall() == [("b", 3, 3.0)]
 ```
 
-The helper inspects each positional expression to determine where it belongs:
+The helper inspects each component to determine where it belongs:
 
-* Strings and non-aggregate boolean expressions apply pre-aggregation filters.
-* Strings containing aggregate functions are treated as ``HAVING`` clauses and
-  automatically rewrite to reference the projected aliases, even when the input
+* ``component`` accepts strings and typed expressions. Strings and non-aggregate
+  boolean expressions apply pre-aggregation filters.
+* Strings containing aggregate functions automatically become ``HAVING``
+  clauses and rewrite to reference the projected aliases, even when the input
   omits identifier quoting or uses different casing.
 * Non-boolean expressions without aggregate functions become additional
   grouping expressions that ``.all()`` will include automatically.
-* Aggregate expressions must be aliased, either by passing them positionally or
-  via keyword arguments, and they appear after the grouping columns in the
-  result.
-* Boolean expressions containing aggregates are treated as ``HAVING`` clauses
-  and rewritten to reference the projected aggregate aliases. You can also add
-  them explicitly via :meth:`~duckplus.relation._AggregateBuilder.having` before
-  materialising the query.
+* ``agg`` registers aggregate expressions. Each must define an alias (either via
+  :meth:`alias` on the typed expression or the ``alias=`` keyword) and appears
+  after the grouping columns in the result.
+* Boolean expressions containing aggregates passed to ``component`` are treated
+  as ``HAVING`` clauses and rewritten to reference the projected aggregate
+  aliases. You can also add them explicitly via
+  :meth:`~duckplus.relation._AggregateBuilder.having` before materialising the
+  query.
 
 If a filter, aggregate, or having clause references an unknown column, DuckPlus
 raises a descriptive error before executing the query, keeping failures easy to

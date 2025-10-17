@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-# pylint: disable=import-error
+# pylint: disable=import-error,too-many-arguments
 
 from collections.abc import Sequence
 from uuid import uuid4

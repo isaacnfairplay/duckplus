@@ -87,21 +87,20 @@ errors.
 
 :meth:`Relation.aggregate <duckplus.relation.Relation.aggregate>` returns a
 builder that groups rows and computes aggregates with typed expressions. Column
-validation ensures typed expressions only reference the source relation. Pass
-strings or non-aggregate boolean expressions positionally to filter rows before
-grouping, and provide aliased aggregate expressions either positionally or as
-keyword arguments. Finalise the builder with :meth:`.by`
-or :meth:`.all` depending on whether you want explicit or inferred grouping
-expressions.
+validation ensures typed expressions only reference the source relation. Use
+``component`` for strings or non-aggregate boolean expressions to filter rows
+before grouping, and ``agg`` for aliased aggregate expressions. Finalise the
+builder with :meth:`.by` or :meth:`.all` depending on whether you want explicit
+or inferred grouping expressions.
 
 ```python
 amount = ducktype.Numeric("amount")
 summary = (
-    base.aggregate(
-        "amount > 0",
-        amount.sum().alias("total_sales"),
-        amount.avg().alias("average_sale"),
-    )
+    base.aggregate()
+    .start_agg()
+    .component("amount > 0")
+    .agg(amount.sum().alias("total_sales"))
+    .agg(amount.avg().alias("average_sale"))
     .having(amount.avg() > 25)
     .by(ducktype.Varchar("category"))
 )

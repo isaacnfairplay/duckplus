@@ -22,10 +22,13 @@ with manager as connection:
     connection.register("sales", sales_frame)
     base = Relation.from_sql(manager, "SELECT * FROM sales")
 
-    summary = base.aggregate(
-        total=ducktype.Numeric("amount").sum(),
-        average=ducktype.Numeric("amount").avg(),
-    ).by("region")
+    summary = (
+        base.aggregate()
+        .start_agg()
+        .agg(ducktype.Numeric("amount").sum(), alias="total")
+        .agg(ducktype.Numeric("amount").avg(), alias="average")
+        .by("region")
+    )
     print(summary.relation.fetchall())
 ```
 
