@@ -11,7 +11,7 @@ DuckPlus exposes a typed expression builder that mirrors DuckDB's type system. E
 ## Core Factories
 
 ```python
-from duckplus.typed import ducktype
+from duckplus import ducktype
 
 order_total = ducktype.Numeric("total")
 customer_name = ducktype.Varchar("customer")
@@ -22,6 +22,10 @@ raw_payload = ducktype.Blob("payload")
 order_total_orders = ducktype.Numeric("total", table="orders")
 assert order_total_orders.render() == '"orders"."total"'
 ```
+
+Typed factories are also available directly from the top-level package, so
+callers may import conveniences like `from duckplus import Varchar` when they
+want direct access to the concrete factories without the shared namespace.
 
 Each factory exposes helpers to construct literal and raw expressions:
 
