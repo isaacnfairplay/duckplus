@@ -68,20 +68,61 @@ def _categorise_return_type(return_type: str | None) -> str:
     return "generic"
 
 
-def _definition_sort_key(definition: tuple[str, str, str | None, tuple[str, ...], str | None]) -> tuple[int, int]:
-    schema, _name, _rtype, parameters, _varargs = definition
+def _definition_sort_key(
+    definition: tuple[
+        str,
+        str,
+        str | None,
+        tuple[str, ...],
+        tuple[str, ...],
+        str | None,
+        str | None,
+        str | None,
+        str | None,
+    ]
+) -> tuple[int, int]:
+    schema, _name, _rtype, parameter_types, _parameter_names, _varargs, *_ = definition
     schema_priority = SCHEMA_PRIORITY.get(schema, 10)
-    arity = len(parameters)
+    arity = len(parameter_types)
     return (schema_priority, arity)
 
 
-def _load_definitions() -> dict[str, dict[str, dict[str, list[tuple[str, str, str | None, tuple[str, ...], str | None]]]]]:
+def _load_definitions() -> dict[
+    str,
+    dict[
+        str,
+        dict[
+            str,
+            list[
+                tuple[
+                    str,
+                    str,
+                    str | None,
+                    tuple[str, ...],
+                    tuple[str, ...],
+                    str | None,
+                    str | None,
+                    str | None,
+                    str | None,
+                ]
+            ],
+        ],
+    ],
+]:
     connection = duckdb.connect()
     try:
         rows = connection.execute(
             """
-            SELECT schema_name, function_name, function_type, return_type,
-                   parameter_types, varargs
+            SELECT schema_name,
+                   function_name,
+                   function_type,
+                   return_type,
+                   parameters,
+                   parameter_types,
+                   varargs,
+                   description,
+                   comment,
+                   macro_definition
               FROM duckdb_functions()
              WHERE function_type IN ('scalar', 'aggregate', 'window')
             """
@@ -89,16 +130,38 @@ def _load_definitions() -> dict[str, dict[str, dict[str, list[tuple[str, str, st
     finally:
         connection.close()
 
-    index: dict[str, dict[str, dict[str, list[tuple[str, str, str | None, tuple[str, ...], str | None]]]]] = defaultdict(
+    index: dict[str, dict[str, dict[str, list[tuple[str, str, str | None, tuple[str, ...], tuple[str, ...], str | None, str | None, str | None, str | None]]]]] = defaultdict(
         lambda: defaultdict(dict)
     )
-    for schema_name, function_name, function_type, return_type, parameter_types, varargs in rows:
+    for (
+        schema_name,
+        function_name,
+        function_type,
+        return_type,
+        parameters,
+        parameter_types,
+        varargs,
+        description,
+        comment,
+        macro_definition,
+    ) in rows:
         category = _categorise_return_type(return_type)
         type_bucket = index[function_type]
         category_bucket = type_bucket.setdefault(category, defaultdict(list))
-        parameter_tuple = tuple(parameter_types or ())
+        parameter_types_tuple = tuple(parameter_types or ())
+        parameter_names_tuple = tuple(parameters or ())
         category_bucket[function_name].append(
-            (schema_name, function_name, return_type, parameter_tuple, varargs)
+            (
+                schema_name,
+                function_name,
+                return_type,
+                parameter_types_tuple,
+                parameter_names_tuple,
+                varargs,
+                description,
+                comment,
+                macro_definition,
+            )
         )
 
     for type_bucket in index.values():
@@ -124,12 +187,25 @@ def _format_parameters(parameters: tuple[str, ...]) -> str:
     return f"({formatted})"
 
 
+def _format_parameter_names(names: tuple[str, ...]) -> str:
+    if not names:
+        return "()"
+    formatted = ", ".join(repr(name) for name in names)
+    if len(names) == 1:
+        formatted += ","
+    return f"({formatted})"
+
+
 def _format_definition(
     schema: str,
     name: str,
     return_type: str | None,
     parameters: tuple[str, ...],
+    parameter_names: tuple[str, ...],
     varargs: str | None,
+    description: str | None,
+    comment: str | None,
+    macro_definition: str | None,
 ) -> str:
     return "\n".join(
         [
@@ -139,7 +215,11 @@ def _format_definition(
             "                function_type=function_type,",
             f"                return_type={_format_type(return_type)},",
             f"                parameter_types={_format_parameters(parameters)},",
+            f"                parameters={_format_parameter_names(parameter_names)},",
             f"                varargs={_format_type(varargs)},",
+            f"                description={description!r},",
+            f"                comment={comment!r},",
+            f"                macro_definition={macro_definition!r},",
             "            ),",
         ]
     )
@@ -147,14 +227,47 @@ def _format_definition(
 
 def _render_function_block(
     function_name: str,
-    overloads: list[tuple[str, str, str | None, tuple[str, ...], str | None]],
+    overloads: list[
+        tuple[
+            str,
+            str,
+            str | None,
+            tuple[str, ...],
+            tuple[str, ...],
+            str | None,
+            str | None,
+            str | None,
+            str | None,
+        ]
+    ],
     *,
     return_category: str,
+    call_class: str = "_DuckDBFunctionCall",
 ) -> str:
-    lines = [f"    {function_name} = _DuckDBFunctionCall(("]
+    lines = [f"    {function_name} = {call_class}(("]
     lines.extend(
-        _format_definition(schema, name, return_type, parameters, varargs)
-        for schema, name, return_type, parameters, varargs in overloads
+        _format_definition(
+            schema,
+            name,
+            return_type,
+            parameter_types,
+            parameter_names,
+            varargs,
+            description,
+            comment,
+            macro_definition,
+        )
+        for (
+            schema,
+            name,
+            return_type,
+            parameter_types,
+            parameter_names,
+            varargs,
+            description,
+            comment,
+            macro_definition,
+        ) in overloads
     )
     lines.append("        ),")
     lines.append(f"        return_category={return_category!r},")
@@ -163,7 +276,22 @@ def _render_function_block(
 
 
 def _render_symbolic_mapping(
-    overloads: dict[str, list[tuple[str, str, str | None, tuple[str, ...], str | None]]],
+    overloads: dict[
+        str,
+        list[
+            tuple[
+                str,
+                str,
+                str | None,
+                tuple[str, ...],
+                tuple[str, ...],
+                str | None,
+                str | None,
+                str | None,
+                str | None,
+            ]
+        ],
+    ],
     *,
     return_category: str,
 ) -> str:
@@ -174,10 +302,30 @@ def _render_symbolic_mapping(
         block_lines = ["        " + repr(function_name) + ": _DuckDBFunctionCall(("]
         block_lines.extend(
             indent(
-                _format_definition(schema, name, return_type, parameters, varargs),
+                _format_definition(
+                    schema,
+                    name,
+                    return_type,
+                    parameter_types,
+                    parameter_names,
+                    varargs,
+                    description,
+                    comment,
+                    macro_definition,
+                ),
                 "            ",
             )
-            for schema, name, return_type, parameters, varargs in overloads[function_name]
+            for (
+                schema,
+                name,
+                return_type,
+                parameter_types,
+                parameter_names,
+                varargs,
+                description,
+                comment,
+                macro_definition,
+            ) in overloads[function_name]
         )
         block_lines.append("            ),")
         block_lines.append(f"            return_category={return_category!r},")
@@ -197,8 +345,38 @@ def _render_namespace(
     *,
     function_type: str,
     category: str,
-    identifiers: dict[str, list[tuple[str, str, str | None, tuple[str, ...], str | None]]],
-    symbols: dict[str, list[tuple[str, str, str | None, tuple[str, ...], str | None]]],
+    identifiers: dict[
+        str,
+        list[
+            tuple[
+                str,
+                str,
+                str | None,
+                tuple[str, ...],
+                tuple[str, ...],
+                str | None,
+                str | None,
+                str | None,
+                str | None,
+            ]
+        ],
+    ],
+    symbols: dict[
+        str,
+        list[
+            tuple[
+                str,
+                str,
+                str | None,
+                tuple[str, ...],
+                tuple[str, ...],
+                str | None,
+                str | None,
+                str | None,
+                str | None,
+            ]
+        ],
+    ],
 ) -> str:
     class_name = f"{function_type.title()}{category.title()}Functions"
     doc_category = RETURN_CATEGORY_DOCS.get(category, category)
@@ -216,9 +394,22 @@ def _render_namespace(
                     return_category=category,
                 )
             )
+            if function_type == "aggregate":
+                filter_name = f"{function_name}_filter"
+                lines.append(
+                    _render_function_block(
+                        filter_name,
+                        identifiers[function_name],
+                        return_category=category,
+                        call_class="_DuckDBFilterFunctionCall",
+                    )
+                )
         registry_lines = ["    _IDENTIFIER_FUNCTIONS: ClassVar[dict[str, _DuckDBFunctionCall]] = {"]
         for function_name in sorted(identifiers):
             registry_lines.append(f"        {function_name!r}: {function_name},")
+            if function_type == "aggregate":
+                filter_key = f"{function_name}_filter"
+                registry_lines.append(f"        {filter_key!r}: {filter_key},")
         registry_lines.append("    }")
         lines.append("\n".join(registry_lines))
     else:
@@ -236,7 +427,22 @@ def _render_stub_namespace(
     *,
     function_type: str,
     category: str,
-    identifiers: dict[str, list[tuple[str, str, str | None, tuple[str, ...], str | None]]],
+    identifiers: dict[
+        str,
+        list[
+            tuple[
+                str,
+                str,
+                str | None,
+                tuple[str, ...],
+                tuple[str, ...],
+                str | None,
+                str | None,
+                str | None,
+                str | None,
+            ]
+        ],
+    ],
 ) -> str:
     class_name = f"{function_type.title()}{category.title()}Functions"
     expression = CATEGORY_TO_EXPRESSION[category]
@@ -248,6 +454,11 @@ def _render_stub_namespace(
             if function_name in STUB_VALID_TYPE_IGNORE:
                 annotation += "  # type: ignore[valid-type]"
             lines.append(annotation)
+            if function_type == "aggregate":
+                filter_annotation = f"    {function_name}_filter: _DuckDBFunctionCall[{expression}]"
+                if function_name in STUB_VALID_TYPE_IGNORE:
+                    filter_annotation += "  # type: ignore[valid-type]"
+                lines.append(filter_annotation)
     return "\n".join(lines)
 
 
@@ -278,18 +489,74 @@ def _render_stub_type_namespace(function_type: str, categories: dict[str, str]) 
     return "\n".join(lines)
 
 
+def _render_catalog_markdown(
+    catalog: dict[str, dict[str, dict[str, set[str]]]],
+) -> str:
+    lines = [
+        "# DuckDB typed function catalog (DuckPlus 1.1)",
+        "",
+        "This catalog enumerates every DuckDB scalar, aggregate, and window function",
+        "exposed through DuckPlus' static typed API. Entries are grouped by return",
+        "category to match the generated namespaces.",
+        "",
+        "Aggregate helpers also expose ``_filter`` variants that render ``FILTER",
+        "(WHERE ...)`` with a typed boolean predicate as the first argument.",
+        "",
+        "The file is auto-generated by ``scripts/generate_function_namespaces.py``;",
+        "run the script after upgrading DuckDB to refresh the catalog.",
+        "",
+    ]
+
+    for function_type in ("scalar", "aggregate", "window"):
+        type_bucket = catalog.get(function_type, {})
+        lines.append(f"## {function_type.title()} functions")
+        lines.append("")
+        if not type_bucket:
+            lines.append("(No functions exposed in this release.)")
+            lines.append("")
+            continue
+        for category, entries in sorted(type_bucket.items()):
+            lines.append(f"### {category.title()} results")
+            identifiers = sorted(entries["identifiers"])
+            symbols = sorted(entries["symbols"])
+            if identifiers:
+                for name in identifiers:
+                    lines.append(f"- ``{name}``")
+            else:
+                lines.append("- *(no identifier functions)*")
+            if symbols:
+                lines.append("")
+                lines.append("Symbolic operators:")
+                for symbol in symbols:
+                    lines.append(f"- ``{symbol}``")
+            lines.append("")
+        lines.append("")
+
+    return "\n".join(lines).rstrip() + "\n"
+
+
 def main() -> None:
     index = _load_definitions()
     for function_type in ("aggregate", "scalar", "window"):
         type_bucket = index.setdefault(function_type, {})
         for category in ("blob", "boolean", "generic", "numeric", "varchar"):
             type_bucket.setdefault(category, {})
+    catalog: dict[
+        str,
+        dict[str, dict[str, set[str]]],
+    ] = defaultdict(lambda: defaultdict(lambda: {"identifiers": set(), "symbols": set()}))
+
     output_lines: list[str] = [
         "from __future__ import annotations",
         "",
         "from typing import ClassVar",
         "",
-        "from .functions import DuckDBFunctionDefinition, _DuckDBFunctionCall, _StaticFunctionNamespace",
+        "from .functions import (",
+        "    DuckDBFunctionDefinition,",
+        "    _DuckDBFilterFunctionCall,",
+        "    _DuckDBFunctionCall,",
+        "    _StaticFunctionNamespace,",
+        ")",
         "from .types import parse_type",
         "",
         "",
@@ -335,10 +602,13 @@ def main() -> None:
             identifiers: dict[str, list[tuple[str, str, str | None, tuple[str, ...], str | None]]] = {}
             symbols: dict[str, list[tuple[str, str, str | None, tuple[str, ...], str | None]]] = {}
             for name, overloads in functions.items():
+                catalog_entry = catalog[function_type][category]
                 if name.isidentifier() and not keyword.iskeyword(name):
                     identifiers[name] = overloads
+                    catalog_entry["identifiers"].add(name)
                 else:
                     symbols[name] = overloads
+                    catalog_entry["symbols"].add(name)
             output_lines.append(
                 _render_namespace(
                     function_type=function_type,
@@ -401,6 +671,20 @@ def main() -> None:
     stub_prologue = f'"""{HEADER}\n"""\n\n'
     stub_path.write_text(stub_prologue + stub_body, encoding="utf-8")
     print(f"Wrote {stub_path}")
+
+    catalog_path = (
+        Path(__file__).resolve().parent.parent
+        / "docs"
+        / "versions"
+        / "1.1"
+        / "api"
+        / "typed"
+        / "function_catalog.md"
+    )
+    catalog_path.parent.mkdir(parents=True, exist_ok=True)
+    catalog_body = _render_catalog_markdown(catalog)
+    catalog_path.write_text(catalog_body, encoding="utf-8")
+    print(f"Wrote {catalog_path}")
 
 
 if __name__ == "__main__":

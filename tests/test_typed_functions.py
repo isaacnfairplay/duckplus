@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from duckplus.typed import ducktype
+from duckplus.typed.expression import GenericExpression, VarcharExpression
 from duckplus.typed.functions import (
     AGGREGATE_FUNCTIONS,
     SCALAR_FUNCTIONS,
@@ -43,6 +45,41 @@ def test_aggregate_namespace_matches_module_level_singletons() -> None:
     singleton_sum = AGGREGATE_FUNCTIONS.Numeric.sum
     assert sum_function.signatures == singleton_sum.signatures
     assert sum_function.__doc__ == singleton_sum.__doc__
+
+
+def test_aggregate_functions_include_filter_variants() -> None:
+    numeric_namespace = AGGREGATE_FUNCTIONS.Numeric
+    exported = set(numeric_namespace.__dir__())
+    base_functions = {name for name in exported if not name.endswith("_filter")}
+    for name in base_functions:
+        assert f"{name}_filter" in exported
+
+    amount = ducktype.Numeric("amount")
+    include_flag = ducktype.Boolean("include_flag")
+    filtered_sum = AGGREGATE_FUNCTIONS.Numeric.sum_filter(include_flag, amount)
+
+    assert filtered_sum.render() == 'sum("amount") FILTER (WHERE "include_flag")'
+    assert include_flag.dependencies.union(amount.dependencies) == filtered_sum.dependencies
+
+    with pytest.raises(TypeError, match="BOOLEAN"):
+        AGGREGATE_FUNCTIONS.Numeric.sum_filter(amount, amount)
+
+
+def test_aggregate_min_by_dispatches_by_expression_type() -> None:
+    namespace = DuckDBFunctionNamespace()
+    varchar_expr = ducktype.Varchar("label")
+    order_expr = ducktype.Numeric("ordering")
+
+    result = namespace.Aggregate.min_by(varchar_expr, order_expr)
+
+    assert isinstance(result, VarcharExpression)
+    assert result.render() == 'min_by("label", "ordering")'
+
+    generic_value = ducktype.Generic("payload")
+    generic_result = namespace.Aggregate.max_by(generic_value, order_expr)
+
+    assert isinstance(generic_result, GenericExpression)
+    assert generic_result.render() == 'max_by("payload", "ordering")'
 
 
 def test_window_namespace_is_populated() -> None:

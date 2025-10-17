@@ -1075,6 +1075,41 @@ def test_join_supports_explicit_pairs() -> None:
         ]
 
 
+def test_join_accepts_iterable_of_column_names() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        left = Relation.from_relation(
+            manager,
+            connection.sql(
+                """
+                SELECT * FROM (VALUES
+                    (1::INTEGER, 'north'::VARCHAR),
+                    (2::INTEGER, 'south'::VARCHAR)
+                ) AS data(id, region)
+                """
+            ),
+        )
+        right = Relation.from_relation(
+            manager,
+            connection.sql(
+                """
+                SELECT * FROM (VALUES
+                    (1::INTEGER, 100::INTEGER),
+                    (2::INTEGER, 200::INTEGER)
+                ) AS data(id, amount)
+                """
+            ),
+        )
+
+        joined = left.join(right, on=("id",))
+
+        assert joined.columns == ("id", "region", "amount")
+        assert joined.relation.order("id").fetchall() == [
+            (1, "north", 100),
+            (2, "south", 200),
+        ]
+
+
 def test_join_requires_join_columns() -> None:
     manager = DuckCon()
     with manager as connection:
@@ -1364,6 +1399,24 @@ def test_asof_join_rejects_invalid_direction() -> None:
                 order=("event_ts", "quote_ts"),
                 direction="nearest",  # type: ignore[arg-type]
             )
+
+
+def test_materialize_creates_temporary_table() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql("SELECT 42::INTEGER AS value"),
+        )
+
+        materialized = relation.materialize(name="temp_values")
+
+        assert materialized.columns == ("value",)
+        assert connection.sql("SELECT * FROM temp_values").fetchall() == [(42,)]
+
+    with manager as connection:
+        with pytest.raises(duckdb.CatalogException):
+            connection.sql("SELECT * FROM temp_values")
 
 
 def test_relation_append_csv_writes_rows(tmp_path: Path) -> None:

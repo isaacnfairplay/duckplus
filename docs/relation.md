@@ -441,6 +441,32 @@ an informative error so call sites keep connection ownership explicit. When
 deterministic; during append operations, specify `target_columns` to rely on
 table defaults for any omitted values.
 
+### Materialising intermediate results
+
+DuckPlus also exposes :meth:`Relation.materialize`, which writes the relation
+to a DuckDB table and returns a relation pointing at the materialised data. The
+helper creates a temporary table by default so intermediate results clean up
+automatically when the connection closes. Provide a name to control the table
+identifier or set ``temporary=False`` to persist the rows.
+
+```python
+from duckplus import DuckCon, Relation
+
+manager = DuckCon()
+with manager as connection:
+    relation = Relation.from_sql(
+        manager,
+        "SELECT 42::INTEGER AS value",
+    )
+
+    materialized = relation.materialize(name="temp_values")
+    print(materialized.relation.fetchall())
+
+# Temporary tables disappear when the connection closes.
+with manager as connection:
+    connection.sql("SELECT * FROM temp_values")  # Raises duckdb.CatalogException
+```
+
 ## Appending CSV and Parquet files
 
 DuckPlus now treats file appends as IO operations performed directly by a

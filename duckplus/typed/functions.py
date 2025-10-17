@@ -17,7 +17,7 @@ from .expression import (
     VarcharExpression,
 )
 from .expressions.utils import quote_identifier, quote_qualified_identifier
-from .types import DuckDBType, GenericType, IdentifierType, UnknownType
+from .types import BooleanType, DuckDBType, GenericType, IdentifierType, UnknownType
 
 
 class DuckDBFunctionDefinition:
@@ -29,7 +29,11 @@ class DuckDBFunctionDefinition:
         "function_type",
         "return_type",
         "parameter_types",
+        "parameters",
         "varargs",
+        "description",
+        "comment",
+        "macro_definition",
     )
 
     def __init__(
@@ -40,14 +44,22 @@ class DuckDBFunctionDefinition:
         function_type: str,
         return_type: DuckDBType | None,
         parameter_types: tuple[DuckDBType, ...],
+        parameters: tuple[str, ...],
         varargs: DuckDBType | None,
+        description: str | None,
+        comment: str | None,
+        macro_definition: str | None,
     ) -> None:
         self.schema_name = schema_name
         self.function_name = function_name
         self.function_type = function_type
         self.return_type = return_type
         self.parameter_types = parameter_types
+        self.parameters = parameters
         self.varargs = varargs
+        self.description = description
+        self.comment = comment
+        self.macro_definition = macro_definition
 
     def matches_arity(self, argument_count: int) -> bool:
         """Return whether this overload accepts the provided argument count."""
@@ -67,7 +79,11 @@ class DuckDBFunctionSignature:
         "function_type",
         "return_type",
         "parameter_types",
+        "parameters",
         "varargs",
+        "description",
+        "comment",
+        "macro_definition",
         "sql_name",
     )
 
@@ -79,7 +95,11 @@ class DuckDBFunctionSignature:
         function_type: str,
         return_type: DuckDBType | None,
         parameter_types: tuple[DuckDBType, ...],
+        parameters: tuple[str, ...],
         varargs: DuckDBType | None,
+        description: str | None,
+        comment: str | None,
+        macro_definition: str | None,
         sql_name: str,
     ) -> None:
         self.schema_name = schema_name
@@ -87,7 +107,11 @@ class DuckDBFunctionSignature:
         self.function_type = function_type
         self.return_type = return_type
         self.parameter_types = parameter_types
+        self.parameters = parameters
         self.varargs = varargs
+        self.description = description
+        self.comment = comment
+        self.macro_definition = macro_definition
         self.sql_name = sql_name
 
     def call_syntax(self) -> str:
@@ -132,27 +156,7 @@ class _DuckDBFunctionCall:
         )
 
     def __call__(self, *operands: object) -> TypedExpression:
-        arity = len(operands)
-        for overload in self._overloads:
-            if not overload.matches_arity(arity):
-                continue
-            try:
-                arguments = _coerce_operands_for_overload(operands, overload)
-            except TypeError:
-                continue
-            dependencies = _merge_dependencies(arguments)
-            sql_name = _render_function_name(overload)
-            rendered_args = ", ".join(argument.render() for argument in arguments)
-            sql = f"{sql_name}({rendered_args})" if arguments else f"{sql_name}()"
-            return _construct_expression(
-                sql,
-                return_type=overload.return_type,
-                dependencies=dependencies,
-                category=self._return_category,
-            )
-        arguments = [_coerce_function_operand(operand) for operand in operands]
-        dependencies = _merge_dependencies(arguments)
-        overload = self._select_overload(len(arguments))
+        overload, arguments, dependencies = self._prepare_call(operands)
         sql_name = _render_function_name(overload)
         rendered_args = ", ".join(argument.render() for argument in arguments)
         sql = f"{sql_name}({rendered_args})" if arguments else f"{sql_name}()"
@@ -162,6 +166,25 @@ class _DuckDBFunctionCall:
             dependencies=dependencies,
             category=self._return_category,
         )
+
+    def _prepare_call(
+        self,
+        operands: tuple[object, ...],
+    ) -> tuple[DuckDBFunctionDefinition, list[TypedExpression], frozenset[ExpressionDependency]]:
+        arity = len(operands)
+        for overload in self._overloads:
+            if not overload.matches_arity(arity):
+                continue
+            try:
+                arguments = _coerce_operands_for_overload(operands, overload)
+            except TypeError:
+                continue
+            dependencies = _merge_dependencies(arguments)
+            return overload, arguments, dependencies
+        arguments = [_coerce_function_operand(operand) for operand in operands]
+        dependencies = _merge_dependencies(arguments)
+        overload = self._select_overload(len(arguments))
+        return overload, arguments, dependencies
 
     def _select_overload(self, argument_count: int) -> DuckDBFunctionDefinition:
         for overload in self._overloads:
@@ -174,6 +197,45 @@ class _DuckDBFunctionCall:
         """Return structured signatures for all overloads."""
 
         return self._signatures
+
+
+class _DuckDBFilterFunctionCall(_DuckDBFunctionCall):
+    """Aggregate wrapper that renders ``FILTER (WHERE ...)`` calls."""
+
+    def __init__(
+        self,
+        overloads: Sequence[DuckDBFunctionDefinition],
+        *,
+        return_category: str,
+    ) -> None:
+        super().__init__(overloads, return_category=return_category)
+        self._filter_type = BooleanType("BOOLEAN")
+        self._is_filter_variant = True
+        base_doc = self.__doc__ or ""
+        note = (
+            "\n\nAccepts a typed boolean predicate as the first argument and renders"
+            " ``FILTER (WHERE ...)`` around the aggregate call."
+        )
+        self.__doc__ = (base_doc.rstrip() + note).rstrip()
+
+    def __call__(self, *operands: object) -> TypedExpression:
+        if not operands:
+            msg = "Filter aggregates require a predicate argument"
+            raise TypeError(msg)
+        filter_operand, *rest = operands
+        predicate = _coerce_function_operand(filter_operand, self._filter_type)
+        overload, arguments, dependencies = self._prepare_call(tuple(rest))
+        combined_dependencies = dependencies.union(predicate.dependencies)
+        sql_name = _render_function_name(overload)
+        rendered_args = ", ".join(argument.render() for argument in arguments)
+        call_sql = f"{sql_name}({rendered_args})" if arguments else f"{sql_name}()"
+        sql = f"{call_sql} FILTER (WHERE {predicate.render()})"
+        return _construct_expression(
+            sql,
+            return_type=overload.return_type,
+            dependencies=combined_dependencies,
+            category=self._return_category,
+        )
 
     @property
     def function_type(self) -> str:
@@ -372,7 +434,11 @@ def _definition_to_signature(
         function_type=definition.function_type,
         return_type=definition.return_type,
         parameter_types=definition.parameter_types,
+        parameters=definition.parameters,
         varargs=definition.varargs,
+        description=definition.description,
+        comment=definition.comment,
+        macro_definition=definition.macro_definition,
         sql_name=_render_function_name(definition),
     )
 
@@ -384,12 +450,42 @@ def _format_function_docstring(
 ) -> str:
     overload_count = len(signatures)
     overload_text = "overload" if overload_count == 1 else "overloads"
+    primary = signatures[0]
     header = (
-        f"DuckDB {signatures[0].function_type} function returning {return_category} "
+        f"DuckDB {primary.function_type} function returning {return_category} "
         f"results with {overload_count} {overload_text}."
     )
-    lines = [header, "", "Overloads:"]
-    lines.extend(f"- {signature}" for signature in signatures)
+    lines = [header]
+
+    description = (primary.description or "").strip()
+    comment = (primary.comment or "").strip()
+    if description:
+        lines.extend(("", description))
+    if comment and comment != description:
+        lines.extend(("", comment))
+
+    macro_definition = primary.macro_definition
+    if macro_definition:
+        lines.extend(("", "Macro definition:", "", macro_definition.strip()))
+
+    lines.append("")
+    lines.append("Overloads:")
+    for signature in signatures:
+        parts = [
+            f"{name}: {param.render()}"
+            for name, param in zip(signature.parameters, signature.parameter_types, strict=False)
+        ]
+        if len(signature.parameter_types) > len(signature.parameters):
+            remainder = signature.parameter_types[len(signature.parameters) :]
+            parts.extend(param.render() for param in remainder)
+        rendered_parameters = ", ".join(parts)
+        if signature.varargs is not None:
+            rendered_parameters = (
+                f"{rendered_parameters}, *{signature.varargs.render()}" if rendered_parameters else f"*{signature.varargs.render()}"
+            )
+        overload_line = f"- {signature.sql_name}({rendered_parameters}) -> {signature.return_annotation()}"
+        lines.append(overload_line)
+
     return "\n".join(lines)
 
 
@@ -413,10 +509,40 @@ def _construct_expression(
 
 
 from ._generated_function_namespaces import (  # noqa: E402  pylint: disable=wrong-import-position
-    AggregateFunctionNamespace,
+    AggregateFunctionNamespace as _GeneratedAggregateFunctionNamespace,
     ScalarFunctionNamespace,
     WindowFunctionNamespace,
 )
+
+
+class AggregateFunctionNamespace(_GeneratedAggregateFunctionNamespace):
+    """Augmented aggregate namespace with dynamic function dispatch."""
+
+    def min_by(
+        self,
+        value: TypedExpression,
+        order: TypedExpression,
+    ) -> TypedExpression:
+        if isinstance(value, NumericExpression):
+            return self.Numeric.min_by(value, order)
+        if isinstance(value, VarcharExpression):
+            return self.Varchar.min_by(value, order)
+        if isinstance(value, BlobExpression):
+            return self.Blob.min_by(value, order)
+        return self.Generic.min_by(value, order)
+
+    def max_by(
+        self,
+        value: TypedExpression,
+        order: TypedExpression,
+    ) -> TypedExpression:
+        if isinstance(value, NumericExpression):
+            return self.Numeric.max_by(value, order)
+        if isinstance(value, VarcharExpression):
+            return self.Varchar.max_by(value, order)
+        if isinstance(value, BlobExpression):
+            return self.Blob.max_by(value, order)
+        return self.Generic.max_by(value, order)
 
 
 class DuckDBFunctionNamespace:  # pylint: disable=too-few-public-methods

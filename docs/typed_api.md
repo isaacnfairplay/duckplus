@@ -3,6 +3,8 @@
 > **Note**
 > Updated typed expression documentation is hosted at
 > {doc}`versions/1.0/core/typed_expressions <versions/1.0/core/typed_expressions>`.
+> The full DuckDB function catalog for DuckPlus 1.1 is available at
+> {doc}`versions/1.1/api/typed/function_catalog <versions/1.1/api/typed/function_catalog>`.
 
 DuckPlus exposes a typed expression builder that mirrors DuckDB's type system. Expressions record their DuckDB type metadata and column or table dependencies so downstream helpers can validate usage across complex queries.
 
@@ -185,6 +187,11 @@ prefix_match = ducktype.Functions.Scalar.Boolean.starts_with(
 ```
 
 The generated stubs advertise the return expression type so tools such as mypy and language servers understand the chaining semantics.
+
+Function docstrings now embed DuckDB's catalog metadata, surfacing parameter
+names, type signatures, macro definitions, and inline comments directly in your
+editor. Each overload lists its schema-qualified SQL form so the generated
+helpers remain aligned with DuckDB upgrades without manual bookkeeping.
 
 ## Type Metadata
 

@@ -16,8 +16,8 @@ project = "DuckPlus"
 author = "DuckPlus maintainers"
 current_year = _dt.date.today().year
 copyright = f"{current_year}, {author}"
-release = "1.0.0"
-version = "1.0"
+release = "1.1.0"
+version = "1.1"
 
 extensions = [
     "myst_parser",
@@ -102,8 +102,8 @@ html_context = {
 smv_tag_whitelist = r"^v\d+\.\d+\.\d+$"
 smv_branch_whitelist = r".*"
 smv_remote_whitelist = r"^origin$"
-smv_latest_version = "1.0"
-smv_rename_latest_version = ("1.0", "latest")
+smv_latest_version = "1.1"
+smv_rename_latest_version = ("1.1", "latest")
 smv_released_pattern = r"^tags/v\d+\.\d+\.\d+$"
 smv_outputdir = "_build/html"
 
