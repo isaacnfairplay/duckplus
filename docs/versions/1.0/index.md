@@ -43,6 +43,7 @@ io/file_append
 community_extensions
 schema_management
 practitioner_demos
+api/index
 ```
 
 If you are upgrading from an earlier preview, the {doc}`getting_started`
@@ -50,3 +51,6 @@ chapter highlights the stable import paths, while the deep-dive guides explain
 how each helper composes with DuckDB. For a tour of real-world usage,
 {doc}`practitioner_demos` showcases language server walkthroughs, notebooks, and
 the deterministic ``sales_pipeline`` project that powers many of the examples.
+The {doc}`api/index` reference documents every public class, method, and
+function in the 1.0 API surface so static tooling and application developers can
+reason about DuckPlus without inspecting the source code.
