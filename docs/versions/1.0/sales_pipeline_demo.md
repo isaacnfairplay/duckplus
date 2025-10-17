@@ -6,7 +6,9 @@ primitives in a realistic reporting scenario.  It seeds a managed
 relations, derives enriched metrics, and aggregates the results for leadership
 reporting.  The example returns a
 :class:`~duckplus.examples.sales_pipeline.SalesDemoReport` dataclass so that tests
-and documentation can embed the generated artefacts directly.
+and documentation can embed the generated artefacts directly.  The module ships
+with docstrings that mirror this page, making it easy to jump between prose and
+code while investigating.
 
 ## Running the walkthrough
 
@@ -17,6 +19,12 @@ summaries::
 
 The command prints region-level and channel-level results followed by a sample
 SELECT statement emitted by the typed builder.
+
+```{tip}
+The demo requires no external data sources—the dataset is synthesised from
+Python literals so it runs identically on every machine.  This makes it ideal
+for onboarding sessions or quick smoke tests when you upgrade DuckDB.
+```
 
 ## Preview rows
 
@@ -36,12 +44,16 @@ first five enriched rows are::
 
 The values mirror the tuples stored in
 :attr:`SalesDemoReport.preview_rows <duckplus.examples.sales_pipeline.SalesDemoReport.preview_rows>`.
+Because the dataclass captures both the enriched relation and its metadata, you
+can assert on ``report.preview_columns`` in tests to confirm column order and
+retain deterministic docs.
 
 ## Region performance
 
 ``SalesDemoReport.region_rows`` summarises return rates and revenue by sales
 region.  The deterministic output enables the documentation and tests to agree
-on the same numbers:
+on the same numbers.  The aggregation uses typed expressions for ``sum`` and
+``count_if`` to demonstrate how numeric helpers compose:
 
 | region | total_orders | net_revenue | high_value_orders | return_rate |
 | ------ | ------------ | ----------- | ----------------- | ----------- |
@@ -59,7 +71,9 @@ The channel summary surfaces repeat behaviour and contribution averages::
     ('partner', 2, 1, 139.965)
 
 These rows correspond to
-:attr:`SalesDemoReport.channel_rows <duckplus.examples.sales_pipeline.SalesDemoReport.channel_rows>`.
+:attr:`SalesDemoReport.channel_rows <duckplus.examples.sales_pipeline.SalesDemoReport.channel_rows>`.  Call
+``summarise_by_channel`` from the module when you need to recompute the relation
+for exploratory analysis.
 
 ## Typed projection example
 
@@ -78,4 +92,6 @@ replaces the ``service_tier`` column with a computed label while falling back to
     FROM enriched_orders
 
 Because the SELECT builder is dependency-aware, the optional clauses disappear
-if an upstream relation omits ``return_reason`` or ``net_revenue``.
+if an upstream relation omits ``return_reason`` or ``net_revenue``.  Reuse the
+``build_enriched_orders`` helper in your own scripts when you want to add new
+metrics or persist the intermediate relation to disk.

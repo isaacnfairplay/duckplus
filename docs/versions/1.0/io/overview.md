@@ -3,6 +3,8 @@
 DuckPlus mirrors DuckDB's file readers while integrating with
 :class:`~duckplus.duckcon.DuckCon`. Each helper expects an open manager and
 returns an immutable :class:`~duckplus.relation.Relation` with cached metadata.
+The functions live in :mod:`duckplus.io` and intentionally avoid ``**kwargs`` so
+editor completions surface every DuckDB option.
 
 ```python
 from pathlib import Path
@@ -40,6 +42,10 @@ with manager:
     )
 ```
 
+Pass ``lazy=True`` to stream large CSVs lazily—DuckPlus will propagate the
+parameter to DuckDB, allowing you to chain transformations before triggering
+materialisation.
+
 ## Parquet reader
 
 :meth:`duckplus.io.read_parquet` mirrors DuckDB's keyword arguments, including
@@ -62,8 +68,36 @@ relation = io.read_parquet(
 
 The IO module extends to DuckDB's JSON readers, Arrow integration, and
 community-extension backed connectors like Excel and nano-ODBC. Each helper keeps
-parameters explicit so scripts remain self-documenting.
+parameters explicit so scripts remain self-documenting. Highlights include:
+
+- :func:`duckplus.io.read_json` for line-delimited JSON, with ``maximum_depth``
+  and ``format`` options mirroring DuckDB's table function.
+- :func:`duckplus.io.read_arrow` for zero-copy reads from Arrow datasets or
+  ``pyarrow.dataset.Dataset`` objects.
+- :meth:`duckplus.relation.Relation.from_excel` for Excel workbooks, which will
+  automatically install the ``excel`` extension when missing.
 
 Consult the docstrings in :mod:`duckplus.io` for the full argument lists. When an
 extension is required, DuckPlus will attempt to install it automatically or
 raise an actionable message if the environment is offline.
+
+## Composing with custom helpers
+
+:class:`DuckCon <duckplus.duckcon.DuckCon>` exposes
+:meth:`~duckplus.duckcon.DuckCon.register_helper` and
+:meth:`~duckplus.duckcon.DuckCon.apply_helper` so you can wrap bespoke data
+sources. Register a callable that accepts the open connection, then return a
+DuckPlus relation to remain within the immutable flow:
+
+```python
+def read_yaml(connection, path):
+    return connection.sql("SELECT * FROM read_json(? ::VARCHAR)", [str(path)])
+
+manager.register_helper("read_yaml", read_yaml)
+
+with manager:
+    relation = manager.apply_helper("read_yaml", Path("data.yaml"))
+```
+
+The returned relation captures metadata like any built-in reader, so downstream
+validation and schema utilities continue to work.
