@@ -99,24 +99,24 @@ case = (
 Both helpers keep dependencies precise, ensuring that relation operations flag a
 missing ``amount`` column before executing SQL.
 
-## Function catalogue
+## Scalar helpers
 
-DuckPlus exposes curated metadata for DuckDB functions via
-:mod:`duckplus.typed.functions`. Each namespace lists the scalar, aggregate, and
-window functions the DSL understands, which is useful for editor integrations or
-dynamic form builders:
+Scalar helpers surface directly on the typed expressions. This keeps editor
+integrations ergonomic while maintaining dependency tracking:
 
 ```python
-from duckplus.typed import functions
-
-print(functions.SCALAR_FUNCTIONS["lower"].parameters)
+abs_distance = ducktype.Numeric("distance").abs()
+snippet = ducktype.Varchar("description").slice(1, 5)
 ```
 
-When the DSL lacks a direct helper for a DuckDB built-in, fall back to the
-``raw`` constructor on the appropriate factory to inject SQL while still
-benefiting from dependency tracking. For example,
-``ducktype.Numeric.raw("great_circle_distance(lat, lon)")`` yields a typed
-expression with no dependencies.
+Factory namespaces also expose ``Aggregate`` helpers mirroring DuckDB's built-in
+functions, making it straightforward to aggregate literal columns without
+building the expression first:
+
+```python
+count_all = ducktype.Numeric.Aggregate.count()
+latest_event = ducktype.Generic.Aggregate.max("event_timestamp")
+```
 
 ## Select builder
 

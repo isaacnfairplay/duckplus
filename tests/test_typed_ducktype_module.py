@@ -5,7 +5,6 @@ from __future__ import annotations
 from duckplus import (
     Blob as TopLevelBlob,
     Boolean as TopLevelBoolean,
-    Functions as TopLevelFunctions,
     Generic as TopLevelGeneric,
     Numeric as TopLevelNumeric,
     Varchar as TopLevelVarchar,
@@ -15,7 +14,6 @@ from duckplus import (
 from duckplus.typed.ducktype import (
     Blob,
     Boolean,
-    Functions,
     Generic,
     Numeric,
     Varchar,
@@ -38,7 +36,6 @@ def test_ducktype_module_factory_aliases_are_identical() -> None:
     assert Boolean is expression_ducktype.Boolean
     assert Blob is expression_ducktype.Blob
     assert Generic is expression_ducktype.Generic
-    assert Functions is expression_ducktype.Functions
 
 
 def test_ducktype_module_select_helper() -> None:
@@ -65,7 +62,6 @@ def test_duckplus_module_re_exports_typed_factories() -> None:
     assert TopLevelBoolean is expression_ducktype.Boolean
     assert TopLevelBlob is expression_ducktype.Blob
     assert TopLevelGeneric is expression_ducktype.Generic
-    assert TopLevelFunctions is expression_ducktype.Functions
 
     builder = top_level_select().column("1")
     expected = expression_ducktype.select().column("1")

@@ -66,16 +66,12 @@ total_revenue = ducktype.Numeric("revenue").sum()
 mean_discount = ducktype.Numeric("discount").avg()
 ```
 
-Raw helpers accept explicit dependency metadata for advanced scenarios such as table-level lineage tracking:
+When you need to aggregate directly from the factory without first building an
+expression, use the ``Aggregate`` helpers on each namespace:
 
 ```python
-from duckplus.typed import ExpressionDependency
-
-orders_count = ducktype.Numeric.raw(
-    "count(*)",
-    dependencies=[("orders", None)],
-)
-assert orders_count.dependencies == {ExpressionDependency.table("orders")}
+orders_count = ducktype.Numeric.Aggregate.count()
+recent_revenue = ducktype.Numeric.Aggregate.sum("revenue")
 ```
 
 ## Window Functions
@@ -172,30 +168,22 @@ projection = configure_builder().build_select_list(
 assert projection == '"total", "discount", * REPLACE ("net_total" AS "net")'
 ```
 
-## Function Namespaces
+## Scalar Helpers
 
-The DuckDB function catalog is exposed via `ducktype.Functions` with scalar, aggregate, and window namespaces. Each namespace is grouped by return type for discoverability.
+Scalar helpers surface as instance methods on the typed expressions themselves.
+This keeps the API discoverable and removes the need for a central function
+registry:
 
 ```python
-abs_value = ducktype.Functions.Scalar.Numeric.abs(ducktype.Numeric("balance"))
-substring = ducktype.Functions.Scalar.Varchar.substr(
-    ducktype.Varchar("name"),
-    ducktype.Numeric.literal(1),
-    ducktype.Numeric.literal(3),
-)
-rolling_sum = ducktype.Functions.Window.Numeric.sum(ducktype.Numeric("sales"))
-prefix_match = ducktype.Functions.Scalar.Boolean.starts_with(
-    ducktype.Varchar("name"),
-    "VIP",
-)
+abs_value = ducktype.Numeric("balance").abs()
+substring = ducktype.Varchar("name").slice(1, 3)
+rolling_sum = ducktype.Numeric("sales").sum().over(order_by=["event_date"])
+prefix_match = ducktype.Varchar("name").starts_with("VIP")
 ```
 
-The generated stubs advertise the return expression type so tools such as mypy and language servers understand the chaining semantics.
-
-Function docstrings now embed DuckDB's catalog metadata, surfacing parameter
-names, type signatures, macro definitions, and inline comments directly in your
-editor. Each overload lists its schema-qualified SQL form so the generated
-helpers remain aligned with DuckDB upgrades without manual bookkeeping.
+These methods return typed expressions that preserve dependencies and DuckDB
+type metadata, so downstream chaining behaves exactly like column-based
+expressions.
 
 ## Type Metadata
 

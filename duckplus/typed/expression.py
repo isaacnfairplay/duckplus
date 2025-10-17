@@ -28,14 +28,10 @@ from .select import SelectStatementBuilder
 
 
 class DuckTypeNamespace:
-    """Container exposing typed expression factories and DuckDB functions."""
+    """Container exposing typed expression factories."""
 
     def __init__(self) -> None:
-        from .functions import DuckDBFunctionNamespace  # Local import to avoid cycle
-
-        functions = DuckDBFunctionNamespace()
-        self.Functions = functions
-        self.Numeric = NumericFactory(functions)
+        self.Numeric = NumericFactory()
         self.Varchar = VarcharFactory()
         self.Boolean = BooleanFactory()
         self.Blob = BlobFactory()
@@ -43,6 +39,11 @@ class DuckTypeNamespace:
 
     def select(self) -> SelectStatementBuilder:
         return SelectStatementBuilder()
+
+    def row_number(self) -> NumericExpression:
+        """Return a typed expression invoking ``ROW_NUMBER()``."""
+
+        return NumericExpression._raw("row_number()")
 
 
 ducktype = DuckTypeNamespace()

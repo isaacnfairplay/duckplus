@@ -10,5 +10,6 @@ jump into the enriched docstrings or explore the companion notebooks.
 language_server_demo
 reference/duckplus/examples/pi_demo/index
 reference/duckplus/examples/sales_pipeline/index
+traceability_pipeline_demo
 duckdb_demos/index
 ```

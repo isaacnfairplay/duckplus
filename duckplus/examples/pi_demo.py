@@ -85,8 +85,8 @@ def build_circle_expressions(radius_column: str = "radius") -> CircleExpressions
     """
 
     radius = ducktype.Numeric(radius_column)
-    pi_literal = ducktype.Numeric.raw(
-        "3.141592653589793::DOUBLE",
+    pi_literal = ducktype.Numeric.literal(
+        3.141592653589793,
         duck_type=NumericType("DOUBLE"),
     )
     area = pi_literal * radius * radius

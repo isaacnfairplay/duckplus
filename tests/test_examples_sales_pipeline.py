@@ -82,5 +82,5 @@ def test_run_sales_demo_returns_projection_sql() -> None:
     ]
     assert len(report.preview_rows) == 5
     assert "SELECT * REPLACE" in report.projection_sql
-    assert 'CASE WHEN "return_reason" IS NULL' in report.projection_sql
+    assert 'CASE WHEN ("return_reason" IS NULL)' in report.projection_sql
     assert report.projection_sql.strip().endswith("FROM enriched_orders")

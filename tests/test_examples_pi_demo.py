@@ -11,9 +11,9 @@ from duckplus.typed import ExpressionDependency
 def test_build_circle_expressions_uses_numeric_dependencies() -> None:
     expressions = pi_demo.build_circle_expressions("r")
     assert expressions.radius.render() == '"r"'
-    assert expressions.area.render() == '((3.141592653589793::DOUBLE * "r") * "r")'
+    assert expressions.area.render() == '((3.141592653589793 * "r") * "r")'
     assert expressions.area.dependencies == {ExpressionDependency.column("r")}
-    assert expressions.circumference.render() == '((3.141592653589793::DOUBLE * "r") * 2)'
+    assert expressions.circumference.render() == '((3.141592653589793 * "r") * 2)'
 
 
 def test_project_circle_metrics_aliases_columns() -> None:
@@ -21,8 +21,8 @@ def test_project_circle_metrics_aliases_columns() -> None:
     rendered = [expression.render() for expression in projection]
     assert rendered == [
         '"r" AS "radius"',
-        '((3.141592653589793::DOUBLE * "r") * "r") AS "area"',
-        '((3.141592653589793::DOUBLE * "r") * 2) AS "circumference"',
+        '((3.141592653589793 * "r") * "r") AS "area"',
+        '((3.141592653589793 * "r") * 2) AS "circumference"',
     ]
 
 
@@ -30,8 +30,8 @@ def test_summarise_circle_metrics_renders_aggregations() -> None:
     summary = pi_demo.summarise_circle_metrics("r")
     rendered = [expression.render() for expression in summary]
     assert rendered == [
-        'sum(((3.141592653589793::DOUBLE * "r") * "r")) AS "total_area"',
-        'sum(((3.141592653589793::DOUBLE * "r") * 2)) AS "total_circumference"',
+        'sum(((3.141592653589793 * "r") * "r")) AS "total_area"',
+        'sum(((3.141592653589793 * "r") * 2)) AS "total_circumference"',
     ]
 
 
@@ -55,4 +55,4 @@ def test_build_demo_queries_uses_projection_and_summary() -> None:
     assert "summary" in queries
     assert queries["projection"].startswith("SELECT ")
     assert '"r" AS "radius"' in queries["projection"]
-    assert 'sum(((3.141592653589793::DOUBLE * "r") * 2))' in queries["summary"]
+    assert 'sum(((3.141592653589793 * "r") * 2))' in queries["summary"]

@@ -131,8 +131,9 @@ from typing import Iterable
 
 from duckplus.duckcon import DuckCon
 from duckplus.relation import Relation
-from duckplus.typed import ExpressionDependency, ducktype
+from duckplus.typed import ducktype
 from duckplus.typed.expression import TypedExpression
+from duckplus.typed.expressions.numeric import NumericExpression
 
 __all__ = [
     "SalesDemoData",
@@ -266,23 +267,9 @@ def build_enriched_orders(orders: Relation, returns: Relation) -> Relation:
     net_revenue = total - shipping
     tax_amount = net_revenue * ducktype.Numeric.literal(0.07)
     contribution = net_revenue - tax_amount
-    total_sql = total.render()
-    dependency_tuple = tuple(total.dependencies)
-    threshold_200 = ducktype.Numeric.literal(200).render()
-    threshold_250 = ducktype.Numeric.literal(250).render()
-    threshold_350 = ducktype.Numeric.literal(350).render()
-    high_value = ducktype.Boolean.raw(
-        f"{total_sql} >= {threshold_250}",
-        dependencies=dependency_tuple,
-    )
-    enterprise_condition = ducktype.Boolean.raw(
-        f"{total_sql} >= {threshold_350}",
-        dependencies=dependency_tuple,
-    )
-    growth_condition = ducktype.Boolean.raw(
-        f"{total_sql} >= {threshold_200}",
-        dependencies=dependency_tuple,
-    )
+    high_value = total >= ducktype.Numeric.literal(250)
+    enterprise_condition = total >= ducktype.Numeric.literal(350)
+    growth_condition = total >= ducktype.Numeric.literal(200)
     service_tier = (
         ducktype.Varchar.case()
         .when(enterprise_condition, "enterprise")
@@ -290,11 +277,7 @@ def build_enriched_orders(orders: Relation, returns: Relation) -> Relation:
         .else_("starter")
         .end()
     )
-    return_dependency = ExpressionDependency.column("return_reason")
-    is_returned = ducktype.Boolean.raw(
-        '"return_reason" IS NOT NULL',
-        dependencies=(return_dependency,),
-    )
+    is_returned = ducktype.Generic("return_reason").is_not_null()
 
     enriched = joined.add(
         net_revenue=net_revenue,
@@ -324,12 +307,12 @@ def build_enriched_orders(orders: Relation, returns: Relation) -> Relation:
     )
 
 
-def _count(expression: TypedExpression) -> TypedExpression:
-    return ducktype.Functions.Aggregate.Numeric.count(expression)
+def _count(expression: TypedExpression) -> NumericExpression:
+    return ducktype.Numeric.Aggregate.count(expression)
 
 
-def _count_if(expression: TypedExpression) -> TypedExpression:
-    return ducktype.Functions.Aggregate.Numeric.count_if(expression)
+def _count_if(expression: TypedExpression) -> NumericExpression:
+    return ducktype.Numeric.Aggregate.count_if(expression)
 
 
 def summarise_by_region(enriched: Relation) -> Relation:
@@ -343,13 +326,8 @@ def summarise_by_region(enriched: Relation) -> Relation:
 
     total_orders = _count(ducktype.Numeric("order_id"))
     returned_orders = _count_if(ducktype.Boolean("is_returned"))
-    rate_dependencies = tuple(
-        returned_orders.dependencies.union(total_orders.dependencies)
-    )
-    return_rate = ducktype.Numeric.raw(
-        f"({returned_orders.render()} / NULLIF({total_orders.render()}, 0))",
-        dependencies=rate_dependencies,
-    )
+    denominator = total_orders.nullif(ducktype.Numeric.literal(0))
+    return_rate = returned_orders / denominator
 
     return enriched.aggregate(
         "region",
@@ -402,10 +380,7 @@ def render_projection_sql(enriched: Relation) -> str:
             "return_reason": (
                 ducktype.Varchar.case()
                 .when(
-                    ducktype.Boolean.raw(
-                        '"return_reason" IS NULL',
-                        dependencies=(ExpressionDependency.column("return_reason"),),
-                    ),
+                    ducktype.Generic("return_reason").is_null(),
                     "fulfilled",
                 )
                 .else_(ducktype.Varchar("return_reason"))
@@ -428,10 +403,10 @@ def _capture_rows(
     order_by: Iterable[str] | None = None,
 ) -> list[tuple[object, ...]]:
     if order_by is None:
-        ordered = relation.relation
+        ordered = relation
     else:
-        ordered = relation.relation.order(", ".join(order_by))
-    return list(ordered.fetchall())
+        ordered = relation.order_by(*order_by)
+    return list(ordered.relation.fetchall())
 
 
 # pylint: disable=too-many-locals

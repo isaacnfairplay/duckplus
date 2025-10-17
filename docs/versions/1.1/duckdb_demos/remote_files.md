@@ -17,17 +17,12 @@ with manager as connection:
         manager,
         "https://storage.googleapis.com/duckdb-blobs/nyc-taxi/trips.parquet",
     )
-    weekday = nyc.add(
-        weekday=ducktype.Numeric.raw(
-            "EXTRACT('dow' FROM pickup_datetime)",
-            dependencies=["pickup_datetime"],
-        ),
-    )
-    top_fares = weekday.aggregate(
-        ("weekday",),
+    top_fares = nyc.aggregate(
+        ("passenger_count",),
+        trips=ducktype.Numeric.Aggregate.count(),
         total=ducktype.Numeric("total_amount").sum(),
     )
-    print(top_fares.relation.order("total", desc=True).limit(5).fetchall())
+    print(top_fares.order_by("total DESC").relation.limit(5).fetchall())
 ```
 
 The ``httpfs`` extension only needs to be installed once per machine. When the

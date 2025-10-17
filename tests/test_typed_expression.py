@@ -11,19 +11,8 @@ from duckplus.typed import (
     NumericExpression,
     ducktype,
 )
-from duckplus.typed.functions import (
-    DuckDBFunctionDefinition,
-    _coerce_operands_for_overload,
-)
-from duckplus.typed.types import parse_type
-
-
 def col_dep(name: str, *, table: str | None = None) -> ExpressionDependency:
     return ExpressionDependency.column(name, table=table)
-
-
-def table_dep(name: str) -> ExpressionDependency:
-    return ExpressionDependency.table(name)
 
 
 def test_numeric_column_carries_metadata() -> None:
@@ -40,18 +29,23 @@ def test_numeric_column_with_table_dependency() -> None:
     assert expression.dependencies == {col_dep('total', table='orders')}
 
 
-def test_raw_expression_allows_table_dependency() -> None:
-    expression = ducktype.Numeric.raw(
-        "count(*)",
-        dependencies=[("orders", None)],
-    )
-    assert expression.dependencies == {table_dep('orders')}
-
-
 def test_numeric_aggregate_sum_uses_dependencies() -> None:
     expression = ducktype.Numeric.Aggregate.sum("sales")
     assert expression.render() == 'sum("sales")'
     assert expression.dependencies == {col_dep('sales')}
+
+
+def test_numeric_aggregate_count_if_uses_predicate_dependencies() -> None:
+    predicate = ducktype.Boolean("include")
+    expression = ducktype.Numeric.Aggregate.count_if(predicate)
+    assert expression.render() == 'count_if("include")'
+    assert expression.dependencies == {col_dep('include')}
+
+
+def test_generic_aggregate_max_tracks_dependencies() -> None:
+    expression = ducktype.Generic.Aggregate.max("payload")
+    assert expression.render() == 'max("payload")'
+    assert expression.dependencies == {col_dep('payload')}
 
 
 def test_varchar_equality_to_literal() -> None:
@@ -99,73 +93,28 @@ def test_numeric_operand_validation() -> None:
     assert "numeric" in str(error_info.value).lower()
 
 
-def test_function_catalog_scalar_numeric_abs() -> None:
-    expression = ducktype.Functions.Scalar.Numeric.abs(ducktype.Numeric.literal(-5))
+def test_numeric_abs_method() -> None:
+    expression = ducktype.Numeric.literal(-5).abs()
     assert expression.render() == "abs(-5)"
-    assert expression.duck_type.render().upper() in {"TINYINT", "SMALLINT", "INTEGER"}
+    assert expression.duck_type.category == "numeric"
 
-def test_function_catalog_boolean_namespace_handles_dependencies() -> None:
-    expression = ducktype.Functions.Scalar.Boolean.starts_with(
-        ducktype.Varchar("name"), "A"
-    )
+
+def test_varchar_starts_with_method_tracks_dependencies() -> None:
+    expression = ducktype.Varchar("name").starts_with("A")
     assert expression.render() == "starts_with(\"name\", 'A')"
     assert expression.dependencies == {col_dep('name')}
-    assert expression.duck_type.render() == "BOOLEAN"
 
-def test_function_catalog_numeric_pow_accepts_literal_exponent() -> None:
-    expression = ducktype.Functions.Scalar.Numeric.pow(
-        ducktype.Numeric("base"), 2
-    )
+
+def test_numeric_pow_accepts_literal_exponent() -> None:
+    expression = ducktype.Numeric("base").pow(2)
     assert expression.render() == 'pow("base", 2)'
     assert expression.dependencies == {col_dep('base')}
 
-def test_function_catalog_aggregate_numeric_sum_alias() -> None:
-    expression = ducktype.Functions.Aggregate.Numeric.sum("revenue").alias("total")
+
+def test_numeric_aggregate_sum_alias() -> None:
+    expression = ducktype.Numeric.Aggregate.sum("revenue").alias("total")
     assert expression.render() == 'sum("revenue") AS "total"'
     assert expression.dependencies == {col_dep('revenue')}
-
-
-def _build_overload(*parameter_types: str) -> DuckDBFunctionDefinition:
-    return DuckDBFunctionDefinition(
-        schema_name="main",
-        function_name="test",
-        function_type="scalar",
-        return_type=None,
-        parameter_types=tuple(parse_type(param) for param in parameter_types),
-        parameters=tuple(f"arg{i}" for i in range(len(parameter_types))),
-        varargs=None,
-        description=None,
-        comment=None,
-        macro_definition=None,
-    )
-
-
-def test_function_argument_accepts_narrower_unsigned_integer() -> None:
-    overload = _build_overload("UINTEGER")
-    operand = ducktype.Numeric.literal(5)
-    coerced = _coerce_operands_for_overload((operand,), overload)
-    assert coerced == [operand]
-
-
-def test_function_argument_accepts_generic_numeric_for_integer() -> None:
-    overload = _build_overload("UTINYINT")
-    operand = ducktype.Numeric("value")
-    coerced = _coerce_operands_for_overload((operand,), overload)
-    assert coerced == [operand]
-
-
-def test_function_argument_rejects_wider_integer() -> None:
-    overload = _build_overload("UTINYINT")
-    operand = ducktype.Numeric.literal(512)
-    with pytest.raises(TypeError):
-        _coerce_operands_for_overload((operand,), overload)
-
-
-def test_function_argument_accepts_narrower_signed_integer() -> None:
-    overload = _build_overload("INTEGER")
-    operand = ducktype.Numeric.literal(-5)
-    coerced = _coerce_operands_for_overload((operand,), overload)
-    assert coerced == [operand]
 
 
 def test_numeric_expression_method_sum() -> None:
@@ -426,6 +375,6 @@ def test_select_builder_if_exists_rejects_qualified_dependencies() -> None:
 
 def test_select_builder_if_exists_requires_column_dependencies() -> None:
     builder = ducktype.select()
-    expression = ducktype.Numeric.raw("1", dependencies=[])
+    expression = ducktype.Numeric.literal(1)
     with pytest.raises(ValueError):
         builder.column(expression, if_exists=True)

@@ -29,16 +29,22 @@ with manager as connection:
     ranked = base.add(running_total=running)
     pivoted = ranked.aggregate(
         (),
-        north_total=ducktype.Numeric.raw(
-            "SUM(CASE WHEN region = 'north' THEN amount ELSE 0 END)",
-            dependencies=["region", "amount"],
+        north_total=(
+            ducktype.Numeric.case()
+            .when(region == "north", amount)
+            .else_(ducktype.Numeric.literal(0))
+            .end()
+            .sum()
         ),
-        south_total=ducktype.Numeric.raw(
-            "SUM(CASE WHEN region = 'south' THEN amount ELSE 0 END)",
-            dependencies=["region", "amount"],
+        south_total=(
+            ducktype.Numeric.case()
+            .when(region == "south", amount)
+            .else_(ducktype.Numeric.literal(0))
+            .end()
+            .sum()
         ),
     )
-    print(ranked.relation.order("region", "amount").fetchall())
+    print(ranked.order_by("region", "amount").relation.fetchall())
     print(pivoted.relation.fetchall())
 ```
 

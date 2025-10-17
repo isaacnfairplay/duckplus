@@ -53,7 +53,7 @@ class BlobExpression(TypedExpression):
         )
 
     @classmethod
-    def raw(
+    def _raw(
         cls,
         sql: str,
         *,
@@ -83,14 +83,14 @@ class BlobFactory:
     def literal(self, value: bytes) -> BlobExpression:
         return BlobExpression.literal(value)
 
-    def raw(
+    def _raw(
         self,
         sql: str,
         *,
         dependencies: Iterable[DependencyLike] = (),
         duck_type: DuckDBType | None = None,
     ) -> BlobExpression:
-        return BlobExpression.raw(
+        return BlobExpression._raw(
             sql,
             dependencies=dependencies,
             duck_type=duck_type,
