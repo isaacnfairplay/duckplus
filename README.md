@@ -1,58 +1,140 @@
-# DuckPlus
+# DuckPlus README
 
-DuckPlus provides a typed expression DSL and ergonomic helpers on top of DuckDB. The
-library wraps DuckDB relations with immutable helpers so data practitioners can
-compose transformations safely while preserving column metadata.
+A tightly scoped field guide for building reliable DuckDB workloads with DuckPlus.
+It captures the core patterns, design opinions, and guardrails encoded in the
+codebase so an AI or human teammate can adopt the same defaults quickly.
 
-## Features
-- **Typed expressions** – Build SQL expressions fluently using Python type
-  wrappers that understand dependencies and aliases.
-- **Relation helpers** – Chain immutable helpers for column management,
-  filtering, aggregation, joins, IO operations, and more.
-- **Extension support** – Enable DuckDB bundled and community extensions with
-  simple helper methods.
-- **Documentation** – Extensive guides live in `docs/` and are published at
-  [isaacnfairplay.github.io/duckplus](https://isaacnfairplay.github.io/duckplus/latest/).
+## TL;DR
+- Manage DuckDB connections with `DuckCon`; it installs optional extensions,
+  tracks helper functions, and guarantees cleanup through the context manager
+  protocol.【F:duckplus/duckcon.py†L35-L111】
+- Wrap every transformation in the immutable `Relation` layer so column names,
+  types, and dependencies stay validated as you compose pipelines.【F:duckplus/relation.py†L36-L142】【F:duckplus/relation.py†L466-L520】
+- Use `ducktype` factories for any SQL expression; they encode dependencies,
+  support aggregates, and drive the `select()` builder without raw strings.【F:duckplus/typed/ducktype.py†L1-L27】【F:duckplus/typed/expressions/numeric.py†L158-L235】
+- Prefer the I/O, schema, and table helpers exposed from the package root for
+  consistent error handling and identifier quoting.【F:duckplus/__init__.py†L7-L44】【F:duckplus/io/__init__.py†L1-L120】【F:duckplus/schema.py†L1-L118】【F:duckplus/table.py†L1-L64】
 
-## Installation
-```bash
-pip install duckplus
-```
+## Repository Layout
+| Area | Purpose | Highlights |
+| --- | --- | --- |
+| `duckplus/duckcon.py` | Connection lifecycle | Extension discovery, helper registry, strict context usage.【F:duckplus/duckcon.py†L35-L181】 |
+| `duckplus/relation.py` | Immutable relational DSL | Column/type caching, dependency validation, pandas/arrow/polars sampling.【F:duckplus/relation.py†L36-L231】 |
+| `duckplus/typed/` | Expression factories | Namespace-driven expression builders, aggregate factories, dependency graphs.【F:duckplus/typed/ducktype.py†L1-L27】【F:duckplus/typed/expressions/generic.py†L17-L135】 |
+| `duckplus/io/` | File readers | Normalised options, identifier quoting, connection guards for CSV/Parquet/JSON.【F:duckplus/io/__init__.py†L1-L194】 |
+| `duckplus/schema.py` | Schema diff tooling | Drift detection with warnings plus file-based comparisons.【F:duckplus/schema.py†L1-L140】 |
+| `duckplus/table.py` | Managed inserts | Cross-relation guardrails, automatic create/overwrite handling.【F:duckplus/table.py†L1-L64】 |
 
-## Quick start
-```python
-from duckplus import DuckCon, ducktype
+## Core Concepts & Opinions
+1. **Connection Safety First** – Always open `DuckCon` via `with DuckCon(...) as con:`.
+   The class guards extension installation, shared helper registration, and
+   enforces teardown even when errors surface.【F:duckplus/duckcon.py†L35-L114】
+2. **Immutable Relations** – Every `Relation` method returns a new wrapper so you
+   can stage transformations without side effects. The wrapper caches column
+   metadata and refuses to run if the originating `DuckCon` is closed, keeping
+   pipelines deterministic.【F:duckplus/relation.py†L36-L161】【F:duckplus/relation.py†L466-L520】
+3. **Typed Expressions over Strings** – Build SQL fragments through `ducktype`
+   factories. They know their upstream column dependencies, which lets helpers
+   detect missing columns and surface precise errors at composition time instead
+   of deferring to DuckDB runtime failures.【F:duckplus/relation.py†L466-L520】【F:duckplus/typed/ducktype.py†L1-L27】
+4. **Helper Registration Beats Raw SQL** – Use `DuckCon.register_helper` for I/O
+   or custom routines so callers can invoke them through `apply_helper` without
+   re-plumbing connections. The registry enforces unique names unless explicitly
+   overwritten.【F:duckplus/duckcon.py†L88-L147】
+5. **Schema Drift is a First-Class Signal** – Rely on `schema.diff_relations`
+   and `schema.diff_files` to compare datasets and emit warnings when types
+   change unexpectedly, instead of building ad-hoc checks.【F:duckplus/schema.py†L1-L140】
 
-with DuckCon() as con:
-    relation = con.sql("SELECT 1 AS id, 42 AS value")
-    enriched = (
-        relation
-        .add((ducktype.Numeric("value") * 2).alias("double_value"))
-        .transform(value=int)
-    )
-    print(enriched.to_df())
-```
+## Building Pipelines
+1. **Establish the connection**:
+   ```python
+   from duckplus import DuckCon
 
-## Development
-To work on DuckPlus locally, create a virtual environment and install the
-development dependencies:
+   with DuckCon(extra_extensions=("nanodbc",)) as con:
+       relation = con.sql("SELECT * FROM events")  # regular DuckDB relation
+   ```
+2. **Wrap into DuckPlus**:
+   ```python
+   from duckplus import Relation
 
-```bash
-pip install -e .[dev]
-```
+   events = Relation.from_relation(DuckCon(database=":memory:"), relation)
+   ```
+   Prefer retrieving relations directly through `DuckCon` helpers (see below)
+   so the wrapper captures the active connection automatically.【F:duckplus/relation.py†L210-L231】
+3. **Compose with typed expressions**:
+   ```python
+   from duckplus import ducktype
 
-Before opening a pull request, run the project quality checks:
+   enriched = (
+       events
+       .add(
+           (ducktype.Numeric("value") * 2).alias("double_value"),
+           newer=ducktype.Boolean("is_new").coalesce(False),
+       )
+       .transform(updated_at="updated_at::TIMESTAMP")
+   )
+   ```
+   `Relation.add` rejects unknown dependencies, duplicate aliases, and closed
+   connections before dispatching SQL, giving immediate feedback.【F:duckplus/relation.py†L466-L520】
+4. **Aggregate with builders**:
+   ```python
+   summary = (
+       enriched
+       .aggregate()
+       .agg(ducktype.Numeric.Aggregate.sum("double_value"), alias="total")
+       .agg(ducktype.Numeric.Aggregate.avg("value"), alias="avg_value")
+       .all()
+   )
+   ```
+   Aggregate factories encapsulate valid numeric operations and return typed
+   expressions ready for `Relation.aggregate()` builders.【F:duckplus/typed/expressions/numeric.py†L158-L235】
+5. **Export responsibly**:
+   ```python
+   from duckplus import io
 
-```bash
-mypy duckplus
-pylint duckplus
-pytest
-```
+   snapshot = io.read_parquet(
+       duckcon,
+       "data/events.parquet",
+       columns=["event_id", "value"],
+   )
+   ```
+   I/O wrappers normalise option aliases, quote identifiers, and keep parity with
+   DuckDB keyword arguments while still requiring an open connection.【F:duckplus/io/__init__.py†L1-L194】
 
-## Contributing
-Please review the roadmap in [`TODO.md`](TODO.md) to understand current
-priorities. Contributions are welcome via issues and pull requests. When adding
-features or bug fixes, include tests and documentation updates.
+## Tables & Persistence
+- Use `duckplus.Table` when inserting into managed DuckDB tables; it validates
+  that the source relation originates from the same `DuckCon` and optionally
+  creates or overwrites the destination in one call.【F:duckplus/table.py†L1-L64】
+- Prefer `Table.insert_relation` for raw DuckDB relations (e.g., produced by
+  bulk loaders) to reuse the same guardrails without wrapping first.【F:duckplus/table.py†L33-L64】
 
-## License
-DuckPlus is released under the MIT License.
+## Schema Verification Loop
+1. Profile candidate datasets via `Relation.null_ratios()` and
+   `Relation.row_count()` for quick health checks.【F:duckplus/relation.py†L70-L125】
+2. Use `schema.diff_relations(baseline, candidate)` to compare columns and types.
+   Enable `warn=True` (default) so type drift emits actionable warnings.【F:duckplus/schema.py†L1-L118】
+3. When working with files, delegate to `schema.diff_files` so DuckPlus handles
+   reader selection and option normalisation internally.【F:duckplus/schema.py†L118-L140】
+
+## Extension & Helper Patterns
+- Pass `extra_extensions` when creating `DuckCon` to auto-install community
+  extensions like `nanodbc` and `excel`; the class deduplicates requests and
+  orchestrates installation safely.【F:duckplus/duckcon.py†L47-L84】【F:duckplus/duckcon.py†L120-L181】
+- Call `duckcon.extensions()` to inspect installation status, including version
+  metadata, aliases, and source location for debugging environments.【F:duckplus/duckcon.py†L147-L206】
+- Register connection-aware helpers with `DuckCon.register_helper` then invoke
+  them through `apply_helper(name, ...)` so you never pass around raw
+  connections.【F:duckplus/duckcon.py†L88-L147】
+
+## Testing & Quality Gates
+- Run `pytest` for behavioural coverage, `mypy duckplus` for typing, `uvx` for
+  repository-specific validation (mirrors local policy), and `pylint duckplus`
+  for style enforcement before shipping changes.【F:AGENTS.md†L1-L6】
+- Documentation lives in `docs/` and is published via GitHub Pages; update it in
+  tandem with new features to keep the public site aligned.【F:docs/index.md†L1-L20】
+
+## Further Reading
+- Browse the published guides at
+  [isaacnfairplay.github.io/duckplus/latest](https://isaacnfairplay.github.io/duckplus/latest/).
+- Review `TODO.md` for roadmap context and preflight discovery questions that
+  inform future feature design.
