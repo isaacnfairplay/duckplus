@@ -21,8 +21,7 @@ pip install duckplus
 
 ## Quick start
 ```python
-from duckplus import DuckCon
-from duckplus.typed import ducktype
+from duckplus import DuckCon, ducktype
 
 with DuckCon() as con:
     relation = con.sql("SELECT 1 AS id, 42 AS value")

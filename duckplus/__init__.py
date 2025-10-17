@@ -4,7 +4,34 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-__all__ = ["DuckCon", "Relation", "Table", "io", "schema"]
+from . import typed  # pylint: disable=unused-import
+from .typed import (
+    Blob,
+    Boolean,
+    Functions,
+    Generic,
+    Numeric,
+    Varchar,
+    ducktype,
+    select,
+)
+
+__all__ = [
+    "DuckCon",
+    "Relation",
+    "Table",
+    "io",
+    "schema",
+    "typed",
+    "ducktype",
+    "Numeric",
+    "Varchar",
+    "Boolean",
+    "Blob",
+    "Generic",
+    "Functions",
+    "select",
+]
 
 try:  # pragma: no branch - small module guard
     from .duckcon import DuckCon
