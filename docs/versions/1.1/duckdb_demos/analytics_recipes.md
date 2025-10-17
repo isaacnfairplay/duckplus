@@ -28,7 +28,6 @@ with manager as connection:
 
     ranked = base.add(running_total=running)
     pivoted = ranked.aggregate(
-        (),
         north_total=(
             ducktype.Numeric.case()
             .when(region == "north", amount)
@@ -43,7 +42,7 @@ with manager as connection:
             .end()
             .sum()
         ),
-    )
+    ).all()
     print(ranked.order_by("region", "amount").relation.fetchall())
     print(pivoted.relation.fetchall())
 ```

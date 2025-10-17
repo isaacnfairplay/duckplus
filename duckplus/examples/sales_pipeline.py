@@ -330,12 +330,11 @@ def summarise_by_region(enriched: Relation) -> Relation:
     return_rate = returned_orders / denominator
 
     return enriched.aggregate(
-        "region",
         total_orders=total_orders,
         net_revenue=ducktype.Numeric("net_revenue").sum(),
         high_value_orders=_count_if(ducktype.Boolean("is_high_value")),
         return_rate=return_rate,
-    )
+    ).by("region")
 
 
 def summarise_by_channel(enriched: Relation) -> Relation:
@@ -348,11 +347,10 @@ def summarise_by_channel(enriched: Relation) -> Relation:
     """
 
     return enriched.aggregate(
-        "channel",
         total_orders=_count(ducktype.Numeric("order_id")),
         repeat_orders=_count_if(ducktype.Boolean("is_repeat")),
         average_contribution=ducktype.Numeric("contribution").avg(),
-    )
+    ).by("channel")
 
 
 def render_projection_sql(enriched: Relation) -> str:

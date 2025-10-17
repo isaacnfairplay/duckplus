@@ -44,11 +44,10 @@ Aggregation helpers live on the typed expression itself:
 
 ```python
 summary = base.aggregate(
-    ("customer",),
     total_sales=amount.sum(),
     average_sale=amount.avg(),
     largest_sale=amount.max(),
-)
+).by("customer")
 ```
 
 Aggregations can be filtered using :meth:`duckplus.typed.expressions.base.TypedExpression.filter` and

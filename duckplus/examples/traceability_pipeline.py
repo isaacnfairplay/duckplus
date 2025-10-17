@@ -189,12 +189,11 @@ def rank_program_candidates(
     )
 
     activity_summary = activity_log.aggregate(
-        ("program_name", "line_label"),
         seen_count=ducktype.Numeric.Aggregate.count(),
         last_seen=ducktype.Generic.Aggregate.max(
             ducktype.Generic("recorded_at")
         ),
-    )
+    ).by("program_name", "line_label")
 
     scored = matches.left_join(
         activity_summary,
@@ -301,12 +300,11 @@ def repair_unit_costs(events: Relation, price_snapshots: Relation) -> Relation:
 
     recent_prices = (
         price_snapshots.aggregate(
-            ("item_token", "route_hint", "station_hint"),
             recent_unit_cost=ducktype.Numeric.Aggregate.max_by(
                 ducktype.Numeric("unit_cost"),
                 ducktype.Generic("captured_at"),
             ),
-        )
+        ).by("item_token", "route_hint", "station_hint")
         .add(
             route_key=ducktype.Varchar("route_hint").coalesce("__NULL__"),
             station_key=ducktype.Varchar("station_hint").coalesce("__NULL__"),
@@ -314,9 +312,8 @@ def repair_unit_costs(events: Relation, price_snapshots: Relation) -> Relation:
     )
 
     item_prices = price_snapshots.aggregate(
-        ("item_token",),
         fallback_unit_cost=ducktype.Numeric("unit_cost").avg(),
-    )
+    ).by("item_token")
 
     repairs_needed = (
         split_events

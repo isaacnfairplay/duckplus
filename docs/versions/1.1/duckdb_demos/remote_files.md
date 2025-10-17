@@ -18,10 +18,9 @@ with manager as connection:
         "https://storage.googleapis.com/duckdb-blobs/nyc-taxi/trips.parquet",
     )
     top_fares = nyc.aggregate(
-        ("passenger_count",),
         trips=ducktype.Numeric.Aggregate.count(),
         total=ducktype.Numeric("total_amount").sum(),
-    )
+    ).by("passenger_count")
     print(top_fares.order_by("total DESC").relation.limit(5).fetchall())
 ```
 

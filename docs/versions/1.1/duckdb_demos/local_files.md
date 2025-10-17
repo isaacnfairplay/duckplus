@@ -49,10 +49,9 @@ with manager:
         hive_partitioning=True,
     )
     summary = trips.aggregate(
-        ("passenger_count",),
         total_fare=ducktype.Numeric("total_amount").sum(),
         avg_distance=ducktype.Numeric("trip_distance").avg(),
-    )
+    ).by("passenger_count")
     print(summary.relation.order("passenger_count").limit(5).fetchall())
 ```
 

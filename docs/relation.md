@@ -123,13 +123,59 @@ a `ValueError` explaining that the expression references unknown columns. This
 mirrors the validation performed for other column helpers and keeps column
 creation deterministic.
 
+## Projecting columns with a fluent builder
+
+`Relation.select` exposes a builder that assembles complex projection lists
+before applying them to the underlying relation. Call
+:meth:`~duckplus.relation._SelectBuilder.column` for each expression to include
+and finish with :meth:`~duckplus.relation._SelectBuilder.from_` to materialise the
+projection. Typed expressions participate in dependency validation just like
+other helpers, while `if_exists=True` columns mirror the optional behaviour of
+`keep_if_exists` and friends.
+
+```python
+from duckplus import DuckCon, Relation
+from duckplus.typed import ducktype
+
+manager = DuckCon()
+with manager as connection:
+    base = Relation.from_relation(
+        manager,
+        connection.sql(
+            "SELECT * FROM (VALUES"
+            " ('a'::VARCHAR, 1::INTEGER, 2::INTEGER),"
+            " ('b'::VARCHAR, 3::INTEGER, 4::INTEGER)"
+            ") AS data(category, amount, fallback)"
+        ),
+    )
+
+    projected = (
+        base.select()
+        .column("category")
+        .column(ducktype.Numeric("amount").alias("primary_amount"))
+        .column(
+            ducktype.Numeric("fallback").alias("fallback_amount"),
+            if_exists=True,
+        )
+        .from_()
+    )
+
+assert projected.columns == ("category", "primary_amount", "fallback_amount")
+```
+
+Builders also support `*` projections with optional `REPLACE`/`EXCLUDE`
+modifiers. DuckPlus validates dependencies for typed replacements before issuing
+the query so missing or ambiguous columns surface as descriptive errors.
+
 ## Grouping and aggregating data
 
-`Relation.aggregate` groups rows by a set of existing columns and computes
+`Relation.aggregate` returns a transient builder that groups rows and computes
 named aggregate expressions. Aggregations must be provided as typed expressions
 from :mod:`duckplus.typed`, and optional filter predicates limit the input rows before
-aggregation. Grouping columns are validated against the original relation so
-typos surface immediately.
+aggregation. Call :meth:`~duckplus.relation._AggregateBuilder.by` to specify explicit
+grouping columns or :meth:`~duckplus.relation._AggregateBuilder.all` to group by the
+non-aggregate expressions passed positionally. Grouping columns are validated
+against the original relation so typos surface immediately.
 
 ```python
 from duckplus import DuckCon, Relation
@@ -150,12 +196,14 @@ with manager as connection:
 
     total_sales = ducktype.Numeric("amount").sum().alias("total_sales")
     average_sale = ducktype.Numeric("amount").avg().alias("average_sale")
-    summary = base.aggregate(
-        ducktype.Varchar("category"),
-        "amount > 1",
-        total_sales,
-        average_sale,
-        ducktype.Numeric("amount").avg() > 2,
+    summary = (
+        base.aggregate(
+            "amount > 1",
+            total_sales,
+            average_sale,
+        )
+        .having(ducktype.Numeric("amount").avg() > 2)
+        .by(ducktype.Varchar("category"))
     )
 
 assert summary.columns == ("category", "total_sales", "average_sale")
@@ -169,12 +217,14 @@ The helper inspects each positional expression to determine where it belongs:
   automatically rewrite to reference the projected aliases, even when the input
   omits identifier quoting or uses different casing.
 * Non-boolean expressions without aggregate functions become additional
-  grouping expressions.
+  grouping expressions that ``.all()`` will include automatically.
 * Aggregate expressions must be aliased, either by passing them positionally or
   via keyword arguments, and they appear after the grouping columns in the
   result.
 * Boolean expressions containing aggregates are treated as ``HAVING`` clauses
-  and rewritten to reference the projected aggregate aliases.
+  and rewritten to reference the projected aggregate aliases. You can also add
+  them explicitly via :meth:`~duckplus.relation._AggregateBuilder.having` before
+  materialising the query.
 
 If a filter, aggregate, or having clause references an unknown column, DuckPlus
 raises a descriptive error before executing the query, keeping failures easy to
