@@ -90,6 +90,7 @@ DEFAULT_SWITCHER_URL = os.environ.get(
     urljoin(html_baseurl, switcher_path),
 )
 
+# Theme configuration depends on the switcher configuration above.
 html_theme_options: Dict[str, Any] = {
     "logo": {
         "text": "DuckPlus",
@@ -109,14 +110,6 @@ html_theme_options: Dict[str, Any] = {
 html_context = {
     "default_mode": "light",
 }
-
-smv_tag_whitelist = r"^v\d+\.\d+\.\d+$"
-smv_branch_whitelist = r".*"
-smv_remote_whitelist = r"^origin$"
-smv_latest_version = "1.1"
-smv_rename_latest_version = ("1.1", "latest")
-smv_released_pattern = r"^tags/v\d+\.\d+\.\d+$"
-smv_outputdir = "_build/html"
 
 # Keep todo entries visible for unreleased features while still rendering cleanly.
 todo_include_todos = True
