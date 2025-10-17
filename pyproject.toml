@@ -8,7 +8,7 @@ exclude = ["node_modules*"]
 
 [project]
 name = "duckplus"
-version = "1.0.0"
+version = "1.1.0"
 description = "Typed expression helpers for DuckDB"
 requires-python = ">=3.11"
 keywords = ["duckdb", "data-engineering", "analytics", "typed-expressions"]
