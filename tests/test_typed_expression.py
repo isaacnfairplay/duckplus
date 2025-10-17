@@ -132,7 +132,11 @@ def _build_overload(*parameter_types: str) -> DuckDBFunctionDefinition:
         function_type="scalar",
         return_type=None,
         parameter_types=tuple(parse_type(param) for param in parameter_types),
+        parameters=tuple(f"arg{i}" for i in range(len(parameter_types))),
         varargs=None,
+        description=None,
+        comment=None,
+        macro_definition=None,
     )
 
 

@@ -87,6 +87,16 @@ class _TypeParser:
             return UnknownType()
         name = self._parse_identifier()
         upper = name.upper()
+        # Handle multi-word temporal types such as "TIMESTAMP WITH TIME ZONE".
+        if upper in {"TIMESTAMP", "TIME"}:
+            checkpoint = self._position
+            self._skip_whitespace()
+            suffix = self._text[self._position :].upper()
+            if suffix.startswith("WITH TIME ZONE"):
+                self._position += len("WITH TIME ZONE")
+                upper = f"{upper} WITH TIME ZONE"
+            else:
+                self._position = checkpoint
         if self._peek() == "(":
             result = self._parse_parameterised(upper)
         else:

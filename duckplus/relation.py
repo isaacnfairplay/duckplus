@@ -27,6 +27,8 @@ from .typed.types import BooleanType
 
 T = TypeVar("T")
 
+JoinCondition = Mapping[str, str] | Iterable[tuple[str, str]] | Iterable[str] | str | None
+
 
 @dataclass(frozen=True)
 class Relation:
@@ -558,7 +560,7 @@ class Relation:
         self,
         other: "Relation",
         *,
-        on: Mapping[str, str] | Iterable[tuple[str, str]] | None = None,
+        on: JoinCondition = None,
     ) -> "Relation":
         """Return an inner join with conflict validation."""
 
@@ -568,7 +570,7 @@ class Relation:
         self,
         other: "Relation",
         *,
-        on: Mapping[str, str] | Iterable[tuple[str, str]] | None = None,
+        on: JoinCondition = None,
     ) -> "Relation":
         """Return a left join with conflict validation."""
 
@@ -578,7 +580,7 @@ class Relation:
         self,
         other: "Relation",
         *,
-        on: Mapping[str, str] | Iterable[tuple[str, str]] | None = None,
+        on: JoinCondition = None,
     ) -> "Relation":
         """Return a right join with conflict validation."""
 
@@ -588,7 +590,7 @@ class Relation:
         self,
         other: "Relation",
         *,
-        on: Mapping[str, str] | Iterable[tuple[str, str]] | None = None,
+        on: JoinCondition = None,
     ) -> "Relation":
         """Return a full outer join with conflict validation."""
 
@@ -598,18 +600,68 @@ class Relation:
         self,
         other: "Relation",
         *,
-        on: Mapping[str, str] | Iterable[tuple[str, str]] | None = None,
+        on: JoinCondition = None,
     ) -> "Relation":
         """Return a semi join keeping only left relation columns."""
 
         return self._join(other, join_type="semi", on=on)
+
+    def materialize(
+        self,
+        name: str | None = None,
+        *,
+        temporary: bool = True,
+        replace: bool = True,
+    ) -> "Relation":
+        """Materialise the relation into a DuckDB table and return it.
+
+        By default the relation is materialised into a temporary table that is
+        discarded when the underlying :class:`~duckplus.duckcon.DuckCon`
+        closes. Use ``name`` to control the table identifier, set
+        ``temporary=False`` to persist the result, and ``replace=False`` to
+        require that the table does not already exist.
+        """
+
+        helper = "Relation.materialize"
+        connection = require_connection(self.duckcon, helper)
+
+        if name is None:
+            table_name = f"duckplus_materialized_{uuid4().hex}"
+        else:
+            if not isinstance(name, str):
+                msg = "materialize table name must be a string"
+                raise TypeError(msg)
+            table_name = name.strip()
+            if not table_name:
+                msg = "materialize table name cannot be empty"
+                raise ValueError(msg)
+
+        quoted_table = self._quote_qualified_identifier(table_name)
+        view_name = f"duckplus_materialize_view_{uuid4().hex}"
+        quoted_view = self._quote_identifier(view_name)
+
+        self._relation.to_view(view_name, replace=True)
+
+        try:
+            statements: list[str] = ["CREATE"]
+            if replace:
+                statements.extend(["OR", "REPLACE"])
+            if temporary:
+                statements.append("TEMP")
+            statements.extend(["TABLE", quoted_table, "AS SELECT * FROM", quoted_view])
+            connection.execute(" ".join(statements))
+        finally:
+            connection.execute(f"DROP VIEW {quoted_view}")
+
+        materialized = connection.table(table_name)
+        return type(self).from_relation(self.duckcon, materialized)
 
     def asof_join(
         self,
         other: "Relation",
         *,
         order: tuple[object, object],
-        on: Mapping[str, str] | Iterable[tuple[str, str]] | None = None,
+        on: JoinCondition = None,
         tolerance: object | None = None,
         direction: Literal["backward", "forward"] = "backward",
     ) -> "Relation":
@@ -742,7 +794,7 @@ class Relation:
         other: "Relation",
         *,
         join_type: Literal["inner", "left", "right", "outer", "semi"],
-        on: Mapping[str, str] | Iterable[tuple[str, str]] | None,
+        on: JoinCondition,
     ) -> "Relation":
         if not isinstance(other, Relation):
             msg = "join helpers require another Relation instance"
@@ -1375,7 +1427,7 @@ class Relation:
     def _prepare_join_pairs(
         self,
         other: "Relation",
-        on: Mapping[str, str] | Iterable[tuple[str, str]] | None,
+        on: JoinCondition,
     ) -> list[tuple[str, str]]:
         left_casefold_map = self._build_casefold_map(self.columns)
         right_casefold_map = self._build_casefold_map(other.columns)
@@ -1420,7 +1472,7 @@ class Relation:
 
     def _prepare_explicit_join_pairs(
         self,
-        on: Mapping[str, str] | Iterable[tuple[str, str]] | None,
+        on: JoinCondition,
         left_casefold_map: Mapping[str, list[str]],
         right_casefold_map: Mapping[str, list[str]],
     ) -> tuple[list[tuple[str, str]], set[tuple[str, str]]]:
@@ -1452,23 +1504,30 @@ class Relation:
 
     @staticmethod
     def _normalise_join_on_entries(
-        on: Mapping[str, str] | Iterable[tuple[str, str]] | None,
+        on: JoinCondition,
     ) -> list[tuple[str, str]]:
         if on is None:
             return []
 
         if isinstance(on, Mapping):
-            items = list(on.items())
+            entries: Iterable[object] = on.items()
+        elif isinstance(on, str):
+            entries = [(on, on)]
         else:
-            items = list(on)
+            entries = cast(Iterable[object], on)
 
         normalised: list[tuple[str, str]] = []
-        for entry in items:
-            if not isinstance(entry, tuple) or len(entry) != 2:
-                msg = "join on entries must be (left, right) column pairs"
+        for entry in entries:
+            if isinstance(entry, str):
+                left_name = right_name = entry
+            elif isinstance(entry, tuple) and len(entry) == 2:
+                left_name, right_name = entry
+            else:
+                msg = (
+                    "join on entries must be string column names or (left, right) column pairs"
+                )
                 raise TypeError(msg)
 
-            left_name, right_name = entry
             if not isinstance(left_name, str) or not isinstance(right_name, str):
                 msg = "join on column names must be strings"
                 raise TypeError(msg)
@@ -1943,6 +2002,18 @@ class Relation:
     def _quote_identifier(identifier: str) -> str:
         escaped = identifier.replace("\"", "\"\"")
         return f'"{escaped}"'
+
+    @staticmethod
+    def _quote_qualified_identifier(identifier: str) -> str:
+        parts = identifier.split(".")
+        quoted_parts: list[str] = []
+        for part in parts:
+            trimmed = part.strip()
+            if not trimmed:
+                msg = "Qualified identifier segments cannot be empty"
+                raise ValueError(msg)
+            quoted_parts.append(Relation._quote_identifier(trimmed))
+        return ".".join(quoted_parts)
 
     def _deduplicate_against_existing(
         self,
