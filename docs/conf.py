@@ -73,6 +73,16 @@ except ValueError:
 DEFAULT_HTML_BASEURL = f"https://{owner}.github.io/{repo_name}/"
 html_baseurl = os.environ.get("DUCKPLUS_DOCS_BASEURL", DEFAULT_HTML_BASEURL)
 
+# ``sphinx-multiversion`` populates ``smv_rename_latest_version`` during CLI
+# execution. Local imports (e.g. ``python -m sphinx``) may evaluate the config
+# before the variable is set, so normalise it here to avoid ``NameError``
+# scenarios during CI builds.
+DEFAULT_SMV_RENAME_LATEST = ("main", "latest")
+rename_latest = globals().get("smv_rename_latest_version", DEFAULT_SMV_RENAME_LATEST)
+if not (isinstance(rename_latest, tuple) and len(rename_latest) == 2):
+    rename_latest = DEFAULT_SMV_RENAME_LATEST
+smv_rename_latest_version = rename_latest
+
 # The version switcher JSON is served from the ``latest`` build so that all
 # historic versions can reference a single canonical copy. Without including the
 # ``latest`` prefix the generated pages attempt to fetch ``/_static`` from the
@@ -80,9 +90,7 @@ html_baseurl = os.environ.get("DUCKPLUS_DOCS_BASEURL", DEFAULT_HTML_BASEURL)
 # subdirectories (e.g. ``.../duckplus/1.0``).  That empty response meant the
 # dropdown rendered with no options even though the JSON was present in each
 # build directory.
-latest_alias = "latest"
-if isinstance(smv_rename_latest_version, tuple) and len(smv_rename_latest_version) == 2:
-    latest_alias = smv_rename_latest_version[1]
+latest_alias = smv_rename_latest_version[1]
 
 switcher_path = f"{latest_alias}/_static/version_switcher.json"
 DEFAULT_SWITCHER_URL = os.environ.get(
