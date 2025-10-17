@@ -132,6 +132,13 @@ Answer these before starting any TODO item to confirm the work is understood and
 5. Continue running mypy, uvx, pylint, and pytest per repository policy to guard against regressions.
 6. Stress append helpers with large batch writes and ``match_all_columns`` deduplication scenarios to ensure file safety paths stay covered.
 
+### Preflight Answers – File append helper integration tests
+1. Extend the `Relation.append_csv` and `Relation.append_parquet` coverage with integration scenarios that write sizeable batches while exercising deduplication and mutation options.
+2. The relation helpers live in `duckplus/relation.py`, so tests belong in `tests/test_relation.py` alongside the existing append coverage.
+3. Review the prior append helper tests plus the Parquet/CSV documentation to mirror header behaviour, deduplication semantics, and temporary file handling expectations.
+4. Confirm large appends keep headers stable, skip duplicates when `match_all_columns` or `unique_id_column` arguments are provided, and respect custom temporary directories during Parquet rewrites without leaving artifacts behind.
+5. Validate via pytest together with the repository-standard mypy, uvx, and pylint runs.
+
 ### Preflight Answers – Table interfacing API
 1. Managed table helpers should live alongside `DuckCon` and reuse the existing relation metadata, ensuring inserts only run when the connection is open and the relation originates from the same manager.
 2. Shared utilities in `duckplus/_table_utils.py` handle identifier quoting, column normalisation, and transactional inserts so future appenders and table wrappers stay consistent.
