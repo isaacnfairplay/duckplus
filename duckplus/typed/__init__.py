@@ -13,7 +13,6 @@ from .expression import (
     SelectStatementBuilder,
     TypedExpression,
     VarcharExpression,
-    ducktype,
 )
 from .functions import (
     AGGREGATE_FUNCTIONS,
@@ -21,6 +20,16 @@ from .functions import (
     DuckDBFunctionSignature,
     SCALAR_FUNCTIONS,
     WINDOW_FUNCTIONS,
+)
+from .ducktype import (
+    Blob,
+    Boolean,
+    Functions,
+    Generic,
+    Numeric,
+    Varchar,
+    ducktype,
+    select,
 )
 
 __all__ = [
@@ -33,11 +42,18 @@ __all__ = [
     "SelectStatementBuilder",
     "TypedExpression",
     "VarcharExpression",
-    "ducktype",
     "ExpressionDependency",
     "DuckDBFunctionNamespace",
     "DuckDBFunctionSignature",
     "SCALAR_FUNCTIONS",
     "AGGREGATE_FUNCTIONS",
     "WINDOW_FUNCTIONS",
+    "ducktype",
+    "Numeric",
+    "Varchar",
+    "Boolean",
+    "Blob",
+    "Generic",
+    "Functions",
+    "select",
 ]
