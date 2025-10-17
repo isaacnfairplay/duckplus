@@ -16,7 +16,7 @@ project = "DuckPlus"
 author = "DuckPlus maintainers"
 current_year = _dt.date.today().year
 copyright = f"{current_year}, {author}"
-release = "1.1.0"
+release = "1.1.1"
 version = "1.1"
 
 extensions = [
