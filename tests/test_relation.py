@@ -831,6 +831,36 @@ def test_aggregate_supports_filters() -> None:
         assert typed_filtered.order_by("category").relation.fetchall() == expected
 
 
+def test_aggregate_strings_with_aggregates_become_having_clauses() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(_AGGREGATE_SOURCE_SQL),
+        )
+
+        aggregated = relation.aggregate(
+            (ducktype.Varchar("category"),),
+            "sum(amount) > 2",
+            total=ducktype.Numeric("amount").sum(),
+        )
+
+        assert aggregated.columns == ("category", "total")
+        assert sorted(aggregated.relation.fetchall()) == [("a", 3), ("b", 3)]
+
+        upper_aggregated = relation.aggregate(
+            (ducktype.Varchar("category"),),
+            'SUM("amount") > 2',
+            total=ducktype.Numeric("amount").sum(),
+        )
+
+        assert upper_aggregated.columns == ("category", "total")
+        assert sorted(upper_aggregated.relation.fetchall()) == [
+            ("a", 3),
+            ("b", 3),
+        ]
+
+
 def test_aggregate_rejects_raw_sql_strings() -> None:
     manager = DuckCon()
     with manager as connection:

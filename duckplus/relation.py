@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import csv
+import re
 from dataclasses import dataclass, field
 from os import PathLike
 from pathlib import Path
@@ -959,7 +960,15 @@ class Relation:
 
         for component in component_list:
             if isinstance(component, str):
-                positional_filters.append(component)
+                sql = component.strip()
+                if not sql:
+                    msg = "Aggregate string components cannot be empty"
+                    raise ValueError(msg)
+
+                if self._contains_aggregate_sql(sql.casefold()):
+                    having_conditions.append((sql, frozenset()))
+                else:
+                    positional_filters.append(component)
                 continue
 
             if isinstance(component, TypedExpression):
@@ -2395,14 +2404,24 @@ class Relation:
         conditions: Sequence[tuple[str, frozenset[ExpressionDependency]]],
         aggregate_aliases: Mapping[str, str],
     ) -> duckdb.DuckDBPyRelation:
-        sorted_aliases = sorted(
-            aggregate_aliases.items(), key=lambda item: len(item[0]), reverse=True
-        )
+        sorted_aliases = [
+            (
+                self._compile_having_pattern(expression_sql),
+                alias,
+            )
+            for expression_sql, alias in sorted(
+                aggregate_aliases.items(), key=lambda item: len(item[0]), reverse=True
+            )
+        ]
         working = relation
         for index, (sql, _dependencies) in enumerate(conditions, start=1):
-            rewritten = sql
-            for expression_sql, alias in sorted_aliases:
-                rewritten = rewritten.replace(expression_sql, alias)
+            rewritten = sql.strip()
+            if not rewritten:
+                msg = f"aggregate having condition {index} cannot be empty"
+                raise ValueError(msg)
+
+            for pattern, alias in sorted_aliases:
+                rewritten = pattern.sub(alias, rewritten)
 
             if self._contains_aggregate_sql(rewritten.casefold()):
                 msg = (
@@ -2420,6 +2439,13 @@ class Relation:
                 raise ValueError(msg) from error
 
         return working
+
+    @staticmethod
+    def _compile_having_pattern(expression_sql: str) -> re.Pattern[str]:
+        pattern = re.escape(expression_sql)
+        pattern = pattern.replace(r"\ ", r"\s*")
+        pattern = pattern.replace('"', '"?')
+        return re.compile(pattern, flags=re.IGNORECASE)
 
     def _normalise_aggregate_expression(
         self, alias: str, expression: TypedExpression

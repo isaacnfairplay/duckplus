@@ -76,8 +76,10 @@ summary = base.aggregate(
 ```
 
 Aggregate boolean expressions are treated as ``HAVING`` clauses and rewritten to
-reference the projected aliases. Non-aggregate expressions become additional
-grouping expressions, keeping the aggregate SQL concise.
+reference the projected aliases. Strings containing aggregate functions follow
+the same path, so ``"sum(amount) > 100"`` is rewritten to the corresponding
+alias even if casing or identifier quoting differ. Non-aggregate expressions
+become additional grouping expressions, keeping the aggregate SQL concise.
 
 Typed expressions expose window helpers via
 :meth:`duckplus.typed.expressions.base.TypedExpression.over`, enabling fluent

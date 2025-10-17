@@ -165,6 +165,9 @@ assert summary.relation.fetchall() == [("b", 3, 3.0)]
 The helper inspects each positional expression to determine where it belongs:
 
 * Strings and non-aggregate boolean expressions apply pre-aggregation filters.
+* Strings containing aggregate functions are treated as ``HAVING`` clauses and
+  automatically rewrite to reference the projected aliases, even when the input
+  omits identifier quoting or uses different casing.
 * Non-boolean expressions without aggregate functions become additional
   grouping expressions.
 * Aggregate expressions must be aliased, either by passing them positionally or
