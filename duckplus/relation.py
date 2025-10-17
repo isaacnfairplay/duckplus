@@ -20,6 +20,7 @@ import duckdb  # type: ignore[import-not-found]
 
 from ._table_utils import require_connection
 from .duckcon import DuckCon
+from .typed import ducktype
 from .typed.select import SelectStatementBuilder
 from .typed.dependencies import ExpressionDependency
 from .typed.expressions.base import AliasedExpression, BooleanExpression, TypedExpression
@@ -83,8 +84,10 @@ class Relation:
         """Return the number of rows produced by the relation."""
 
         require_connection(self.duckcon, "Relation.row_count")
-        count_relation = self._relation.aggregate("COUNT(*) AS duckplus_row_count")
-        row = count_relation.fetchone()
+        count_relation = self.aggregate(
+            duckplus_row_count=ducktype.Numeric.Aggregate.count()
+        ).all()
+        row = count_relation.relation.fetchone()
         if row is None:
             return 0
         return int(row[0])
@@ -96,21 +99,28 @@ class Relation:
         if not self.columns:
             return {}
 
-        expressions: list[str] = []
+        aggregations: dict[str, TypedExpression] = {}
         for column in self.columns:
-            quoted = self._quote_identifier(column)
-            expression = (
-                f"COALESCE(AVG(CASE WHEN {quoted} IS NULL "
-                "THEN 1.0 ELSE 0.0 END), 0.0)"
+            is_null = ducktype.Generic(column).is_null()
+            null_ratio = (
+                ducktype.Numeric.Aggregate.avg(
+                    ducktype.Numeric.case()
+                    .when(is_null, 1.0)
+                    .else_(0.0)
+                    .end()
+                ).coalesce(0.0)
             )
-            expressions.append(expression)
+            aggregations[column] = null_ratio
 
-        ratio_relation = self._relation.aggregate(", ".join(expressions))
-        row = ratio_relation.fetchone()
+        ratio_relation = self.aggregate(**aggregations).all()
+        row = ratio_relation.relation.fetchone()
         if row is None:
             return {column: 0.0 for column in self.columns}
 
-        return {column: float(value) for column, value in zip(self.columns, row, strict=False)}
+        return {
+            column: float(value)
+            for column, value in zip(self.columns, row, strict=False)
+        }
 
     def sample_pandas(self, limit: int | None = 50) -> Any:
         """Return a Pandas DataFrame containing a sample of the relation."""
