@@ -6,9 +6,10 @@ from typing import Iterable
 
 from ..dependencies import DependencyLike, ExpressionDependency
 from ..types import DuckDBType, VarcharType
-from .base import TypedExpression
+from .base import TypedExpression, BooleanExpression
 from .boolean import BooleanFactory
 from .case import CaseExpressionBuilder
+from .numeric import NumericExpression
 from .utils import quote_qualified_identifier, quote_string
 
 
@@ -54,7 +55,7 @@ class VarcharExpression(TypedExpression):
         )
 
     @classmethod
-    def raw(
+    def _raw(
         cls,
         sql: str,
         *,
@@ -62,6 +63,71 @@ class VarcharExpression(TypedExpression):
         duck_type: DuckDBType | None = None,
     ) -> "VarcharExpression":
         return cls(sql, dependencies=dependencies, duck_type=duck_type)
+
+    def coalesce(self, *others: object) -> "VarcharExpression":
+        """Return the first non-null value from the provided expressions."""
+
+        if not others:
+            return self
+
+        operands = [self]
+        dependencies = set(self.dependencies)
+        for other in others:
+            operand = self._coerce_operand(other)
+            operands.append(operand)
+            dependencies.update(operand.dependencies)
+
+        sql = ", ".join(expression.render() for expression in operands)
+        return type(self)(
+            f"COALESCE({sql})",
+            dependencies=dependencies,
+            duck_type=self.duck_type,
+        )
+
+    def length(self) -> "NumericExpression":
+        """Return the number of characters in the expression."""
+
+        from .numeric import NumericExpression
+
+        sql = f"length({self.render()})"
+        return NumericExpression._raw(sql, dependencies=self.dependencies)
+
+    def slice(self, start: int, length: int | None = None) -> "VarcharExpression":
+        """Return a substring starting at ``start`` with optional ``length``."""
+
+        if not isinstance(start, int):  # pragma: no cover - defensive guard
+            msg = "slice start must be an integer"
+            raise TypeError(msg)
+        if length is not None and not isinstance(length, int):  # pragma: no cover
+            msg = "slice length must be an integer or None"
+            raise TypeError(msg)
+
+        if length is None:
+            sql = f"substr({self.render()}, {start})"
+            return VarcharExpression._raw(sql, dependencies=self.dependencies)
+
+        sql = f"substr({self.render()}, {start}, {length})"
+        return VarcharExpression._raw(sql, dependencies=self.dependencies)
+
+    def contains(self, needle: object) -> "BooleanExpression":
+        """Return whether ``needle`` occurs within the expression."""
+
+        operand = self._coerce_operand(needle)
+
+        from .numeric import NumericExpression
+
+        sql = f"strpos({self.render()}, {operand.render()})"
+        dependencies = self.dependencies.union(operand.dependencies)
+        position = NumericExpression._raw(sql, dependencies=dependencies)
+        return position > NumericExpression.literal(0)
+
+    def starts_with(self, prefix: object) -> "BooleanExpression":
+        """Return whether the expression begins with ``prefix``."""
+
+        operand = self._coerce_operand(prefix)
+        dependencies = self.dependencies.union(operand.dependencies)
+        sql = f"starts_with({self.render()}, {operand.render()})"
+        return BooleanExpression._raw(sql, dependencies=dependencies)
 
     def _coerce_operand(self, other: object) -> "VarcharExpression":
         if isinstance(other, VarcharExpression):
@@ -107,14 +173,14 @@ class VarcharFactory:
     def literal(self, value: str) -> VarcharExpression:
         return VarcharExpression.literal(value)
 
-    def raw(
+    def _raw(
         self,
         sql: str,
         *,
         dependencies: Iterable[DependencyLike] = (),
         duck_type: DuckDBType | None = None,
     ) -> VarcharExpression:
-        return VarcharExpression.raw(
+        return VarcharExpression._raw(
             sql,
             dependencies=dependencies,
             duck_type=duck_type,

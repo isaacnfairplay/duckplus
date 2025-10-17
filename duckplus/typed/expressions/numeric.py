@@ -3,17 +3,14 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Callable, Iterable, TYPE_CHECKING
+from typing import Iterable
 
 from ..dependencies import DependencyLike, ExpressionDependency
 from ..types import DuckDBType, NumericType, infer_numeric_literal_type
-from .base import TypedExpression
+from .base import GenericExpression, TypedExpression
 from .boolean import BooleanFactory
 from .case import CaseExpressionBuilder
 from .utils import format_numeric, quote_qualified_identifier
-
-if TYPE_CHECKING:  # pragma: no cover - type checking helper
-    from ..functions import DuckDBFunctionNamespace
 
 NumericOperand = int | float | Decimal
 
@@ -59,7 +56,7 @@ class NumericExpression(TypedExpression):
         )
 
     @classmethod
-    def raw(
+    def _raw(
         cls,
         sql: str,
         *,
@@ -100,27 +97,63 @@ class NumericExpression(TypedExpression):
     def __pow__(self, other: object) -> "NumericExpression":
         return self._binary("^", other)
 
+    def coalesce(self, *others: object) -> "NumericExpression":
+        """Return the first non-null numeric expression from the arguments."""
+
+        if not others:
+            return self
+
+        operands = [self]
+        dependencies = set(self.dependencies)
+        for other in others:
+            operand = self._coerce_operand(other)
+            operands.append(operand)
+            dependencies.update(operand.dependencies)
+
+        sql = ", ".join(expression.render() for expression in operands)
+        return type(self)(
+            f"COALESCE({sql})",
+            dependencies=dependencies,
+            duck_type=self.duck_type,
+        )
+
+    def abs(self) -> "NumericExpression":
+        """Return the absolute value of the numeric expression."""
+
+        sql = f"abs({self.render()})"
+        return type(self)(sql, dependencies=self.dependencies, duck_type=self.duck_type)
+
+    def pow(self, exponent: object) -> "NumericExpression":
+        """Raise the expression to the provided ``exponent``."""
+
+        operand = self._coerce_operand(exponent)
+        dependencies = self.dependencies.union(operand.dependencies)
+        sql = f"pow({self.render()}, {operand.render()})"
+        return type(self)(sql, dependencies=dependencies)
+
+    def nullif(self, other: object) -> "NumericExpression":
+        """Return ``NULLIF`` between the expression and ``other``."""
+
+        operand = self._coerce_operand(other)
+        dependencies = self.dependencies.union(operand.dependencies)
+        sql = f"NULLIF({self.render()}, {operand.render()})"
+        return type(self)(sql, dependencies=dependencies, duck_type=self.duck_type)
+
     # Aggregation -----------------------------------------------------
     def sum(self) -> "NumericExpression":
-        from ..functions import (  # pylint: disable=import-outside-toplevel
-            AGGREGATE_FUNCTIONS,
-        )
-
-        return AGGREGATE_FUNCTIONS.Numeric.sum(self)
+        sql = f"sum({self.render()})"
+        return type(self)(sql, dependencies=self.dependencies)
 
     def avg(self) -> "NumericExpression":
-        from ..functions import (  # pylint: disable=import-outside-toplevel
-            AGGREGATE_FUNCTIONS,
-        )
-
-        return AGGREGATE_FUNCTIONS.Numeric.avg(self)
+        sql = f"avg({self.render()})"
+        return type(self)(sql, dependencies=self.dependencies)
 
 
 class NumericFactory:
     """Factory for creating numeric expressions."""
 
-    def __init__(self, function_namespace: "DuckDBFunctionNamespace | None" = None) -> None:
-        self._function_namespace = function_namespace
+    def __init__(self) -> None:
+        self._aggregate = NumericAggregateFactory(self)
 
     def __call__(
         self,
@@ -130,17 +163,22 @@ class NumericFactory:
     ) -> NumericExpression:
         return NumericExpression.column(column, table=table)
 
-    def literal(self, value: NumericOperand) -> NumericExpression:
-        return NumericExpression.literal(value)
+    def literal(
+        self,
+        value: NumericOperand,
+        *,
+        duck_type: DuckDBType | None = None,
+    ) -> NumericExpression:
+        return NumericExpression.literal(value, duck_type=duck_type)
 
-    def raw(
+    def _raw(
         self,
         sql: str,
         *,
         dependencies: Iterable[DependencyLike] = (),
         duck_type: DuckDBType | None = None,
     ) -> NumericExpression:
-        return NumericExpression.raw(
+        return NumericExpression._raw(
             sql,
             dependencies=dependencies,
             duck_type=duck_type,
@@ -169,50 +207,93 @@ class NumericFactory:
 
     @property
     def Aggregate(self) -> "NumericAggregateFactory":  # pylint: disable=invalid-name
-        return NumericAggregateFactory(
-            self,
-            function_namespace=self._function_namespace,
-        )
+        return self._aggregate
 
 
 class NumericAggregateFactory:
     def __init__(
         self,
         factory: NumericFactory,
-        *,
-        function_namespace: "DuckDBFunctionNamespace | None" = None,
     ) -> None:
         self._factory = factory
-        self._function_namespace = function_namespace
+        self._boolean_factory = BooleanFactory()
 
-    def _from_function_namespace(
-        self, name: str
-    ) -> Callable[..., NumericExpression] | None:
-        if self._function_namespace is None:
-            return None
-        try:
-            accessor = self._function_namespace.Aggregate.Numeric
-        except RuntimeError:
-            return None
-        function = getattr(accessor, name, None)
-        if not callable(function):
-            return None
-        return function
+    def _wrap(
+        self,
+        sql: str,
+        *,
+        dependencies: Iterable[DependencyLike] = (),
+        duck_type: DuckDBType | None = None,
+    ) -> NumericExpression:
+        return NumericExpression._raw(sql, dependencies=dependencies, duck_type=duck_type)
 
-    def __getattr__(self, name: str):
-        function = self._from_function_namespace(name)
-        if function is None:
-            raise AttributeError(f"Aggregate function '{name}' is not available") from None
-
-        def wrapper(*operands: object) -> NumericExpression:
-            return function(*operands)
-
-        return wrapper
+    def _coerce_order_operand(self, operand: object) -> TypedExpression:
+        if isinstance(operand, TypedExpression):
+            return operand
+        if isinstance(operand, str):
+            return GenericExpression.column(operand)
+        if isinstance(operand, tuple) and len(operand) == 2:
+            table, column = operand
+            if isinstance(table, str) and isinstance(column, str):
+                return GenericExpression.column(column, table=table)
+        if isinstance(operand, (int, float, Decimal)):
+            return self._factory.coerce(operand)
+        msg = "Unsupported operand for ordering expression"
+        raise TypeError(msg)
 
     def sum(self, operand: object) -> NumericExpression:
-        function = self._from_function_namespace("sum")
-        if function is not None:
-            return function(operand)
         expression = self._factory.coerce(operand)
         sql = f"sum({expression.render()})"
-        return NumericExpression(sql, dependencies=expression.dependencies)
+        return self._wrap(sql, dependencies=expression.dependencies, duck_type=expression.duck_type)
+
+    def avg(self, operand: object) -> NumericExpression:
+        expression = self._factory.coerce(operand)
+        sql = f"avg({expression.render()})"
+        return self._wrap(sql, dependencies=expression.dependencies)
+
+    def min(self, operand: object) -> NumericExpression:
+        expression = self._factory.coerce(operand)
+        sql = f"min({expression.render()})"
+        return self._wrap(sql, dependencies=expression.dependencies, duck_type=expression.duck_type)
+
+    def max(self, operand: object) -> NumericExpression:
+        expression = self._factory.coerce(operand)
+        sql = f"max({expression.render()})"
+        return self._wrap(sql, dependencies=expression.dependencies, duck_type=expression.duck_type)
+
+    def count(self, operand: object | None = None) -> NumericExpression:
+        if operand is None:
+            return self._wrap("count(*)")
+        expression = self._factory.coerce(operand)
+        sql = f"count({expression.render()})"
+        return self._wrap(sql, dependencies=expression.dependencies)
+
+    def count_if(self, predicate: object) -> NumericExpression:
+        condition = self._boolean_factory.coerce(predicate)
+        sql = f"count_if({condition.render()})"
+        return self._wrap(sql, dependencies=condition.dependencies)
+
+    def sum_filter(
+        self,
+        predicate: object,
+        operand: object,
+    ) -> NumericExpression:
+        condition = self._boolean_factory.coerce(predicate)
+        expression = self._factory.coerce(operand)
+        sql = f"sum({expression.render()}) FILTER (WHERE {condition.render()})"
+        deps = expression.dependencies.union(condition.dependencies)
+        return self._wrap(sql, dependencies=deps, duck_type=expression.duck_type)
+
+    def max_by(self, value: object, order: object) -> NumericExpression:
+        value_expr = self._factory.coerce(value)
+        order_expr = self._coerce_order_operand(order)
+        sql = f"max_by({value_expr.render()}, {order_expr.render()})"
+        deps = value_expr.dependencies.union(order_expr.dependencies)
+        return self._wrap(sql, dependencies=deps, duck_type=value_expr.duck_type)
+
+    def min_by(self, value: object, order: object) -> NumericExpression:
+        value_expr = self._factory.coerce(value)
+        order_expr = self._coerce_order_operand(order)
+        sql = f"min_by({value_expr.render()}, {order_expr.render()})"
+        deps = value_expr.dependencies.union(order_expr.dependencies)
+        return self._wrap(sql, dependencies=deps, duck_type=value_expr.duck_type)

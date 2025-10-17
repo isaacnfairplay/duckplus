@@ -453,10 +453,7 @@ def test_add_validates_expression_references() -> None:
 
         with pytest.raises(ValueError, match="unknown columns"):
             relation.add(
-                double=ducktype.Numeric.raw(
-                    "missing + 1",
-                    dependencies=["missing"],
-                )
+                double=ducktype.Numeric("missing") + ducktype.Numeric.literal(1)
             )
 
 
@@ -764,13 +761,13 @@ def test_aggregate_supports_filters() -> None:
 
         typed_filtered = relation.aggregate(
             ("category",),
-            ducktype.Boolean.raw("amount > 1", dependencies=["amount"]),
+            ducktype.Numeric("amount") > 1,
             total=ducktype.Numeric("amount").sum(),
         )
 
         expected = [("a", 2), ("b", 3)]
-        assert string_filtered.relation.order("category").fetchall() == expected
-        assert typed_filtered.relation.order("category").fetchall() == expected
+        assert string_filtered.order_by("category").relation.fetchall() == expected
+        assert typed_filtered.order_by("category").relation.fetchall() == expected
 
 
 def test_aggregate_rejects_raw_sql_strings() -> None:
@@ -919,11 +916,11 @@ def test_filter_applies_multiple_conditions() -> None:
 
         filtered = relation.filter(
             "amount > 1",
-            ducktype.Boolean.raw("category = 'b'", dependencies=["category"]),
+            ducktype.Varchar("category") == "b",
         )
 
         assert filtered.columns == relation.columns
-        assert filtered.relation.order("category").fetchall() == [("b", 3)]
+        assert filtered.order_by("category").relation.fetchall() == [("b", 3)]
 
 
 def test_filter_rejects_unknown_columns_in_strings() -> None:
@@ -948,10 +945,7 @@ def test_filter_rejects_unknown_columns_in_typed_expressions() -> None:
 
         with pytest.raises(ValueError, match="unknown columns"):
             relation.filter(
-                ducktype.Boolean.raw(
-                    "missing > 1",
-                    dependencies=["missing"],
-                )
+                ducktype.Numeric("missing") > 1
             )
 
 

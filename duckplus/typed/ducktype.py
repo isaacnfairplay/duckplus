@@ -18,7 +18,6 @@ Varchar = ducktype.Varchar
 Boolean = ducktype.Boolean
 Blob = ducktype.Blob
 Generic = ducktype.Generic
-Functions = ducktype.Functions
 
 
 def select() -> SelectStatementBuilder:
@@ -34,6 +33,5 @@ __all__ = [
     "Boolean",
     "Blob",
     "Generic",
-    "Functions",
     "select",
 ]

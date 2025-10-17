@@ -71,6 +71,18 @@ class TypedExpression:
         dependencies = self.dependencies.union(operand.dependencies)
         return BooleanExpression(sql, dependencies=dependencies)
 
+    def is_null(self) -> "BooleanExpression":
+        """Return a boolean expression testing whether the value is ``NULL``."""
+
+        sql = f"({self.render()} IS NULL)"
+        return BooleanExpression(sql, dependencies=self.dependencies)
+
+    def is_not_null(self) -> "BooleanExpression":
+        """Return a boolean expression testing whether the value is not ``NULL``."""
+
+        sql = f"({self.render()} IS NOT NULL)"
+        return BooleanExpression(sql, dependencies=self.dependencies)
+
     def _coerce_operand(self: ExpressionT, other: object) -> ExpressionT:
         raise NotImplementedError
 
@@ -86,6 +98,34 @@ class TypedExpression:
             other, (TypedExpression, str, int, float, bool, bytes, Decimal)
         ):
             return self._comparison("!=", other)
+        return NotImplemented
+
+    def __lt__(self, other: object) -> ComparisonResult:  # type: ignore[override]
+        if isinstance(
+            other, (TypedExpression, str, int, float, bool, bytes, Decimal)
+        ):
+            return self._comparison("<", other)
+        return NotImplemented
+
+    def __le__(self, other: object) -> ComparisonResult:  # type: ignore[override]
+        if isinstance(
+            other, (TypedExpression, str, int, float, bool, bytes, Decimal)
+        ):
+            return self._comparison("<=", other)
+        return NotImplemented
+
+    def __gt__(self, other: object) -> ComparisonResult:  # type: ignore[override]
+        if isinstance(
+            other, (TypedExpression, str, int, float, bool, bytes, Decimal)
+        ):
+            return self._comparison(">", other)
+        return NotImplemented
+
+    def __ge__(self, other: object) -> ComparisonResult:  # type: ignore[override]
+        if isinstance(
+            other, (TypedExpression, str, int, float, bool, bytes, Decimal)
+        ):
+            return self._comparison(">=", other)
         return NotImplemented
 
     def over(
@@ -298,7 +338,7 @@ class BooleanExpression(TypedExpression):
         return cls("TRUE" if value else "FALSE")
 
     @classmethod
-    def raw(
+    def _raw(
         cls,
         sql: str,
         *,
@@ -335,6 +375,26 @@ class GenericExpression(TypedExpression):
         msg = "Generic expressions only accept other SQL expressions"
         raise TypeError(msg)
 
+    def coalesce(self, *others: object) -> "GenericExpression":
+        """Return the first non-null expression from the provided arguments."""
+
+        if not others:
+            return self
+
+        operands = [self]
+        dependencies = set(self.dependencies)
+        for other in others:
+            operand = self._coerce_operand(other)
+            operands.append(operand)
+            dependencies.update(operand.dependencies)
+
+        sql = ", ".join(expression.render() for expression in operands)
+        return type(self)(
+            f"COALESCE({sql})",
+            dependencies=dependencies,
+            duck_type=self.duck_type,
+        )
+
     @classmethod
     def column(
         cls,
@@ -349,7 +409,7 @@ class GenericExpression(TypedExpression):
         )
 
     @classmethod
-    def raw(
+    def _raw(
         cls,
         sql: str,
         *,
@@ -357,10 +417,10 @@ class GenericExpression(TypedExpression):
     ) -> "GenericExpression":
         return cls(sql, dependencies=dependencies)
 
-    def max_by(self, order: "TypedExpression") -> "TypedExpression":
-        from ..functions import (  # pylint: disable=import-outside-toplevel
-            AGGREGATE_FUNCTIONS,
-        )
-
-        aggregator = AGGREGATE_FUNCTIONS.Generic.max_by
-        return aggregator(self, order)
+    def max_by(self, order: "TypedExpression") -> "GenericExpression":
+        if not isinstance(order, TypedExpression):
+            msg = "Generic max_by requires a typed expression for ordering"
+            raise TypeError(msg)
+        dependencies = self.dependencies.union(order.dependencies)
+        sql = f"max_by({self.render()}, {order.render()})"
+        return GenericExpression(sql, duck_type=self.duck_type, dependencies=dependencies)

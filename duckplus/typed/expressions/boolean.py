@@ -21,13 +21,13 @@ class BooleanFactory:
     def literal(self, value: bool) -> BooleanExpression:
         return BooleanExpression.literal(value)
 
-    def raw(
+    def _raw(
         self,
         sql: str,
         *,
         dependencies: Iterable[DependencyLike] = (),
     ) -> BooleanExpression:
-        return BooleanExpression(sql, dependencies=dependencies)
+        return BooleanExpression._raw(sql, dependencies=dependencies)
 
     def coerce(self, operand: object) -> BooleanExpression:
         if isinstance(operand, BooleanExpression):

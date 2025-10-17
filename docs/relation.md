@@ -148,13 +148,13 @@ with manager as connection:
 
     summary = base.aggregate(
         ("category",),
-        ducktype.Boolean.raw("amount > 1", dependencies=["amount"]),
+        ducktype.Numeric("amount") > 1,
         total_sales=ducktype.Numeric("amount").sum(),
         average_sale=ducktype.Numeric("amount").avg(),
     )
 
 assert summary.columns == ("category", "total_sales", "average_sale")
-assert summary.relation.order("category").fetchall() == [
+assert summary.order_by("category").relation.fetchall() == [
     ("a", 2, 2.0),
     ("b", 3, 3.0),
 ]
@@ -190,7 +190,7 @@ with manager as connection:
 
     filtered = base.filter(
         "amount > 1",
-        ducktype.Boolean.raw("category = 'b'", dependencies=["category"]),
+        ducktype.Varchar("category") == "b",
     )
 
 assert filtered.columns == ("category", "amount")

@@ -24,9 +24,9 @@ with manager:
         },
     )
     metrics = events.add(
-        total_engagement=ducktype.Numeric.raw(
-            "metrics.likes + metrics.shares",
-            dependencies=["metrics"],
+        total_engagement=(
+            ducktype.Numeric("metrics.likes")
+            + ducktype.Numeric("metrics.shares")
         )
     )
     print(metrics.relation.fetchall())

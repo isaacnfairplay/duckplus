@@ -8,7 +8,6 @@ from . import typed  # pylint: disable=unused-import
 from .typed import (
     Blob,
     Boolean,
-    Functions,
     Generic,
     Numeric,
     Varchar,
@@ -29,7 +28,6 @@ __all__ = [
     "Boolean",
     "Blob",
     "Generic",
-    "Functions",
     "select",
 ]
 

@@ -606,6 +606,68 @@ class Relation:
 
         return self._join(other, join_type="semi", on=on)
 
+    def distinct(self) -> "Relation":
+        """Return the relation with duplicate rows removed."""
+
+        try:
+            relation = self._relation.distinct()
+        except duckdb.BinderException as error:  # pragma: no cover - defensive
+            msg = "distinct operation references unknown columns"
+            raise ValueError(msg) from error
+        return type(self).from_relation(self.duckcon, relation)
+
+    def union(self, other: "Relation", *, all: bool = False) -> "Relation":
+        """Return the UNION (or UNION ALL) of two relations."""
+
+        if not isinstance(other, Relation):
+            msg = "union requires another Relation instance"
+            raise TypeError(msg)
+        if self.duckcon is not other.duckcon:
+            msg = "Unioned relations must originate from the same DuckCon"
+            raise ValueError(msg)
+        if not self.duckcon.is_open:
+            msg = (
+                "DuckCon connection must be open to call union helpers. "
+                "Use DuckCon as a context manager."
+            )
+            raise RuntimeError(msg)
+
+        try:
+            if all:
+                relation = self._relation.union_all(other._relation)  # type: ignore[operator]
+            else:
+                relation = self._relation.union(other._relation)  # type: ignore[operator]
+        except duckdb.BinderException as error:
+            msg = "Union operation references incompatible columns"
+            raise ValueError(msg) from error
+        return type(self).from_relation(self.duckcon, relation)
+
+    def order_by(self, *clauses: str) -> "Relation":
+        """Return the relation ordered by the provided SQL clauses."""
+
+        if not clauses:
+            msg = "order_by requires at least one clause"
+            raise ValueError(msg)
+
+        formatted = []
+        for clause in clauses:
+            if not isinstance(clause, str):
+                msg = "order_by clauses must be strings"
+                raise TypeError(msg)
+            normalised = clause.strip()
+            if not normalised:
+                msg = "order_by clauses cannot be empty"
+                raise ValueError(msg)
+            formatted.append(normalised)
+
+        order_sql = ", ".join(formatted)
+        try:
+            relation = self._relation.order(order_sql)
+        except duckdb.BinderException as error:
+            msg = "order_by clauses reference unknown columns"
+            raise ValueError(msg) from error
+        return type(self).from_relation(self.duckcon, relation)
+
     def materialize(
         self,
         name: str | None = None,
