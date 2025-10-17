@@ -5,7 +5,7 @@
 from __future__ import annotations
 from os import PathLike, fspath
 from pathlib import Path
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from typing import Any, TypedDict, cast
 
 import duckdb  # type: ignore[import-not-found]
@@ -18,6 +18,9 @@ __all__ = [
     "read_csv",
     "read_parquet",
     "read_json",
+    "read_odbc_query",
+    "read_odbc_table",
+    "read_excel",
 ]
 
 PathLikeInput = Path | PathLike[str] | str
@@ -622,3 +625,59 @@ def read_json(
 
     relation = connection.read_json(path, **kwargs)  # type: ignore[arg-type]
     return Relation.from_relation(duckcon, relation)
+
+
+def read_odbc_query(
+    duckcon: DuckCon,
+    connection_string: str,
+    query: str,
+    *,
+    parameters: Iterable[Any] | None = None,
+) -> Relation:
+    """Execute an ODBC query via nano-ODBC and return a relation."""
+
+    return Relation.from_odbc_query(
+        duckcon,
+        connection_string,
+        query,
+        parameters=parameters,
+    )
+
+
+def read_odbc_table(
+    duckcon: DuckCon,
+    connection_string: str,
+    table: str,
+) -> Relation:
+    """Scan an ODBC table via nano-ODBC and return a relation."""
+
+    return Relation.from_odbc_table(duckcon, connection_string, table)
+
+
+def read_excel(
+    duckcon: DuckCon,
+    source: str | PathLike[str],
+    *,
+    sheet: str | int | None = None,
+    header: bool | None = None,
+    skip: int | None = None,
+    skiprows: int | None = None,
+    limit: int | None = None,
+    names: Sequence[str] | None = None,
+    dtype: Mapping[str, str] | Sequence[str] | None = None,
+    all_varchar: bool | None = None,
+) -> Relation:
+    """Load an Excel workbook via DuckDB's excel extension."""
+
+    return Relation.from_excel(
+        duckcon,
+        source,
+        sheet=sheet,
+        header=header,
+        skip=skip,
+        skiprows=skiprows,
+        limit=limit,
+        names=names,
+        dtype=dtype,
+        all_varchar=all_varchar,
+    )

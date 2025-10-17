@@ -71,6 +71,7 @@ class DuckCon:  # pylint: disable=too-many-instance-attributes
         self.connect_kwargs = connect_kwargs
         self._connection: Optional[duckdb.DuckDBPyConnection] = None
         self._helpers: dict[str, Callable[[duckdb.DuckDBPyConnection, Any], Any]] = {}
+        self._register_default_helpers()
 
     def __enter__(self) -> duckdb.DuckDBPyConnection:
         if self._connection is not None:
@@ -147,6 +148,37 @@ class DuckCon:  # pylint: disable=too-many-instance-attributes
             raise KeyError(f"Helper '{name}' is not registered.")
         helper = self._helpers[name]
         return helper(self.connection, *args, **kwargs)
+
+    def _register_default_helpers(self) -> None:
+        """Preload built-in I/O helpers into the helper registry."""
+
+        # Avoid importing duckplus.io at module import time to sidestep circular
+        # imports. The local import keeps the binding cost low and mirrors the
+        # lazy nature of helper registration.
+        from . import io as io_helpers  # pylint: disable=import-outside-toplevel
+
+        defaults: dict[str, Callable[..., Any]] = {
+            "read_csv": io_helpers.read_csv,
+            "read_parquet": io_helpers.read_parquet,
+            "read_json": io_helpers.read_json,
+            "read_odbc_query": io_helpers.read_odbc_query,
+            "read_odbc_table": io_helpers.read_odbc_table,
+            "read_excel": io_helpers.read_excel,
+        }
+
+        for name, helper in defaults.items():
+            if name in self._helpers:
+                continue
+
+            def _bound_helper(
+                _connection: duckdb.DuckDBPyConnection,
+                *args: Any,
+                _helper: Callable[["DuckCon", Any], Any] = helper,
+                **kwargs: Any,
+            ) -> Any:
+                return _helper(self, *args, **kwargs)
+
+            self._helpers[name] = _bound_helper
 
     def load_nano_odbc(self, *, install: bool = True) -> None:
         """Install and load the nano-ODBC community extension.
@@ -311,6 +343,15 @@ class DuckCon:  # pylint: disable=too-many-instance-attributes
 
         return Table(self, name)
 
-
 if TYPE_CHECKING:  # pragma: no cover - import for typing only
     from .table import Table
+
+
+from . import io as _io_helpers  # pylint: disable=wrong-import-position
+
+DuckCon.read_csv = _io_helpers.read_csv  # type: ignore[attr-defined]
+DuckCon.read_parquet = _io_helpers.read_parquet  # type: ignore[attr-defined]
+DuckCon.read_json = _io_helpers.read_json  # type: ignore[attr-defined]
+DuckCon.read_odbc_query = _io_helpers.read_odbc_query  # type: ignore[attr-defined]
+DuckCon.read_odbc_table = _io_helpers.read_odbc_table  # type: ignore[attr-defined]
+DuckCon.read_excel = _io_helpers.read_excel  # type: ignore[attr-defined]

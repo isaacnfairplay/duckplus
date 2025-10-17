@@ -13,7 +13,9 @@ codebase so an AI or human teammate can adopt the same defaults quickly.
 - Use `ducktype` factories for any SQL expression; they encode dependencies,
   support aggregates, and drive the `select()` builder without raw strings.【F:duckplus/typed/ducktype.py†L1-L27】【F:duckplus/typed/expressions/numeric.py†L158-L235】
 - Prefer the I/O, schema, and table helpers exposed from the package root for
-  consistent error handling and identifier quoting.【F:duckplus/__init__.py†L7-L44】【F:duckplus/io/__init__.py†L1-L120】【F:duckplus/schema.py†L1-L118】【F:duckplus/table.py†L1-L64】
+  consistent error handling and identifier quoting. Built-in readers such as
+  ``DuckCon.read_csv``, ``DuckCon.read_parquet``, and ``DuckCon.read_excel``
+  ship pre-registered so you can call them directly from the manager.【F:duckplus/__init__.py†L7-L44】【F:duckplus/duckcon.py†L73-L181】【F:duckplus/io/__init__.py†L1-L648】【F:duckplus/schema.py†L1-L118】【F:duckplus/table.py†L1-L64】
 
 ## Repository Layout
 | Area | Purpose | Highlights |
@@ -39,8 +41,10 @@ codebase so an AI or human teammate can adopt the same defaults quickly.
    of deferring to DuckDB runtime failures.【F:duckplus/relation.py†L466-L520】【F:duckplus/typed/ducktype.py†L1-L27】
 4. **Helper Registration Beats Raw SQL** – Use `DuckCon.register_helper` for I/O
    or custom routines so callers can invoke them through `apply_helper` without
-   re-plumbing connections. The registry enforces unique names unless explicitly
-   overwritten.【F:duckplus/duckcon.py†L88-L147】
+   re-plumbing connections. Core helpers like `read_csv`, `read_parquet`, and
+   `read_json` register automatically so the connection manager always exposes
+   the common file readers. Override them with `overwrite=True` when custom
+   behaviour is required.【F:duckplus/duckcon.py†L73-L159】
 5. **Schema Drift is a First-Class Signal** – Rely on `schema.diff_relations`
    and `schema.diff_files` to compare datasets and emit warnings when types
    change unexpectedly, instead of building ad-hoc checks.【F:duckplus/schema.py†L1-L140】
@@ -90,16 +94,16 @@ codebase so an AI or human teammate can adopt the same defaults quickly.
    expressions ready for `Relation.aggregate()` builders.【F:duckplus/typed/expressions/numeric.py†L158-L235】
 5. **Export responsibly**:
    ```python
-   from duckplus import io
-
-   snapshot = io.read_parquet(
-       duckcon,
-       "data/events.parquet",
-       columns=["event_id", "value"],
-   )
+   manager = DuckCon()
+   with manager:
+       snapshot = manager.read_parquet(
+           "data/events.parquet",
+           columns=["event_id", "value"],
+       )
    ```
    I/O wrappers normalise option aliases, quote identifiers, and keep parity with
-   DuckDB keyword arguments while still requiring an open connection.【F:duckplus/io/__init__.py†L1-L194】
+   DuckDB keyword arguments while still requiring an open connection. The helpers
+   register on every `DuckCon` instance, so the import stays optional.【F:duckplus/duckcon.py†L73-L159】【F:duckplus/io/__init__.py†L1-L194】
 
 ## Tables & Persistence
 - Use `duckplus.Table` when inserting into managed DuckDB tables; it validates
