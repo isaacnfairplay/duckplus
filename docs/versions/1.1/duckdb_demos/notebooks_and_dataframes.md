@@ -23,10 +23,9 @@ with manager as connection:
     base = Relation.from_sql(manager, "SELECT * FROM sales")
 
     summary = base.aggregate(
-        ("region",),
         total=ducktype.Numeric("amount").sum(),
         average=ducktype.Numeric("amount").avg(),
-    )
+    ).by("region")
     print(summary.relation.fetchall())
 ```
 

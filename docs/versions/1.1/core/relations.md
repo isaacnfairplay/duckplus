@@ -56,22 +56,54 @@ raising errors, making migration scripts resilient. For ad-hoc projections, use
 callable that receives the underlying ``DuckDBPyRelation`` and returns a new
 one. The wrapper will capture the resulting metadata automatically.
 
+## Projection builder
+
+`Relation.select` returns a builder that assembles complex projection lists
+before issuing the query. Chain :meth:`.column`
+invocations to append typed expressions or raw SQL snippets, then finalise the
+projection with :meth:`.from_`. Optional columns accept ``if_exists=True`` to
+mirror other soft helpers, and typed expressions surface dependency validation
+errors before DuckDB sees the query.
+
+```python
+projection = (
+    base.select()
+    .column("category")
+    .column(ducktype.Numeric("amount").alias("primary_amount"))
+    .column(
+        ducktype.Numeric("fallback").alias("fallback_amount"),
+        if_exists=True,
+    )
+    .from_()
+)
+```
+
+Projection builders also expose ``.star`` with ``REPLACE``/``EXCLUDE`` modifiers.
+DuckPlus validates typed replacements so ambiguous or missing dependencies raise
+descriptive ``ValueError`` instances rather than deferring to DuckDB binder
+errors.
+
 ## Aggregation and window functions
 
-:meth:`Relation.aggregate <duckplus.relation.Relation.aggregate>` groups rows and
-computes aggregates with typed expressions. Column validation ensures typed
-expressions only reference the source relation. Pass strings or non-aggregate
-boolean expressions positionally to filter rows before grouping, and provide
-aliased aggregate expressions either positionally or as keyword arguments.
+:meth:`Relation.aggregate <duckplus.relation.Relation.aggregate>` returns a
+builder that groups rows and computes aggregates with typed expressions. Column
+validation ensures typed expressions only reference the source relation. Pass
+strings or non-aggregate boolean expressions positionally to filter rows before
+grouping, and provide aliased aggregate expressions either positionally or as
+keyword arguments. Finalise the builder with :meth:`.by`
+or :meth:`.all` depending on whether you want explicit or inferred grouping
+expressions.
 
 ```python
 amount = ducktype.Numeric("amount")
-summary = base.aggregate(
-    ducktype.Varchar("category"),
-    "amount > 0",
-    amount.sum().alias("total_sales"),
-    amount.avg().alias("average_sale"),
-    amount.avg() > 25,
+summary = (
+    base.aggregate(
+        "amount > 0",
+        amount.sum().alias("total_sales"),
+        amount.avg().alias("average_sale"),
+    )
+    .having(amount.avg() > 25)
+    .by(ducktype.Varchar("category"))
 )
 ```
 
@@ -79,7 +111,8 @@ Aggregate boolean expressions are treated as ``HAVING`` clauses and rewritten to
 reference the projected aliases. Strings containing aggregate functions follow
 the same path, so ``"sum(amount) > 100"`` is rewritten to the corresponding
 alias even if casing or identifier quoting differ. Non-aggregate expressions
-become additional grouping expressions, keeping the aggregate SQL concise.
+become additional grouping expressions, and ``.all()`` automatically includes
+them when finalising the query.
 
 Typed expressions expose window helpers via
 :meth:`duckplus.typed.expressions.base.TypedExpression.over`, enabling fluent
