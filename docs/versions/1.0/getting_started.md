@@ -20,23 +20,44 @@ so typed expressions and relation helpers share the same semantics as the
 underlying database.
 ```
 
+### Verifying your environment
+
+Immediately after installation, open a Python shell and run:
+
+```python
+import duckplus
+
+with duckplus.DuckCon() as con:
+    print(con.sql("SELECT 'duckplus' AS package_name, 42 AS answer").fetchall())
+```
+
+The query confirms the DuckDB bindings are discoverable and that the default
+configuration can execute simple SQL. If an import fails, double-check that
+DuckDB and ``duckplus`` were installed into the same virtual environment. The
+package is tested on CPython 3.11–3.12 across Linux, macOS, and Windows runners.
+
 ## Opening a connection
 
 `DuckCon` keeps connection lifecycles predictable. Use it as a context manager
 when you want to rely on automatic cleanup, or call ``connect``/``close``
-explicitly when integrating with existing resource managers.
+explicitly when integrating with existing resource managers. The class exposes
+the ``is_open`` property so you can assert state during tests, and
+``register_helper`` so bespoke IO helpers can be bound to the active connection
+without leaking the raw ``DuckDBPyConnection``.
 
 ```python
 from duckplus import DuckCon
 
-manager = DuckCon(extra_extensions=("httpfs",))
+manager = DuckCon(extra_extensions=("excel",))
 with manager as con:
     assert con.sql("SELECT 42").fetchone() == (42,)
 ```
 
 Providing ``extra_extensions`` ensures DuckDB community extensions are installed
 and loaded before queries run. The {doc}`core/duckcon` chapter covers extension
-management and connection pooling in more depth.
+management, the extension metadata returned by :meth:`DuckCon.extensions
+<duckplus.duckcon.DuckCon.extensions>`, and strategies for reusing connections in
+long-running services.
 
 ## Working with immutable relations
 
@@ -66,7 +87,10 @@ with manager as con:
 
 Column metadata from ``base`` ensures the ``total`` expression only references
 existing columns. The {doc}`core/relations` chapter documents every helper,
-including aggregation, filtering, joins, and schema validation utilities.
+including aggregation, filtering, joins, schema validation utilities, exporters,
+and diagnostic helpers such as :meth:`Relation.null_ratios
+<duckplus.relation.Relation.null_ratios>` and :meth:`Relation.row_count
+<duckplus.relation.Relation.row_count>`.
 
 ## Typed expression DSL
 
@@ -89,6 +113,21 @@ running_total = amount.sum().over(partition_by=("region",), order_by=("date",))
 
 Typed expressions integrate with both relation helpers and the
 :mod:`duckplus.typed.select` builder described in {doc}`core/typed_expressions`.
+
+## Next steps
+
+1. Skim the {doc}`core/duckcon` reference to learn how to configure database
+   settings, register custom helpers, and troubleshoot extension loading.
+2. Follow up with {doc}`core/relations` for a catalogue of immutable data
+   transformations and exporter patterns.
+3. Explore {doc}`core/typed_expressions` to understand how the DSL tracks column
+   dependencies, aliases, window frames, and integration with DuckDB functions.
+4. Wrap up with {doc}`io/overview` and {doc}`io/file_append` to load and persist
+   data efficiently.
+
+Whenever you are unsure which helper to reach for, run ``help(duckplus.DuckCon)``
+or ``help(duckplus.Relation)`` in a Python shell—the docstrings mirror the
+structure of this guide.
 
 ## Documentation navigation
 
