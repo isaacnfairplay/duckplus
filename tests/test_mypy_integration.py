@@ -23,3 +23,23 @@ def demo() -> None:
     assert "error" in stdout.lower()
     assert "has no attribute \"sum\"" in stdout
     assert stderr == ""
+
+
+def test_ducktype_convenience_module_is_mypy_clean(tmp_path: Path) -> None:
+    source = """
+from duckplus.typed.ducktype import Numeric, select
+
+
+def demo() -> None:
+    builder = select()
+    expr = Numeric.literal(1)
+    builder = builder.column(expr, alias="value")
+    builder.build()
+"""
+    path = tmp_path / "typed_ducktype_usage.py"
+    path.write_text(source, encoding="utf-8")
+
+    stdout, stderr, status = mypy_api.run([str(path)])
+    assert status == 0
+    assert stdout.strip().startswith("Success: no issues found")
+    assert stderr == ""
