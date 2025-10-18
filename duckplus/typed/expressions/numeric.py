@@ -182,7 +182,10 @@ class NumericExpression(TypedExpression):
 
     def avg(self) -> "NumericExpression":
         sql = f"avg({self.render()})"
-        return type(self)(sql, dependencies=self.dependencies)
+        return DoubleExpression._raw(
+            sql,
+            dependencies=self.dependencies,
+        )
 
 
 class NumericFactory:
@@ -293,7 +296,10 @@ class NumericAggregateFactory:
     def avg(self, operand: object) -> NumericExpression:
         expression = self._factory.coerce(operand)
         sql = f"avg({expression.render()})"
-        return self._wrap(sql, dependencies=expression.dependencies)
+        return DoubleExpression._raw(
+            sql,
+            dependencies=expression.dependencies,
+        )
 
     def min(self, operand: object) -> NumericExpression:
         expression = self._factory.coerce(operand)

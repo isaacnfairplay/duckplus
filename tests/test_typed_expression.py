@@ -36,6 +36,13 @@ def test_numeric_aggregate_sum_uses_dependencies() -> None:
     assert expression.dependencies == {col_dep('sales')}
 
 
+def test_integer_aggregate_avg_returns_double_type() -> None:
+    expression = ducktype.Integer.Aggregate.avg("sales")
+    assert expression.render() == 'avg("sales")'
+    assert expression.dependencies == {col_dep('sales')}
+    assert expression.duck_type.render() == "DOUBLE"
+
+
 def test_numeric_aggregate_count_if_uses_predicate_dependencies() -> None:
     predicate = ducktype.Boolean("include")
     expression = ducktype.Numeric.Aggregate.count_if(predicate)
@@ -123,6 +130,13 @@ def test_numeric_expression_method_sum() -> None:
     assert isinstance(aggregated, NumericExpression)
     assert aggregated.render() == 'sum("amount")'
     assert aggregated.dependencies == {col_dep('amount')}
+
+
+def test_integer_expression_avg_returns_double_type() -> None:
+    aggregated = ducktype.Integer("amount").avg()
+    assert aggregated.render() == 'avg("amount")'
+    assert aggregated.dependencies == {col_dep('amount')}
+    assert aggregated.duck_type.render() == "DOUBLE"
 
 
 def test_integer_literal_preserves_type() -> None:
