@@ -6,11 +6,13 @@ from decimal import Decimal
 import pytest
 
 from duckplus.typed import (
+    AGGREGATE_FUNCTIONS,
     BooleanExpression,
     ExpressionDependency,
     GenericExpression,
     NumericExpression,
     VarcharExpression,
+    SCALAR_FUNCTIONS,
     ducktype,
 )
 def col_dep(name: str, *, table: str | None = None) -> ExpressionDependency:
@@ -55,6 +57,39 @@ def test_generic_aggregate_max_tracks_dependencies() -> None:
     expression = ducktype.Generic.Aggregate.max("payload")
     assert expression.render() == 'max("payload")'
     assert expression.dependencies == {col_dep('payload')}
+
+
+def test_scalar_namespace_lower_tracks_dependencies() -> None:
+    expression = SCALAR_FUNCTIONS.Varchar.lower("customer")
+    assert expression.render() == 'lower("customer")'
+    assert expression.dependencies == {col_dep('customer')}
+
+
+def test_scalar_namespace_numeric_literal() -> None:
+    expression = SCALAR_FUNCTIONS.Numeric.abs(42)
+    assert expression.render() == 'abs(42)'
+    assert expression.dependencies == frozenset()
+
+
+def test_scalar_symbolic_operator_renders_infix() -> None:
+    left = ducktype.Varchar("name")
+    right = ducktype.Varchar.literal("%foo%")
+    expression = SCALAR_FUNCTIONS.Boolean.symbols['~~'](left, right)
+    assert expression.render() == "(\"name\" ~~ '%foo%')"
+    assert expression.dependencies == {col_dep('name')}
+
+
+def test_aggregate_namespace_sum_tracks_dependencies() -> None:
+    expression = AGGREGATE_FUNCTIONS.Numeric.sum("revenue")
+    assert expression.render() == 'sum("revenue")'
+    assert expression.dependencies == {col_dep('revenue')}
+
+
+def test_aggregate_namespace_filter_merges_dependencies() -> None:
+    predicate = ducktype.Boolean("is_active")
+    expression = AGGREGATE_FUNCTIONS.Numeric.sum_filter(predicate, "revenue")
+    assert expression.render() == 'sum("revenue") FILTER (WHERE "is_active")'
+    assert expression.dependencies == {col_dep('revenue'), col_dep('is_active')}
 
 
 def test_varchar_equality_to_literal() -> None:

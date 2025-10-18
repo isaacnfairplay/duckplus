@@ -225,8 +225,41 @@ def _format_definition(
     )
 
 
-def _render_function_block(
-    function_name: str,
+def _signature_constant_name(name: str) -> str:
+    if name.isidentifier():
+        normalized = name.upper()
+    else:
+        normalized = "_".join(f"{ord(char):04x}" for char in name)
+    return f"_{normalized}_SIGNATURES"
+
+
+def _symbol_method_name(symbol: str) -> str:
+    codes = "_".join(f"{ord(char):04x}" for char in symbol)
+    return f"symbol_{codes}"
+
+
+def _format_overload_summary(
+    schema: str,
+    name: str,
+    return_type: str | None,
+    parameter_types: tuple[str, ...],
+    parameter_names: tuple[str, ...],
+    varargs: str | None,
+) -> str:
+    components: list[str] = []
+    for index, parameter_type in enumerate(parameter_types):
+        parameter_name = parameter_names[index] if index < len(parameter_names) and parameter_names[index] else f"arg{index}"
+        rendered_type = parameter_type or "ANY"
+        components.append(f"{rendered_type} {parameter_name}")
+    if varargs:
+        components.append(f"{varargs} ...")
+    arguments = ", ".join(components)
+    rendered_return = return_type or "ANY"
+    return f"- {schema}.{name}({arguments}) -> {rendered_return}"
+
+
+def _docstring_for_function(
+    name: str,
     overloads: list[
         tuple[
             str,
@@ -241,21 +274,68 @@ def _render_function_block(
         ]
     ],
     *,
-    return_category: str,
-    call_class: str = "_DuckDBFunctionCall",
+    filter_variant: bool = False,
+    symbol: str | None = None,
 ) -> str:
-    lines = [f"    {function_name} = {call_class}(("]
+    target = symbol or name
+    header = f"Call DuckDB function ``{target}``"
+    if filter_variant:
+        header += " with ``FILTER``"
+    header += "."
+    description = next((entry[6] for entry in overloads if entry[6]), None)
+    lines = [f"        \"\"\"{header}"]
+    if description:
+        lines.append("")
+        lines.append(f"        {description}")
+    lines.append("")
+    lines.append("        Overloads:")
+    for overload in overloads:
+        lines.append(
+            "        "
+            + _format_overload_summary(
+                overload[0],
+                overload[1],
+                overload[2],
+                overload[3],
+                overload[4],
+                overload[5],
+            )
+        )
+    lines.append("        \"\"\"")
+    return "\n".join(lines)
+
+
+def _render_signature_constant(
+    constant_name: str,
+    overloads: list[
+        tuple[
+            str,
+            str,
+            str | None,
+            tuple[str, ...],
+            tuple[str, ...],
+            str | None,
+            str | None,
+            str | None,
+            str | None,
+        ]
+    ],
+) -> str:
+    lines = [f"    {constant_name}: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = ("]
     lines.extend(
-        _format_definition(
-            schema,
-            name,
-            return_type,
-            parameter_types,
-            parameter_names,
-            varargs,
-            description,
-            comment,
-            macro_definition,
+        indent(
+            _format_definition(
+                schema,
+                name,
+                return_type,
+                parameter_types,
+                parameter_names,
+                varargs,
+                description,
+                comment,
+                macro_definition,
+            ),
+            "        ",
         )
         for (
             schema,
@@ -269,76 +349,64 @@ def _render_function_block(
             macro_definition,
         ) in overloads
     )
-    lines.append("        ),")
-    lines.append(f"        return_category={return_category!r},")
     lines.append("    )")
     return "\n".join(lines)
 
 
-def _render_symbolic_mapping(
-    overloads: dict[
-        str,
-        list[
-            tuple[
-                str,
-                str,
-                str | None,
-                tuple[str, ...],
-                tuple[str, ...],
-                str | None,
-                str | None,
-                str | None,
-                str | None,
-            ]
-        ],
-    ],
+def _render_method(
+    method_name: str,
     *,
-    return_category: str,
-) -> str:
-    if not overloads:
-        return "    _SYMBOLIC_FUNCTIONS: ClassVar[dict[str, _DuckDBFunctionCall]] = {}"
-    items = []
-    for function_name in sorted(overloads):
-        block_lines = ["        " + repr(function_name) + ": _DuckDBFunctionCall(("]
-        block_lines.extend(
-            indent(
-                _format_definition(
-                    schema,
-                    name,
-                    return_type,
-                    parameter_types,
-                    parameter_names,
-                    varargs,
-                    description,
-                    comment,
-                    macro_definition,
-                ),
-                "            ",
-            )
-            for (
-                schema,
-                name,
-                return_type,
-                parameter_types,
-                parameter_names,
-                varargs,
-                description,
-                comment,
-                macro_definition,
-            ) in overloads[function_name]
-        )
-        block_lines.append("            ),")
-        block_lines.append(f"            return_category={return_category!r},")
-        block_lines.append("        ),")
-        items.append("\n".join(block_lines))
-    mapping = "\n".join(items)
-    return "\n".join(
-        [
-            "    _SYMBOLIC_FUNCTIONS: ClassVar[dict[str, _DuckDBFunctionCall]] = {",
-            mapping,
-            "    }",
+    expression: str,
+    constant_name: str,
+    overloads: list[
+        tuple[
+            str,
+            str,
+            str | None,
+            tuple[str, ...],
+            tuple[str, ...],
+            str | None,
+            str | None,
+            str | None,
+            str | None,
         ]
+    ],
+    filter_variant: bool = False,
+    symbol: str | None = None,
+    original_name: str | None = None,
+) -> str:
+    signature = "predicate: object, *operands: object" if filter_variant else "*operands: object"
+    lines = [f"    def {method_name}(self, {signature}) -> {expression}:"]
+    lines.append(
+        _docstring_for_function(
+            original_name or method_name,
+            overloads,
+            filter_variant=filter_variant,
+            symbol=symbol,
+        )
     )
+    if filter_variant:
+        lines.extend(
+            [
+                "        return call_duckdb_filter_function(",
+                "            predicate,",
+                f"            self.{constant_name},",
+                "            return_category=self.return_category,",
+                "            operands=operands,",
+                "        )",
+            ]
+        )
+    else:
+        lines.extend(
+            [
+                "        return call_duckdb_function(",
+                f"            self.{constant_name},",
+                "            return_category=self.return_category,",
+                "            operands=operands,",
+                "        )",
+            ]
+        )
+    return "\n".join(lines)
 
 
 def _render_namespace(
@@ -381,45 +449,67 @@ def _render_namespace(
     class_name = f"{function_type.title()}{category.title()}Functions"
     doc_category = RETURN_CATEGORY_DOCS.get(category, category)
     doc = f"DuckDB {function_type} functions returning {doc_category} results."
+    expression = CATEGORY_TO_EXPRESSION[category]
     lines: list[str] = [f"class {class_name}(_StaticFunctionNamespace):", f"    \"\"\"{doc}\"\"\""]
     lines.append("    __slots__ = ()")
     lines.append("    function_type: ClassVar[str] = " + repr(function_type))
     lines.append("    return_category: ClassVar[str] = " + repr(category))
-    if identifiers:
-        for function_name in sorted(identifiers):
+    for function_name in sorted(identifiers):
+        constant_name = _signature_constant_name(function_name)
+        lines.append(_render_signature_constant(constant_name, identifiers[function_name]))
+        lines.append(
+            _render_method(
+                function_name,
+                expression=expression,
+                constant_name=constant_name,
+                overloads=identifiers[function_name],
+            )
+        )
+        if function_type == "aggregate":
+            filter_name = f"{function_name}_filter"
             lines.append(
-                _render_function_block(
-                    function_name,
-                    identifiers[function_name],
-                    return_category=category,
+                _render_method(
+                    filter_name,
+                    expression=expression,
+                    constant_name=constant_name,
+                    overloads=identifiers[function_name],
+                    filter_variant=True,
+                    original_name=function_name,
                 )
             )
-            if function_type == "aggregate":
-                filter_name = f"{function_name}_filter"
-                lines.append(
-                    _render_function_block(
-                        filter_name,
-                        identifiers[function_name],
-                        return_category=category,
-                        call_class="_DuckDBFilterFunctionCall",
-                    )
-                )
-        registry_lines = ["    _IDENTIFIER_FUNCTIONS: ClassVar[dict[str, _DuckDBFunctionCall]] = {"]
+    for symbol_name in sorted(symbols):
+        constant_name = _signature_constant_name(symbol_name)
+        method_name = _symbol_method_name(symbol_name)
+        lines.append(_render_signature_constant(constant_name, symbols[symbol_name]))
+        lines.append(
+            _render_method(
+                method_name,
+                expression=expression,
+                constant_name=constant_name,
+                overloads=symbols[symbol_name],
+                symbol=symbol_name,
+            )
+        )
+    if identifiers:
+        mapping_lines = ["    _IDENTIFIER_FUNCTIONS: ClassVar[dict[str, str]] = {"]
         for function_name in sorted(identifiers):
-            registry_lines.append(f"        {function_name!r}: {function_name},")
+            mapping_lines.append(f"        {function_name!r}: '{function_name}',")
             if function_type == "aggregate":
                 filter_key = f"{function_name}_filter"
-                registry_lines.append(f"        {filter_key!r}: {filter_key},")
-        registry_lines.append("    }")
-        lines.append("\n".join(registry_lines))
+                mapping_lines.append(f"        {filter_key!r}: '{filter_key}',")
+        mapping_lines.append("    }")
+        lines.append("\n".join(mapping_lines))
     else:
-        lines.append("    _IDENTIFIER_FUNCTIONS: ClassVar[dict[str, _DuckDBFunctionCall]] = {}")
-    lines.append(
-        _render_symbolic_mapping(
-            symbols,
-            return_category=category,
-        )
-    )
+        lines.append("    _IDENTIFIER_FUNCTIONS: ClassVar[dict[str, str]] = {}")
+    if symbols:
+        symbol_lines = ["    _SYMBOLIC_FUNCTIONS: ClassVar[dict[str, str]] = {"]
+        for symbol_name in sorted(symbols):
+            method_name = _symbol_method_name(symbol_name)
+            symbol_lines.append(f"        {symbol_name!r}: '{method_name}',")
+        symbol_lines.append("    }")
+        lines.append("\n".join(symbol_lines))
+    else:
+        lines.append("    _SYMBOLIC_FUNCTIONS: ClassVar[dict[str, str]] = {}")
     return "\n".join(lines)
 
 
@@ -443,22 +533,38 @@ def _render_stub_namespace(
             ]
         ],
     ],
+    symbols: dict[
+        str,
+        list[
+            tuple[
+                str,
+                str,
+                str | None,
+                tuple[str, ...],
+                tuple[str, ...],
+                str | None,
+                str | None,
+                str | None,
+                str | None,
+            ]
+        ],
+    ],
 ) -> str:
     class_name = f"{function_type.title()}{category.title()}Functions"
     expression = CATEGORY_TO_EXPRESSION[category]
     lines = [f"class {class_name}(_StaticFunctionNamespace[{expression}]):"]
-    lines.append("    ...")
-    if identifiers:
-        for function_name in sorted(identifiers):
-            annotation = f"    {function_name}: _DuckDBFunctionCall[{expression}]"
-            if function_name in STUB_VALID_TYPE_IGNORE:
-                annotation += "  # type: ignore[valid-type]"
-            lines.append(annotation)
-            if function_type == "aggregate":
-                filter_annotation = f"    {function_name}_filter: _DuckDBFunctionCall[{expression}]"
-                if function_name in STUB_VALID_TYPE_IGNORE:
-                    filter_annotation += "  # type: ignore[valid-type]"
-                lines.append(filter_annotation)
+    if not identifiers and not symbols:
+        lines.append("    ...")
+        return "\n".join(lines)
+    for function_name in sorted(identifiers):
+        lines.append(f"    def {function_name}(self, *operands: object) -> {expression}: ...")
+        if function_type == "aggregate":
+            lines.append(
+                f"    def {function_name}_filter(self, predicate: object, *operands: object) -> {expression}: ..."
+            )
+    for symbol_name in sorted(symbols):
+        method_name = _symbol_method_name(symbol_name)
+        lines.append(f"    def {method_name}(self, *operands: object) -> {expression}: ...")
     return "\n".join(lines)
 
 
@@ -553,9 +659,10 @@ def main() -> None:
         "",
         "from .functions import (",
         "    DuckDBFunctionDefinition,",
-        "    _DuckDBFilterFunctionCall,",
-        "    _DuckDBFunctionCall,",
+        "    DuckDBFunctionSignature,",
         "    _StaticFunctionNamespace,",
+        "    call_duckdb_filter_function,",
+        "    call_duckdb_function,",
         ")",
         "from .types import parse_type",
         "",
@@ -564,43 +671,66 @@ def main() -> None:
     stub_lines: list[str] = [
         "from __future__ import annotations",
         "",
-        "from typing import ClassVar, Generic, Mapping, Tuple, TypeVar, Protocol",
+        "from typing import Callable, ClassVar, Generic, Mapping, Tuple, TypeVar",
         "",
         "from .expression import BlobExpression, BooleanExpression, GenericExpression, NumericExpression, TypedExpression, VarcharExpression",
         "",
         "class DuckDBFunctionDefinition: ...",
         "class DuckDBFunctionSignature: ...",
-        "_ExprT = TypeVar('_ExprT', bound=TypedExpression, covariant=True)",
-        "",
-        "class _DuckDBFunctionCall(Protocol[_ExprT]):",
-        "    signatures: Tuple[DuckDBFunctionSignature, ...]",
-        "    function_type: str",
-        "    def __call__(self, *operands: object) -> _ExprT: ...",
-        "",
         "_NamespaceExprT = TypeVar('_NamespaceExprT', bound=TypedExpression)",
         "",
         "class _StaticFunctionNamespace(Generic[_NamespaceExprT]):",
         "    function_type: ClassVar[str]",
         "    return_category: ClassVar[str]",
-        "    _IDENTIFIER_FUNCTIONS: Mapping[str, _DuckDBFunctionCall[_NamespaceExprT]]",
-        "    _SYMBOLIC_FUNCTIONS: Mapping[str, _DuckDBFunctionCall[_NamespaceExprT]]",
-        "    def __getitem__(self, name: str) -> _DuckDBFunctionCall[_NamespaceExprT]: ...",
+        "    _IDENTIFIER_FUNCTIONS: Mapping[str, str]",
+        "    _SYMBOLIC_FUNCTIONS: Mapping[str, str]",
+        "    def __getitem__(self, name: str) -> Callable[..., _NamespaceExprT]: ...",
         "    def get(",
         "        self,",
         "        name: str,",
-        "        default: _DuckDBFunctionCall[_NamespaceExprT] | None = ...,",
-        "    ) -> _DuckDBFunctionCall[_NamespaceExprT] | None: ...",
+        "        default: Callable[..., _NamespaceExprT] | None = ...,",
+        "    ) -> Callable[..., _NamespaceExprT] | None: ...",
         "    def __contains__(self, name: object) -> bool: ...",
         "    @property",
-        "    def symbols(self) -> Mapping[str, _DuckDBFunctionCall[_NamespaceExprT]]: ...",
+        "    def symbols(self) -> Mapping[str, Callable[..., _NamespaceExprT]]: ...",
         "    def __dir__(self) -> list[str]: ...",
         "",
     ]
 
     for function_type, categories in sorted(index.items()):
         for category, functions in sorted(categories.items()):
-            identifiers: dict[str, list[tuple[str, str, str | None, tuple[str, ...], str | None]]] = {}
-            symbols: dict[str, list[tuple[str, str, str | None, tuple[str, ...], str | None]]] = {}
+            identifiers: dict[
+                str,
+                list[
+                    tuple[
+                        str,
+                        str,
+                        str | None,
+                        tuple[str, ...],
+                        tuple[str, ...],
+                        str | None,
+                        str | None,
+                        str | None,
+                        str | None,
+                    ]
+                ],
+            ] = {}
+            symbols: dict[
+                str,
+                list[
+                    tuple[
+                        str,
+                        str,
+                        str | None,
+                        tuple[str, ...],
+                        tuple[str, ...],
+                        str | None,
+                        str | None,
+                        str | None,
+                        str | None,
+                    ]
+                ],
+            ] = {}
             for name, overloads in functions.items():
                 catalog_entry = catalog[function_type][category]
                 if name.isidentifier() and not keyword.iskeyword(name):
@@ -623,6 +753,7 @@ def main() -> None:
                     function_type=function_type,
                     category=category,
                     identifiers=identifiers,
+                    symbols=symbols,
                 )
             )
             stub_lines.append("")
@@ -635,6 +766,33 @@ def main() -> None:
         output_lines.append("")
         stub_lines.append(_render_stub_type_namespace(function_type, categories))
         stub_lines.append("")
+
+    output_lines.extend(
+        [
+            "class DuckDBFunctionNamespace:",
+            "    \"\"\"Aggregate entry point for DuckDB typed function namespaces.\"\"\"",
+            "    __slots__ = ()",
+            "    Scalar: ScalarFunctionNamespace = ScalarFunctionNamespace()",  # noqa: N802
+            "    Aggregate: AggregateFunctionNamespace = AggregateFunctionNamespace()",  # noqa: N802
+            "    Window: WindowFunctionNamespace = WindowFunctionNamespace()",  # noqa: N802
+            "    def __dir__(self) -> list[str]:  # pragma: no cover - interactive helper",
+            "        return ['Scalar', 'Aggregate', 'Window']",
+            "",
+            "SCALAR_FUNCTIONS = ScalarFunctionNamespace()",
+            "AGGREGATE_FUNCTIONS = AggregateFunctionNamespace()",
+            "WINDOW_FUNCTIONS = WindowFunctionNamespace()",
+            "",
+            "__all__ = [",
+            "    'DuckDBFunctionDefinition',",
+            "    'DuckDBFunctionNamespace',",
+            "    'DuckDBFunctionSignature',",
+            "    'SCALAR_FUNCTIONS',",
+            "    'AGGREGATE_FUNCTIONS',",
+            "    'WINDOW_FUNCTIONS',",
+            "]",
+            "",
+        ]
+    )
 
     stub_lines.extend(
         [

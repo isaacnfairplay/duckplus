@@ -1,7 +1,6 @@
 # Language Server Demonstration
 
-This walkthrough exercises the Pyright language server against the statically generated DuckDB function catalog. The goal is to
-show, with real LSP responses, the completions and type information surfaced to IDEs.
+This walkthrough exercises the Pyright language server against the statically generated DuckDB function catalog that ships with DuckPlus. The goal is to show, with real LSP responses, the completions and type information surfaced to IDEs.
 
 ## Prerequisites
 
@@ -17,9 +16,7 @@ Execute the helper script from the project root:
 python scripts/demo_language_server.py
 ```
 
-The script launches `pyright-langserver` over stdio, opens a synthetic module that imports the typed function namespaces, and
-issues completion, hover, and signature-help requests at representative positions. No DuckDB connection is required; everything
-runs against the generated catalog.
+The script launches `pyright-langserver` over stdio, opens a synthetic module that imports the typed function namespaces directly, and issues completion, hover, and signature-help requests at representative positions. No DuckDB connection is required; everything runs against the generated catalog bundled with the package.
 
 ## Sample output
 
@@ -48,19 +45,34 @@ Completion for AGGREGATE_FUNCTIONS.Numeric:
   - arg_max
 
 Hover for SCALAR_FUNCTIONS.Varchar.lower:
-  (variable) lower: _DuckDBFunctionCall[VarcharExpression]
+  (method) ScalarVarcharFunctions.lower(*operands: object) -> VarcharExpression
+
+  Call DuckDB function ``lower``.
+
+  Overloads:
+  - main.lower(VARCHAR col0) -> VARCHAR
 
 Hover for SCALAR_FUNCTIONS.Numeric.abs:
-  (variable) abs: _DuckDBFunctionCall[NumericExpression]
+  (method) ScalarNumericFunctions.abs(*operands: object) -> NumericExpression
+
+  Call DuckDB function ``abs``.
+
+  Overloads:
+  - main.abs(NUMERIC col0) -> NUMERIC
 
 Hover for AGGREGATE_FUNCTIONS.Numeric.sum:
-  (variable) sum: _DuckDBFunctionCall[NumericExpression]
+  (method) AggregateNumericFunctions.sum(*operands: object) -> NumericExpression
+
+  Call DuckDB function ``sum``.
+
+  Overloads:
+  - main.sum(NUMERIC col0) -> NUMERIC
 
 Signature help for SCALAR_FUNCTIONS.Varchar.lower:
   (*operands: object) -> VarcharExpression
 ```
 
 The completions prove that the language server sees the generated function members without executing DuckDB, and the hover/
-signature help show the typed expression returned by each call. IDEs can therefore surface the available functions and their
-return categories directly from static analysis.
+signature help now surface each helper’s docstring alongside the typed expression returned by the call. IDEs can therefore
+display both the overload metadata and return categories directly from static analysis.
 

@@ -2,7 +2,7 @@
 
 > **Note**
 > Updated typed expression documentation is hosted at
-> {doc}`versions/1.0/core/typed_expressions <versions/1.0/core/typed_expressions>`.
+> {doc}`versions/1.1/core/typed_expressions <versions/1.1/core/typed_expressions>`.
 > The full DuckDB function catalog for DuckPlus 1.1 is available at
 > {doc}`versions/1.1/api/typed/function_catalog <versions/1.1/api/typed/function_catalog>`.
 
@@ -215,3 +215,13 @@ assert expr.duck_type.render() == "NUMERIC"
 The type objects can be extended for nested types by composing the helpers exposed in `duckplus.typed.types`.
 
 Typed functions validate argument compatibility against the DuckDB type hierarchy. Narrow integer expressions (for example, a `UTINYINT` literal) can satisfy broader parameter slots such as `UINTEGER` or `UBIGINT` thanks to the ordered integer families baked into the type metadata, while incompatible widths raise clear errors during helper invocation.
+
+The full DuckDB function catalog is statically generated into Python source and exposed via the `SCALAR_FUNCTIONS`, `AGGREGATE_FUNCTIONS`, and `WINDOW_FUNCTIONS` namespaces re-exported from `duckplus.typed`. Every helper is defined as a real method with a docstring summarising its DuckDB overloads, so editors and REPLs can introspect the API without consulting any runtime registries. The same data feeds the shipped type stub, keeping completions and signatures available even without a DuckDB connection.
+
+```python
+from duckplus.typed import SCALAR_FUNCTIONS
+
+lowered = SCALAR_FUNCTIONS.Varchar.lower("customer_name")
+assert lowered.render() == 'lower("customer_name")'
+```
+

@@ -2,8 +2,8 @@
 
 > **Note**
 > The actively maintained documentation now lives under
-> {doc}`versions/1.0/io/overview <versions/1.0/io/overview>` and
-> {doc}`versions/1.0/io/file_append <versions/1.0/io/file_append>` in the versioned
+> {doc}`versions/1.1/io/overview <versions/1.1/io/overview>` and
+> {doc}`versions/1.1/io/file_append <versions/1.1/io/file_append>` in the versioned
 > Sphinx site. This file remains for quick reference while older links migrate.
 
 The `duckplus.io` module provides thin wrappers around DuckDB's file readers

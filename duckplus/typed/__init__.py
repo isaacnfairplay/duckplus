@@ -42,6 +42,12 @@ from .ducktype import (
     ducktype,
     select,
 )
+from ._generated_function_namespaces import (
+    AGGREGATE_FUNCTIONS,
+    SCALAR_FUNCTIONS,
+    WINDOW_FUNCTIONS,
+    DuckDBFunctionNamespace,
+)
 
 for _decimal_name in ducktype.decimal_factory_names:
     globals()[_decimal_name] = getattr(ducktype, _decimal_name)
@@ -85,6 +91,10 @@ __all__ = [
     "Timestamp_ns",
     "Timestamp_tz",
     "select",
+    "SCALAR_FUNCTIONS",
+    "AGGREGATE_FUNCTIONS",
+    "WINDOW_FUNCTIONS",
+    "DuckDBFunctionNamespace",
 ]
 
 __all__.extend(ducktype.decimal_factory_names)
