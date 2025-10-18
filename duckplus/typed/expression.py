@@ -1,6 +1,6 @@
 """Public typed expression API built from modular components."""
 
-# pylint: disable=too-few-public-methods,invalid-name,import-outside-toplevel,cyclic-import,protected-access
+# pylint: disable=too-few-public-methods,invalid-name,import-outside-toplevel,cyclic-import,protected-access,too-many-instance-attributes
 
 from __future__ import annotations
 
@@ -15,12 +15,26 @@ from .expressions.binary import BlobExpression, BlobFactory
 from .expressions.boolean import BooleanFactory
 from .expressions.generic import GenericFactory
 from .expressions.numeric import (
+    DoubleExpression,
+    FloatExpression,
+    IntegerExpression,
     NumericAggregateFactory,
     NumericExpression,
     NumericFactory,
     NumericOperand,
+    SmallintExpression,
+    TinyintExpression,
+    UnsignedIntegerExpression,
+    UnsignedSmallintExpression,
+    UnsignedTinyintExpression,
 )
 from .expressions.text import VarcharExpression, VarcharFactory
+from .expressions.temporal import (
+    DateExpression,
+    TemporalAggregateFactory,
+    TemporalFactory,
+    TimestampExpression,
+)
 from .expressions.utils import format_numeric as _format_numeric
 from .expressions.utils import quote_identifier as _quote_identifier
 from .expressions.utils import quote_string as _quote_string
@@ -36,6 +50,17 @@ class DuckTypeNamespace:
         self.Boolean = BooleanFactory()
         self.Blob = BlobFactory()
         self.Generic = GenericFactory()
+        self.Tinyint = NumericFactory(TinyintExpression)
+        self.Smallint = NumericFactory(SmallintExpression)
+        self.Integer = NumericFactory(IntegerExpression)
+        self.Utinyint = NumericFactory(UnsignedTinyintExpression)
+        self.Usmallint = NumericFactory(UnsignedSmallintExpression)
+        self.Uinteger = NumericFactory(UnsignedIntegerExpression)
+        self.Float = NumericFactory(FloatExpression)
+        self.Double = NumericFactory(DoubleExpression)
+        self.Date = TemporalFactory(DateExpression)
+        self.Datetime = TemporalFactory(TimestampExpression)
+        self.Timestamp = self.Datetime
 
     def select(self) -> SelectStatementBuilder:
         return SelectStatementBuilder()
@@ -62,6 +87,10 @@ __all__ = [
     "NumericExpression",
     "NumericFactory",
     "NumericOperand",
+    "TemporalAggregateFactory",
+    "TemporalFactory",
+    "DateExpression",
+    "TimestampExpression",
     "SelectStatementBuilder",
     "TypedExpression",
     "VarcharExpression",

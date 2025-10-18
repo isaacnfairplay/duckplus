@@ -1,5 +1,6 @@
 """Unit tests for the typed expression sub-module."""
 
+from datetime import date, datetime
 from decimal import Decimal
 
 import pytest
@@ -122,6 +123,53 @@ def test_numeric_expression_method_sum() -> None:
     assert isinstance(aggregated, NumericExpression)
     assert aggregated.render() == 'sum("amount")'
     assert aggregated.dependencies == {col_dep('amount')}
+
+
+def test_integer_literal_preserves_type() -> None:
+    literal = ducktype.Integer.literal(5)
+    assert literal.render() == "5"
+    assert literal.duck_type.render() == "INTEGER"
+
+
+def test_integer_literal_rejects_float_literal() -> None:
+    with pytest.raises(TypeError):
+        ducktype.Integer.literal(5.5)
+
+
+def test_float_literal_rejects_boolean() -> None:
+    with pytest.raises(TypeError):
+        ducktype.Float.literal(True)
+
+
+def test_date_literal_from_python_date() -> None:
+    literal = ducktype.Date.literal(date(2024, 1, 5))
+    assert literal.render() == "DATE '2024-01-05'"
+    assert literal.duck_type.render() == "DATE"
+
+
+def test_datetime_literal_from_python_datetime() -> None:
+    stamp = ducktype.Datetime.literal(datetime(2024, 1, 5, 14, 30, 15))
+    assert stamp.render().startswith("TIMESTAMP '")
+    assert "2024-01-05 14:30:15" in stamp.render()
+    assert stamp.duck_type.render() == "TIMESTAMP"
+
+
+def test_datetime_literal_rejects_date_value() -> None:
+    with pytest.raises(TypeError):
+        ducktype.Datetime.literal(date(2024, 1, 5))
+
+
+def test_date_coalesce_tracks_dependencies() -> None:
+    fallback = ducktype.Date.literal("2024-01-01")
+    expression = ducktype.Date("order_date").coalesce(fallback)
+    assert expression.render() == "COALESCE(\"order_date\", DATE '2024-01-01')"
+    assert expression.dependencies == {col_dep('order_date')}
+
+
+def test_date_aggregate_max_tracks_dependencies() -> None:
+    expression = ducktype.Date.Aggregate.max("order_date")
+    assert expression.render() == 'max("order_date")'
+    assert expression.dependencies == {col_dep('order_date')}
 
 
 def test_generic_expression_lacks_sum_method() -> None:

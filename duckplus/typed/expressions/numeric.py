@@ -8,7 +8,13 @@ from decimal import Decimal
 from typing import Iterable
 
 from ..dependencies import DependencyLike, ExpressionDependency
-from ..types import DuckDBType, NumericType, infer_numeric_literal_type
+from ..types import (
+    DuckDBType,
+    FloatingType,
+    IntegerType,
+    NumericType,
+    infer_numeric_literal_type,
+)
 from .base import GenericExpression, TypedExpression
 from .boolean import BooleanFactory
 from .case import CaseExpressionBuilder
@@ -29,9 +35,17 @@ class NumericExpression(TypedExpression):
     ) -> None:
         super().__init__(
             sql,
-            duck_type=duck_type or NumericType("NUMERIC"),
+            duck_type=duck_type or self.default_type(),
             dependencies=dependencies,
         )
+
+    @classmethod
+    def default_type(cls) -> DuckDBType:
+        return NumericType("NUMERIC")
+
+    @classmethod
+    def default_literal_type(cls, value: NumericOperand) -> DuckDBType:
+        return infer_numeric_literal_type(value)
 
     @classmethod
     def column(
@@ -42,7 +56,7 @@ class NumericExpression(TypedExpression):
     ) -> "NumericExpression":
         dependency = ExpressionDependency.column(name, table=table)
         sql = quote_qualified_identifier(name, table=table)
-        return cls(sql, dependencies=(dependency,))
+        return cls(sql, dependencies=(dependency,), duck_type=cls.default_type())
 
     @classmethod
     def literal(
@@ -51,7 +65,7 @@ class NumericExpression(TypedExpression):
         *,
         duck_type: DuckDBType | None = None,
     ) -> "NumericExpression":
-        inferred_type = duck_type or infer_numeric_literal_type(value)
+        inferred_type = duck_type or cls.default_literal_type(value)
         return cls(
             format_numeric(value),
             duck_type=inferred_type,
@@ -65,13 +79,17 @@ class NumericExpression(TypedExpression):
         dependencies: Iterable[DependencyLike] = (),
         duck_type: DuckDBType | None = None,
     ) -> "NumericExpression":
-        return cls(sql, dependencies=dependencies, duck_type=duck_type)
+        return cls(
+            sql,
+            dependencies=dependencies,
+            duck_type=duck_type or cls.default_type(),
+        )
 
     def _coerce_operand(self, other: object) -> "NumericExpression":
         if isinstance(other, NumericExpression):
             return other
         if isinstance(other, (int, float, Decimal)):
-            return NumericExpression.literal(other)
+            return type(self).literal(other)
         msg = "Numeric expressions only accept numeric operands"
         raise TypeError(msg)
 
@@ -79,7 +97,11 @@ class NumericExpression(TypedExpression):
         operand = self._coerce_operand(other)
         sql = f"({self.render()} {operator} {operand.render()})"
         dependencies = self.dependencies.union(operand.dependencies)
-        return NumericExpression(sql, dependencies=dependencies)
+        return type(self)(
+            sql,
+            dependencies=dependencies,
+            duck_type=self.duck_type,
+        )
 
     def __add__(self, other: object) -> "NumericExpression":
         return self._binary("+", other)
@@ -123,7 +145,11 @@ class NumericExpression(TypedExpression):
         """Return the absolute value of the numeric expression."""
 
         sql = f"abs({self.render()})"
-        return type(self)(sql, dependencies=self.dependencies, duck_type=self.duck_type)
+        return type(self)(
+            sql,
+            dependencies=self.dependencies,
+            duck_type=self.duck_type,
+        )
 
     def pow(self, exponent: object) -> "NumericExpression":
         """Raise the expression to the provided ``exponent``."""
@@ -131,7 +157,11 @@ class NumericExpression(TypedExpression):
         operand = self._coerce_operand(exponent)
         dependencies = self.dependencies.union(operand.dependencies)
         sql = f"pow({self.render()}, {operand.render()})"
-        return type(self)(sql, dependencies=dependencies)
+        return type(self)(
+            sql,
+            dependencies=dependencies,
+            duck_type=self.duck_type,
+        )
 
     def nullif(self, other: object) -> "NumericExpression":
         """Return ``NULLIF`` between the expression and ``other``."""
@@ -139,7 +169,11 @@ class NumericExpression(TypedExpression):
         operand = self._coerce_operand(other)
         dependencies = self.dependencies.union(operand.dependencies)
         sql = f"NULLIF({self.render()}, {operand.render()})"
-        return type(self)(sql, dependencies=dependencies, duck_type=self.duck_type)
+        return type(self)(
+            sql,
+            dependencies=dependencies,
+            duck_type=self.duck_type,
+        )
 
     # Aggregation -----------------------------------------------------
     def sum(self) -> "NumericExpression":
@@ -154,7 +188,10 @@ class NumericExpression(TypedExpression):
 class NumericFactory:
     """Factory for creating numeric expressions."""
 
-    def __init__(self) -> None:
+    expression_type: type[NumericExpression] = NumericExpression
+
+    def __init__(self, expression_type: type[NumericExpression] | None = None) -> None:
+        self.expression_type = expression_type or type(self).expression_type
         self._aggregate = NumericAggregateFactory(self)
 
     def __call__(
@@ -163,7 +200,7 @@ class NumericFactory:
         *,
         table: str | None = None,
     ) -> NumericExpression:
-        return NumericExpression.column(column, table=table)
+        return self.expression_type.column(column, table=table)
 
     def literal(
         self,
@@ -171,7 +208,7 @@ class NumericFactory:
         *,
         duck_type: DuckDBType | None = None,
     ) -> NumericExpression:
-        return NumericExpression.literal(value, duck_type=duck_type)
+        return self.expression_type.literal(value, duck_type=duck_type)
 
     def _raw(
         self,
@@ -180,7 +217,7 @@ class NumericFactory:
         dependencies: Iterable[DependencyLike] = (),
         duck_type: DuckDBType | None = None,
     ) -> NumericExpression:
-        return NumericExpression._raw(
+        return self.expression_type._raw(
             sql,
             dependencies=dependencies,
             duck_type=duck_type,
@@ -194,7 +231,7 @@ class NumericFactory:
         if isinstance(operand, tuple) and len(operand) == 2:
             table, column = operand
             if isinstance(table, str) and isinstance(column, str):
-                return NumericExpression.column(column, table=table)
+                return self.expression_type.column(column, table=table)
         if isinstance(operand, (int, float, Decimal)):
             return self.literal(operand)
         msg = "Unsupported operand for numeric expression"
@@ -227,7 +264,12 @@ class NumericAggregateFactory:
         dependencies: Iterable[DependencyLike] = (),
         duck_type: DuckDBType | None = None,
     ) -> NumericExpression:
-        return NumericExpression._raw(sql, dependencies=dependencies, duck_type=duck_type)
+        expression_type = self._factory.expression_type
+        return expression_type._raw(
+            sql,
+            dependencies=dependencies,
+            duck_type=duck_type,
+        )
 
     def _coerce_order_operand(self, operand: object) -> TypedExpression:
         if isinstance(operand, TypedExpression):
@@ -299,3 +341,74 @@ class NumericAggregateFactory:
         sql = f"min_by({value_expr.render()}, {order_expr.render()})"
         deps = value_expr.dependencies.union(order_expr.dependencies)
         return self._wrap(sql, dependencies=deps, duck_type=value_expr.duck_type)
+
+
+class _BaseIntegerExpression(NumericExpression):
+    @classmethod
+    def default_literal_type(cls, value: NumericOperand) -> DuckDBType:
+        if isinstance(value, bool) or not isinstance(value, int):
+            msg = "Integer literals must be int values"
+            raise TypeError(msg)
+        return cls.default_type()
+
+
+class TinyintExpression(_BaseIntegerExpression):
+    @classmethod
+    def default_type(cls) -> DuckDBType:
+        return IntegerType("TINYINT")
+
+
+class SmallintExpression(_BaseIntegerExpression):
+    @classmethod
+    def default_type(cls) -> DuckDBType:
+        return IntegerType("SMALLINT")
+
+
+class IntegerExpression(_BaseIntegerExpression):
+    @classmethod
+    def default_type(cls) -> DuckDBType:
+        return IntegerType("INTEGER")
+
+
+class UnsignedTinyintExpression(_BaseIntegerExpression):
+    @classmethod
+    def default_type(cls) -> DuckDBType:
+        return IntegerType("UTINYINT")
+
+
+class UnsignedSmallintExpression(_BaseIntegerExpression):
+    @classmethod
+    def default_type(cls) -> DuckDBType:
+        return IntegerType("USMALLINT")
+
+
+class UnsignedIntegerExpression(_BaseIntegerExpression):
+    @classmethod
+    def default_type(cls) -> DuckDBType:
+        return IntegerType("UINTEGER")
+
+
+class FloatExpression(NumericExpression):
+    @classmethod
+    def default_type(cls) -> DuckDBType:
+        return FloatingType("FLOAT")
+
+    @classmethod
+    def default_literal_type(cls, value: NumericOperand) -> DuckDBType:
+        if isinstance(value, bool):
+            msg = "FLOAT literals cannot be boolean"
+            raise TypeError(msg)
+        return cls.default_type()
+
+
+class DoubleExpression(NumericExpression):
+    @classmethod
+    def default_type(cls) -> DuckDBType:
+        return FloatingType("DOUBLE")
+
+    @classmethod
+    def default_literal_type(cls, value: NumericOperand) -> DuckDBType:
+        if isinstance(value, bool):
+            msg = "DOUBLE literals cannot be boolean"
+            raise TypeError(msg)
+        return cls.default_type()
