@@ -52,6 +52,11 @@ class CaseExpressionBuilder(Generic[ResultExpressionT]):
         self._else_clause = self._result_coercer(result)
         return self
 
+    def otherwise(self, result: object) -> "CaseExpressionBuilder[ResultExpressionT]":
+        """Alias for :meth:`else_` matching fluent builder terminology."""
+
+        return self.else_(result)
+
     def end(self) -> ResultExpressionT:
         """Finalize the CASE expression and return the typed result."""
 

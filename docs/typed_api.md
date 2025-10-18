@@ -47,6 +47,24 @@ full_name = ducktype.Varchar("first_name") + " " + ducktype.Varchar("last_name")
 assert full_name.render() == "(\"first_name\" || ' ' || \"last_name\")"
 ```
 
+Use `.trim()` to remove leading and trailing characters from varchar
+expressions, optionally passing custom characters to strip:
+
+```python
+identifier = ducktype.Varchar("raw_id").trim("-")
+assert identifier.render() == "trim(\"raw_id\", '-')"
+```
+
+All typed expressions surface `.cast(target)` and `.try_cast(target)` helpers
+that accept either a DuckDB type specification string or a `DuckDBType`
+instance. The helpers return a new typed expression that tracks the requested
+type while preserving the original dependencies:
+
+```python
+invoice_number = ducktype.Varchar("invoice").try_cast("INTEGER")
+assert invoice_number.render() == 'TRY_CAST("invoice" AS INTEGER)'
+```
+
 ## Generic Expressions
 
 `ducktype.Generic` creates expressions that preserve dependencies without making assumptions about the underlying DuckDB type. Generic expressions are ideal for helpers such as `max_by` where the return type follows a different operand.
@@ -100,7 +118,7 @@ customer_segment = (
     ducktype.Varchar.case()
     .when(ducktype.Boolean("is_high_value"), "VIP")
     .when(ducktype.Boolean("is_employee"), "Internal")
-    .else_("Standard")
+    .otherwise("Standard")
     .end()
 )
 ```

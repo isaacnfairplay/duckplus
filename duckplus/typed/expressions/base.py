@@ -65,6 +65,20 @@ class TypedExpression:
             dependencies=dependencies,
         )
 
+    def cast(self, target: object) -> "TypedExpression":
+        """Return a typed expression casting this expression to ``target``."""
+
+        from . import casting as _casting  # pylint: disable=import-outside-toplevel
+
+        return _casting.cast_expression(self, target, try_cast=False)
+
+    def try_cast(self, target: object) -> "TypedExpression":
+        """Return a typed expression attempting to cast to ``target``."""
+
+        from . import casting as _casting  # pylint: disable=import-outside-toplevel
+
+        return _casting.cast_expression(self, target, try_cast=True)
+
     def _comparison(self: ExpressionT, operator: str, other: object) -> "BooleanExpression":
         operand = self._coerce_operand(other)
         sql = f"({self.render()} {operator} {operand.render()})"
