@@ -22,7 +22,6 @@ from .ducktype import (
     Blob,
     Boolean,
     Date,
-    Datetime,
     Double,
     Generic,
     Integer,
@@ -30,6 +29,11 @@ from .ducktype import (
     Smallint,
     Tinyint,
     Timestamp,
+    Timestamp_ms,
+    Timestamp_ns,
+    Timestamp_s,
+    Timestamp_tz,
+    Timestamp_us,
     Utinyint,
     Usmallint,
     Uinteger,
@@ -38,6 +42,11 @@ from .ducktype import (
     ducktype,
     select,
 )
+
+for _decimal_name in ducktype.decimal_factory_names:
+    globals()[_decimal_name] = getattr(ducktype, _decimal_name)
+
+del _decimal_name
 
 __all__ = [
     "AliasedExpression",
@@ -69,7 +78,13 @@ __all__ = [
     "Float",
     "Double",
     "Date",
-    "Datetime",
     "Timestamp",
+    "Timestamp_s",
+    "Timestamp_ms",
+    "Timestamp_us",
+    "Timestamp_ns",
+    "Timestamp_tz",
     "select",
 ]
+
+__all__.extend(ducktype.decimal_factory_names)

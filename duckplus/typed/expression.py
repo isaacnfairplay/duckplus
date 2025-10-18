@@ -34,11 +34,41 @@ from .expressions.temporal import (
     TemporalAggregateFactory,
     TemporalFactory,
     TimestampExpression,
+    TimestampMillisecondsExpression,
+    TimestampMicrosecondsExpression,
+    TimestampNanosecondsExpression,
+    TimestampSecondsExpression,
+    TimestampWithTimezoneExpression,
 )
 from .expressions.utils import format_numeric as _format_numeric
 from .expressions.utils import quote_identifier as _quote_identifier
 from .expressions.utils import quote_string as _quote_string
 from .select import SelectStatementBuilder
+from .types import DecimalType, DuckDBType
+
+
+_DECIMAL_EXPRESSION_CACHE: dict[tuple[int, int], type[NumericExpression]] = {}
+
+
+def _get_decimal_expression(precision: int, scale: int) -> type[NumericExpression]:
+    key = (precision, scale)
+    if key in _DECIMAL_EXPRESSION_CACHE:
+        return _DECIMAL_EXPRESSION_CACHE[key]
+
+    class DecimalExpression(NumericExpression):  # type: ignore[misc]
+        __slots__ = ()
+
+        @classmethod
+        def default_type(cls) -> DuckDBType:  # type: ignore[override]
+            return DecimalType(precision, scale)
+
+        @classmethod
+        def default_literal_type(cls, value: NumericOperand) -> DuckDBType:  # type: ignore[override]
+            return DecimalType(precision, scale)
+
+    DecimalExpression.__name__ = f"Decimal{precision}_{scale}Expression"
+    _DECIMAL_EXPRESSION_CACHE[key] = DecimalExpression
+    return DecimalExpression
 
 
 class DuckTypeNamespace:
@@ -59,8 +89,14 @@ class DuckTypeNamespace:
         self.Float = NumericFactory(FloatExpression)
         self.Double = NumericFactory(DoubleExpression)
         self.Date = TemporalFactory(DateExpression)
-        self.Datetime = TemporalFactory(TimestampExpression)
-        self.Timestamp = self.Datetime
+        self.Timestamp = TemporalFactory(TimestampExpression)
+        self.Timestamp_s = TemporalFactory(TimestampSecondsExpression)
+        self.Timestamp_ms = TemporalFactory(TimestampMillisecondsExpression)
+        self.Timestamp_us = TemporalFactory(TimestampMicrosecondsExpression)
+        self.Timestamp_ns = TemporalFactory(TimestampNanosecondsExpression)
+        self.Timestamp_tz = TemporalFactory(TimestampWithTimezoneExpression)
+        self._decimal_names: list[str] = []
+        self._register_decimal_factories()
 
     def select(self) -> SelectStatementBuilder:
         return SelectStatementBuilder()
@@ -69,6 +105,18 @@ class DuckTypeNamespace:
         """Return a typed expression invoking ``ROW_NUMBER()``."""
 
         return NumericExpression._raw("row_number()")
+
+    def _register_decimal_factories(self) -> None:
+        for precision in range(1, 39):
+            for scale in range(0, precision + 1):
+                name = f"Decimal_{precision}_{scale}"
+                expression_type = _get_decimal_expression(precision, scale)
+                setattr(self, name, NumericFactory(expression_type))
+                self._decimal_names.append(name)
+
+    @property
+    def decimal_factory_names(self) -> tuple[str, ...]:
+        return tuple(self._decimal_names)
 
 
 ducktype = DuckTypeNamespace()
@@ -91,6 +139,11 @@ __all__ = [
     "TemporalFactory",
     "DateExpression",
     "TimestampExpression",
+    "TimestampMillisecondsExpression",
+    "TimestampMicrosecondsExpression",
+    "TimestampNanosecondsExpression",
+    "TimestampSecondsExpression",
+    "TimestampWithTimezoneExpression",
     "SelectStatementBuilder",
     "TypedExpression",
     "VarcharExpression",

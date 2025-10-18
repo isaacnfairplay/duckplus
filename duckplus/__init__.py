@@ -9,7 +9,6 @@ from .typed import (
     Blob,
     Boolean,
     Date,
-    Datetime,
     Double,
     Generic,
     Integer,
@@ -17,6 +16,11 @@ from .typed import (
     Smallint,
     Tinyint,
     Timestamp,
+    Timestamp_ms,
+    Timestamp_ns,
+    Timestamp_s,
+    Timestamp_tz,
+    Timestamp_us,
     Utinyint,
     Usmallint,
     Uinteger,
@@ -48,10 +52,20 @@ __all__ = [
     "Float",
     "Double",
     "Date",
-    "Datetime",
     "Timestamp",
+    "Timestamp_s",
+    "Timestamp_ms",
+    "Timestamp_us",
+    "Timestamp_ns",
+    "Timestamp_tz",
     "select",
 ]
+
+for _decimal_name in ducktype.decimal_factory_names:
+    globals()[_decimal_name] = getattr(ducktype, _decimal_name)
+    __all__.append(_decimal_name)
+
+del _decimal_name
 
 try:  # pragma: no branch - small module guard
     from .duckcon import DuckCon

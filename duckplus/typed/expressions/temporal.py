@@ -144,6 +144,26 @@ class TimestampExpression(TemporalExpression):
         return f"TIMESTAMP {quote_string(rendered)}"
 
 
+class TimestampSecondsExpression(TimestampExpression):
+    _TYPE_NAME = "TIMESTAMP_S"
+
+
+class TimestampMillisecondsExpression(TimestampExpression):
+    _TYPE_NAME = "TIMESTAMP_MS"
+
+
+class TimestampMicrosecondsExpression(TimestampExpression):
+    _TYPE_NAME = "TIMESTAMP_US"
+
+
+class TimestampNanosecondsExpression(TimestampExpression):
+    _TYPE_NAME = "TIMESTAMP_NS"
+
+
+class TimestampWithTimezoneExpression(TimestampExpression):
+    _TYPE_NAME = "TIMESTAMP WITH TIME ZONE"
+
+
 class TemporalFactory:
     def __init__(self, expression_type: type[TemporalExpression]) -> None:
         self.expression_type = expression_type
@@ -262,4 +282,9 @@ __all__ = [
     "TemporalExpression",
     "TemporalFactory",
     "TimestampExpression",
+    "TimestampMillisecondsExpression",
+    "TimestampMicrosecondsExpression",
+    "TimestampNanosecondsExpression",
+    "TimestampSecondsExpression",
+    "TimestampWithTimezoneExpression",
 ]

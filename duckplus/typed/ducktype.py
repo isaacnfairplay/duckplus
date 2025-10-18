@@ -27,8 +27,17 @@ Uinteger = ducktype.Uinteger
 Float = ducktype.Float
 Double = ducktype.Double
 Date = ducktype.Date
-Datetime = ducktype.Datetime
 Timestamp = ducktype.Timestamp
+Timestamp_s = ducktype.Timestamp_s
+Timestamp_ms = ducktype.Timestamp_ms
+Timestamp_us = ducktype.Timestamp_us
+Timestamp_ns = ducktype.Timestamp_ns
+Timestamp_tz = ducktype.Timestamp_tz
+
+for _decimal_name in ducktype.decimal_factory_names:
+    globals()[_decimal_name] = getattr(ducktype, _decimal_name)
+
+del _decimal_name
 
 
 def select() -> SelectStatementBuilder:
@@ -53,7 +62,13 @@ __all__ = [
     "Float",
     "Double",
     "Date",
-    "Datetime",
     "Timestamp",
+    "Timestamp_s",
+    "Timestamp_ms",
+    "Timestamp_us",
+    "Timestamp_ns",
+    "Timestamp_tz",
     "select",
 ]
+
+__all__.extend(ducktype.decimal_factory_names)

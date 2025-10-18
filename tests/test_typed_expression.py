@@ -147,16 +147,35 @@ def test_date_literal_from_python_date() -> None:
     assert literal.duck_type.render() == "DATE"
 
 
-def test_datetime_literal_from_python_datetime() -> None:
-    stamp = ducktype.Datetime.literal(datetime(2024, 1, 5, 14, 30, 15))
+def test_timestamp_literal_from_python_datetime() -> None:
+    stamp = ducktype.Timestamp.literal(datetime(2024, 1, 5, 14, 30, 15))
     assert stamp.render().startswith("TIMESTAMP '")
     assert "2024-01-05 14:30:15" in stamp.render()
     assert stamp.duck_type.render() == "TIMESTAMP"
 
 
-def test_datetime_literal_rejects_date_value() -> None:
+def test_timestamp_literal_rejects_date_value() -> None:
     with pytest.raises(TypeError):
-        ducktype.Datetime.literal(date(2024, 1, 5))
+        ducktype.Timestamp.literal(date(2024, 1, 5))
+
+
+def test_timestamp_precision_literal_tracks_type() -> None:
+    literal = ducktype.Timestamp_ns.literal(datetime(2024, 1, 5, 14, 30, 15, 123456))
+    assert literal.duck_type.render() == "TIMESTAMP_NS"
+
+
+def test_timestamp_precision_coalesce_accepts_variant_literal() -> None:
+    base = ducktype.Timestamp_ms("event_time")
+    fallback = ducktype.Timestamp_ns.literal("2024-01-05 14:30:15.123456789")
+    expression = base.coalesce(fallback)
+    assert expression.render().startswith('COALESCE("event_time"')
+    assert expression.duck_type.render() == "TIMESTAMP_MS"
+    assert expression.dependencies == {col_dep('event_time')}
+
+
+def test_timestamp_with_timezone_literal_tracks_type() -> None:
+    literal = ducktype.Timestamp_tz.literal("2024-01-05 14:30:15+00")
+    assert literal.duck_type.render() == "TIMESTAMP WITH TIME ZONE"
 
 
 def test_date_coalesce_tracks_dependencies() -> None:

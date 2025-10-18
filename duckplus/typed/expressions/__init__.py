@@ -24,6 +24,11 @@ from .temporal import (
     TemporalExpression,
     TemporalFactory,
     TimestampExpression,
+    TimestampMillisecondsExpression,
+    TimestampMicrosecondsExpression,
+    TimestampNanosecondsExpression,
+    TimestampSecondsExpression,
+    TimestampWithTimezoneExpression,
 )
 from .text import VarcharExpression, VarcharFactory
 
@@ -52,6 +57,11 @@ __all__ = [
     "TemporalAggregateFactory",
     "DateExpression",
     "TimestampExpression",
+    "TimestampMillisecondsExpression",
+    "TimestampMicrosecondsExpression",
+    "TimestampNanosecondsExpression",
+    "TimestampSecondsExpression",
+    "TimestampWithTimezoneExpression",
     "TypedExpression",
     "VarcharExpression",
     "VarcharFactory",

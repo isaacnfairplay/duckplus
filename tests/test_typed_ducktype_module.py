@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+from decimal import Decimal
+
 from duckplus import (
     Blob as TopLevelBlob,
     Boolean as TopLevelBoolean,
     Date as TopLevelDate,
-    Datetime as TopLevelDatetime,
+    Decimal_10_2 as TopLevelDecimal_10_2,
     Double as TopLevelDouble,
     Float as TopLevelFloat,
     Generic as TopLevelGeneric,
@@ -15,6 +18,11 @@ from duckplus import (
     Smallint as TopLevelSmallint,
     Tinyint as TopLevelTinyint,
     Timestamp as TopLevelTimestamp,
+    Timestamp_ms as TopLevelTimestamp_ms,
+    Timestamp_ns as TopLevelTimestamp_ns,
+    Timestamp_s as TopLevelTimestamp_s,
+    Timestamp_tz as TopLevelTimestamp_tz,
+    Timestamp_us as TopLevelTimestamp_us,
     Uinteger as TopLevelUinteger,
     Usmallint as TopLevelUsmallint,
     Utinyint as TopLevelUtinyint,
@@ -26,7 +34,7 @@ from duckplus.typed.ducktype import (
     Blob,
     Boolean,
     Date,
-    Datetime,
+    Decimal_10_2,
     Double,
     Float,
     Generic,
@@ -35,6 +43,11 @@ from duckplus.typed.ducktype import (
     Smallint,
     Tinyint,
     Timestamp,
+    Timestamp_ms,
+    Timestamp_ns,
+    Timestamp_s,
+    Timestamp_tz,
+    Timestamp_us,
     Uinteger,
     Usmallint,
     Utinyint,
@@ -67,8 +80,13 @@ def test_ducktype_module_factory_aliases_are_identical() -> None:
     assert Float is expression_ducktype.Float
     assert Double is expression_ducktype.Double
     assert Date is expression_ducktype.Date
-    assert Datetime is expression_ducktype.Datetime
     assert Timestamp is expression_ducktype.Timestamp
+    assert Timestamp_s is expression_ducktype.Timestamp_s
+    assert Timestamp_ms is expression_ducktype.Timestamp_ms
+    assert Timestamp_us is expression_ducktype.Timestamp_us
+    assert Timestamp_ns is expression_ducktype.Timestamp_ns
+    assert Timestamp_tz is expression_ducktype.Timestamp_tz
+    assert Decimal_10_2 is expression_ducktype.Decimal_10_2
 
 
 def test_ducktype_module_select_helper() -> None:
@@ -83,6 +101,8 @@ def test_factory_type_metadata_matches_underlying_namespace() -> None:
     varchar_literal = Varchar.literal("ok")
     integer_literal = Integer.literal(7)
     date_literal = Date.literal("2024-01-01")
+    timestamp_literal = Timestamp_ms.literal(datetime(2024, 1, 1, 12, 30, 45))
+    decimal_literal = Decimal_10_2.literal(Decimal("12.34"))
 
     assert isinstance(numeric_literal.duck_type, NumericType)
     assert numeric_literal.duck_type.category == "numeric"
@@ -92,6 +112,8 @@ def test_factory_type_metadata_matches_underlying_namespace() -> None:
     assert integer_literal.duck_type.render() == "INTEGER"
     assert isinstance(date_literal.duck_type, TemporalType)
     assert date_literal.duck_type.render() == "DATE"
+    assert timestamp_literal.duck_type.render() == "TIMESTAMP_MS"
+    assert decimal_literal.duck_type.render() == "DECIMAL(10, 2)"
 
 
 def test_duckplus_module_re_exports_typed_factories() -> None:
@@ -110,8 +132,13 @@ def test_duckplus_module_re_exports_typed_factories() -> None:
     assert TopLevelFloat is expression_ducktype.Float
     assert TopLevelDouble is expression_ducktype.Double
     assert TopLevelDate is expression_ducktype.Date
-    assert TopLevelDatetime is expression_ducktype.Datetime
     assert TopLevelTimestamp is expression_ducktype.Timestamp
+    assert TopLevelTimestamp_s is expression_ducktype.Timestamp_s
+    assert TopLevelTimestamp_ms is expression_ducktype.Timestamp_ms
+    assert TopLevelTimestamp_us is expression_ducktype.Timestamp_us
+    assert TopLevelTimestamp_ns is expression_ducktype.Timestamp_ns
+    assert TopLevelTimestamp_tz is expression_ducktype.Timestamp_tz
+    assert TopLevelDecimal_10_2 is expression_ducktype.Decimal_10_2
 
     builder = top_level_select().column("1")
     expected = expression_ducktype.select().column("1")
