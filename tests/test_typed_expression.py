@@ -10,6 +10,7 @@ from duckplus.typed import (
     ExpressionDependency,
     GenericExpression,
     NumericExpression,
+    VarcharExpression,
     ducktype,
 )
 def col_dep(name: str, *, table: str | None = None) -> ExpressionDependency:
@@ -111,6 +112,39 @@ def test_varchar_starts_with_method_tracks_dependencies() -> None:
     expression = ducktype.Varchar("name").starts_with("A")
     assert expression.render() == "starts_with(\"name\", 'A')"
     assert expression.dependencies == {col_dep('name')}
+
+
+def test_varchar_trim_without_arguments() -> None:
+    expression = ducktype.Varchar("name").trim()
+    assert expression.render() == 'trim("name")'
+    assert expression.dependencies == {col_dep('name')}
+
+
+def test_varchar_trim_with_literal_characters() -> None:
+    expression = ducktype.Varchar("name").trim("-")
+    assert expression.render() == "trim(\"name\", '-')"
+    assert expression.dependencies == {col_dep('name')}
+
+
+def test_try_cast_returns_numeric_expression() -> None:
+    expression = ducktype.Varchar("value").try_cast("INTEGER")
+    assert isinstance(expression, NumericExpression)
+    assert expression.render() == 'TRY_CAST("value" AS INTEGER)'
+    assert expression.dependencies == {col_dep('value')}
+    assert expression.duck_type.render() == "INTEGER"
+
+
+def test_cast_to_varchar_returns_varchar_expression() -> None:
+    expression = ducktype.Numeric("value").cast("VARCHAR")
+    assert isinstance(expression, VarcharExpression)
+    assert expression.render() == 'CAST("value" AS VARCHAR)'
+    assert expression.dependencies == {col_dep('value')}
+    assert expression.duck_type.render() == "VARCHAR"
+
+
+def test_cast_rejects_invalid_target_type() -> None:
+    with pytest.raises(TypeError):
+        ducktype.Numeric("value").cast(123)
 
 
 def test_numeric_pow_accepts_literal_exponent() -> None:
@@ -302,6 +336,14 @@ def test_case_expression_supports_nested_builders() -> None:
         "CASE WHEN TRUE THEN 'fallback' ELSE 'unknown' END END"
     )
     assert expression.dependencies == {col_dep('is_internal')}
+
+
+def test_case_expression_otherwise_alias() -> None:
+    expression = (
+        ducktype.Varchar.case().when(True, "present").otherwise("missing").end()
+    )
+    assert expression.render() == "CASE WHEN TRUE THEN 'present' ELSE 'missing' END"
+    assert expression.dependencies == set()
 
 
 def test_case_expression_requires_when_clause() -> None:

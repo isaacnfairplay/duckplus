@@ -127,6 +127,18 @@ class VarcharExpression(TypedExpression):
         sql = f"starts_with({self.render()}, {operand.render()})"
         return BooleanExpression._raw(sql, dependencies=dependencies)
 
+    def trim(self, characters: object | None = None) -> "VarcharExpression":
+        """Return the expression with leading and trailing characters removed."""
+
+        if characters is None:
+            sql = f"trim({self.render()})"
+            return type(self)._raw(sql, dependencies=self.dependencies)
+
+        operand = self._coerce_operand(characters)
+        dependencies = self.dependencies.union(operand.dependencies)
+        sql = f"trim({self.render()}, {operand.render()})"
+        return type(self)._raw(sql, dependencies=dependencies)
+
     def _coerce_operand(self, other: object) -> "VarcharExpression":
         if isinstance(other, VarcharExpression):
             return other

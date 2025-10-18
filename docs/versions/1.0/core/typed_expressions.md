@@ -83,7 +83,7 @@ defined:
 status = (
     ducktype.Varchar.case()
     .when(ducktype.Boolean("is_returned"), ducktype.Varchar.literal("returned"))
-    .else_(ducktype.Varchar.literal("fulfilled"))
+    .otherwise(ducktype.Varchar.literal("fulfilled"))
     .end()
     .alias("order_status")
 )
@@ -92,7 +92,7 @@ case = (
     ducktype.Varchar.case()
     .when(amount > 500, ducktype.Varchar.literal("enterprise"))
     .when(amount > 100, ducktype.Varchar.literal("growth"))
-    .else_(ducktype.Varchar.literal("starter"))
+    .otherwise(ducktype.Varchar.literal("starter"))
     .end()
     .alias("segment")
 )
@@ -109,6 +109,8 @@ integrations ergonomic while maintaining dependency tracking:
 ```python
 abs_distance = ducktype.Numeric("distance").abs()
 snippet = ducktype.Varchar("description").slice(1, 5)
+trimmed = ducktype.Varchar("raw_id").trim("-")
+coerced = ducktype.Varchar("invoice").try_cast("INTEGER")
 ```
 
 Factory namespaces also expose ``Aggregate`` helpers mirroring DuckDB's built-in
