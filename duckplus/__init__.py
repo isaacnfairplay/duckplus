@@ -8,8 +8,23 @@ from . import typed  # pylint: disable=unused-import
 from .typed import (
     Blob,
     Boolean,
+    Date,
+    Double,
     Generic,
+    Integer,
     Numeric,
+    Smallint,
+    Tinyint,
+    Timestamp,
+    Timestamp_ms,
+    Timestamp_ns,
+    Timestamp_s,
+    Timestamp_tz,
+    Timestamp_us,
+    Utinyint,
+    Usmallint,
+    Uinteger,
+    Float,
     Varchar,
     ducktype,
     select,
@@ -28,8 +43,29 @@ __all__ = [
     "Boolean",
     "Blob",
     "Generic",
+    "Tinyint",
+    "Smallint",
+    "Integer",
+    "Utinyint",
+    "Usmallint",
+    "Uinteger",
+    "Float",
+    "Double",
+    "Date",
+    "Timestamp",
+    "Timestamp_s",
+    "Timestamp_ms",
+    "Timestamp_us",
+    "Timestamp_ns",
+    "Timestamp_tz",
     "select",
 ]
+
+for _decimal_name in ducktype.decimal_factory_names:
+    globals()[_decimal_name] = getattr(ducktype, _decimal_name)
+    __all__.append(_decimal_name)
+
+del _decimal_name
 
 try:  # pragma: no branch - small module guard
     from .duckcon import DuckCon

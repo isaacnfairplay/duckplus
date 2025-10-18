@@ -1,3 +1,5 @@
+# pylint: disable=cyclic-import
+
 """Traceability data-flow demo with sanitised sample relations.
 
 The helpers in this module showcase three patterns extracted from an internal
@@ -20,8 +22,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable
 
-from duckplus.duckcon import DuckCon
-from duckplus.relation import Relation
+from duckplus.duckcon import DuckCon  # pylint: disable=cyclic-import
+from duckplus.relation import Relation  # pylint: disable=cyclic-import
 from duckplus.typed import ducktype
 
 __all__ = [

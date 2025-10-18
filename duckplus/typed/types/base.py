@@ -123,8 +123,27 @@ class IntervalType(NumericType):
     __slots__ = ()
 
 
+def _temporal_family(name: str) -> str:
+    """Return a canonical family identifier for temporal type names."""
+
+    upper = name.upper()
+    if upper.startswith("TIMESTAMP") or upper.startswith("TIMESTAMPTZ"):
+        if "WITH TIME ZONE" in upper or upper.endswith("TZ"):
+            return "timestamp_tz"
+        return "timestamp"
+    return upper
+
+
 class TemporalType(SimpleType):
     __slots__ = ()
+
+    def accepts(self, candidate: DuckDBType) -> bool:
+        if isinstance(candidate, TemporalType):
+            family = _temporal_family(self.name)
+            candidate_family = _temporal_family(candidate.name)
+            if family.startswith("timestamp") and candidate_family.startswith("timestamp"):
+                return True
+        return super().accepts(candidate)
 
 
 class IdentifierType(SimpleType):

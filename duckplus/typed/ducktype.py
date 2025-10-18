@@ -18,6 +18,26 @@ Varchar = ducktype.Varchar
 Boolean = ducktype.Boolean
 Blob = ducktype.Blob
 Generic = ducktype.Generic
+Tinyint = ducktype.Tinyint
+Smallint = ducktype.Smallint
+Integer = ducktype.Integer
+Utinyint = ducktype.Utinyint
+Usmallint = ducktype.Usmallint
+Uinteger = ducktype.Uinteger
+Float = ducktype.Float
+Double = ducktype.Double
+Date = ducktype.Date
+Timestamp = ducktype.Timestamp
+Timestamp_s = ducktype.Timestamp_s
+Timestamp_ms = ducktype.Timestamp_ms
+Timestamp_us = ducktype.Timestamp_us
+Timestamp_ns = ducktype.Timestamp_ns
+Timestamp_tz = ducktype.Timestamp_tz
+
+for _decimal_name in ducktype.decimal_factory_names:
+    globals()[_decimal_name] = getattr(ducktype, _decimal_name)
+
+del _decimal_name
 
 
 def select() -> SelectStatementBuilder:
@@ -33,5 +53,22 @@ __all__ = [
     "Boolean",
     "Blob",
     "Generic",
+    "Tinyint",
+    "Smallint",
+    "Integer",
+    "Utinyint",
+    "Usmallint",
+    "Uinteger",
+    "Float",
+    "Double",
+    "Date",
+    "Timestamp",
+    "Timestamp_s",
+    "Timestamp_ms",
+    "Timestamp_us",
+    "Timestamp_ns",
+    "Timestamp_tz",
     "select",
 ]
+
+__all__.extend(ducktype.decimal_factory_names)

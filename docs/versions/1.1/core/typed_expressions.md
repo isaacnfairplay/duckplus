@@ -16,7 +16,21 @@ from duckplus.typed import ducktype
 
 amount = ducktype.Numeric("amount")
 customer = ducktype.Varchar("customer")
+order_date = ducktype.Date("order_date")
+order_id = ducktype.Integer("order_id")
 ```
+
+The namespace also exposes narrower numeric and temporal factories so column
+definitions can mirror DuckDB storage types without sacrificing ergonomics.
+Pair them with literal helpers such as ``ducktype.Date.literal("2024-01-01")``
+or ``ducktype.Timestamp.literal(datetime.utcnow())`` when embedding constants in
+expressions. Timestamp factories are available for each precision DuckDB
+supports (``ducktype.Timestamp_s``, ``ducktype.Timestamp_ms``,
+``ducktype.Timestamp_us``, ``ducktype.Timestamp_ns``) along with
+``ducktype.Timestamp_tz`` for ``TIMESTAMP WITH TIME ZONE`` columns. Decimal
+storage is also enumerated via ``ducktype.Decimal_<width>_<scale>`` factories so
+typed expressions can match DuckDB's ``DECIMAL`` permutations without manual
+type strings.
 
 Expressions know which columns they depend on. Combining expressions merges
 those dependencies so downstream helpers can ensure referenced columns exist.
@@ -34,8 +48,9 @@ expressions that can be fed into :meth:`Relation.filter
 high_value = amount > 100
 promotions = (customer == "prime") | (customer == "enterprise")
 discounted = ducktype.Boolean("is_discounted")
+recent_orders = order_date > ducktype.Date.literal("2024-01-01")
 
-eligible = promotions & ~discounted
+eligible = promotions & ~discounted & recent_orders
 ```
 
 ## Aggregation helpers
