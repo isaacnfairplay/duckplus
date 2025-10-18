@@ -9,7 +9,10 @@
 The `duckplus.io` module provides thin wrappers around DuckDB's file readers
 that integrate with :class:`duckplus.DuckCon`. Each helper expects an open
 `DuckCon` context and returns an immutable :class:`duckplus.Relation` that keeps
-a reference to the managing connection.
+a reference to the managing connection. The helpers also register on every
+``DuckCon`` instance, so calling ``manager.read_csv(...)`` or
+``manager.apply_helper("read_excel", ...)`` works without importing
+``duckplus.io`` explicitly.
 
 Every reader exposes its full keyword signature directly in Python so editors
 and type checkers surface the supported options. The ``duckcon`` manager and
@@ -19,12 +22,25 @@ descriptive when desired.
 ```python
 from pathlib import Path
 
-from duckplus import DuckCon, io
+from duckplus import DuckCon
 
 manager = DuckCon()
 with manager:
-    relation = io.read_csv(manager, Path("data.csv"))
+    relation = manager.read_csv(Path("data.csv"))
     print(relation.columns)
+```
+
+Because the helpers register automatically, persisting results is equally
+straightforward via the relation-level file writers:
+
+```python
+with manager:
+    relation = manager.read_parquet(Path("data.parquet"))
+    relation.append_csv(Path("report.csv"))
+    relation.write_parquet_dataset(
+        Path("dataset"),
+        partition_column="country",
+    )
 ```
 
 ## CSV

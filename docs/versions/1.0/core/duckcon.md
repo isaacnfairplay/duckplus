@@ -100,9 +100,15 @@ immutable relation APIs.
 Every :class:`DuckCon` instance keeps a registry of lazily bound helper
 functions. Use :meth:`DuckCon.register_helper
 <duckplus.duckcon.DuckCon.register_helper>` to attach a callable that receives
-the active ``DuckDBPyConnection``. This is a handy escape hatch for
-environment-specific functionality such as registering a ``parquet_scan`` macro
-or enabling custom pragmas.
+the active ``DuckDBPyConnection``. DuckPlus pre-registers the packaged file
+readers (``read_csv``, ``read_parquet``, ``read_json``) and extension-backed
+connectors (``read_odbc_query``, ``read_odbc_table``, ``read_excel``) so you can
+call them as methods on the manager or via :meth:`DuckCon.apply_helper
+<duckplus.duckcon.DuckCon.apply_helper>` without importing :mod:`duckplus.io`.
+Pass ``overwrite=True`` to replace these defaults with a project-specific
+implementation. This registry is a handy escape hatch for environment-specific
+functionality such as registering a ``parquet_scan`` macro or enabling custom
+pragmas.
 
 ```python
 def _apply_pragmas(connection, pragmas):

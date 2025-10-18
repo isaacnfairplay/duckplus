@@ -3,18 +3,34 @@
 DuckPlus mirrors DuckDB's file readers while integrating with
 :class:`~duckplus.duckcon.DuckCon`. Each helper expects an open manager and
 returns an immutable :class:`~duckplus.relation.Relation` with cached metadata.
-The functions live in :mod:`duckplus.io` and intentionally avoid ``**kwargs`` so
-editor completions surface every DuckDB option.
+The functions—covering file readers and extension-backed connectors—live in
+:mod:`duckplus.io` and register automatically on every ``DuckCon`` instance, so
+you can call them directly from the connection manager without importing the
+module. They intentionally avoid ``**kwargs`` so editor completions surface
+every DuckDB option.
 
 ```python
 from pathlib import Path
 
-from duckplus import DuckCon, io
+from duckplus import DuckCon
 
 manager = DuckCon()
 with manager:
-    relation = io.read_csv(manager, Path("data.csv"), header=True)
+    relation = manager.read_csv(Path("data.csv"), header=True)
     print(relation.columns)
+```
+
+Because the helpers register automatically, persisting results is just as easy
+when chaining to the relation-level writers:
+
+```python
+with manager:
+    relation = manager.read_parquet(Path("data.parquet"))
+    relation.append_csv(Path("report.csv"))
+    relation.write_parquet_dataset(
+        Path("dataset"),
+        partition_column="country",
+    )
 ```
 
 ## CSV reader
@@ -32,8 +48,7 @@ Key options include:
 
 ```python
 with manager:
-    relation = io.read_csv(
-        manager,
+    relation = manager.read_csv(
         Path("transactions.csv"),
         delimiter="|",
         header=True,
@@ -53,15 +68,15 @@ materialisation.
 with ``directory=True`` loads all ``*.parquet`` files by default.
 
 ```python
-relation = io.read_parquet(
-    manager,
-    [
-        Path("/data/sales_2024.parquet"),
-        Path("/data/sales_2025.parquet"),
-    ],
-    union_by_name=True,
-    filename=True,
-)
+with manager:
+    relation = manager.read_parquet(
+        [
+            Path("/data/sales_2024.parquet"),
+            Path("/data/sales_2025.parquet"),
+        ],
+        union_by_name=True,
+        filename=True,
+    )
 ```
 
 ## JSON, Arrow, and database connectors
@@ -74,12 +89,19 @@ parameters explicit so scripts remain self-documenting. Highlights include:
   and ``format`` options mirroring DuckDB's table function.
 - :func:`duckplus.io.read_arrow` for zero-copy reads from Arrow datasets or
   ``pyarrow.dataset.Dataset`` objects.
-- :meth:`duckplus.relation.Relation.from_excel` for Excel workbooks, which will
-  automatically install the ``excel`` extension when missing.
+- :func:`duckplus.io.read_odbc_query` and :func:`duckplus.io.read_odbc_table`
+  for nano-ODBC queries and scans.
+- :func:`duckplus.io.read_excel` for Excel workbooks, which will automatically
+  install the ``excel`` extension when missing.
 
 Consult the docstrings in :mod:`duckplus.io` for the full argument lists. When an
 extension is required, DuckPlus will attempt to install it automatically or
-raise an actionable message if the environment is offline.
+raise an actionable message if the environment is offline. Call
+``manager.apply_helper("read_csv", ...)`` to route through the registry
+directly, or pass
+``overwrite=True`` to :meth:`DuckCon.register_helper
+<duckplus.duckcon.DuckCon.register_helper>` if you need to replace the defaults
+with a custom implementation.
 
 ## Composing with custom helpers
 
