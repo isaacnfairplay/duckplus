@@ -50,6 +50,7 @@ from .types import (
     TemporalType,
     UnknownType,
     VarcharType,
+    infer_numeric_literal_type,
 )
 
 @dataclass(frozen=True)
@@ -253,17 +254,73 @@ def _coerce_operand(
     return _coerce_literal(expression_type, operand, expected_type)
 
 
+def _infer_operand_type(operand: object) -> DuckDBType | None:
+    if isinstance(operand, TypedExpression):
+        return operand.duck_type
+    if isinstance(operand, bool):
+        return BooleanType("BOOLEAN")
+    if isinstance(operand, (int, float, Decimal)) and not isinstance(operand, bool):
+        try:
+            return infer_numeric_literal_type(operand)
+        except TypeError:  # pragma: no cover - defensive guard
+            return NumericType("NUMERIC")
+    if isinstance(operand, datetime):
+        return TemporalType("TIMESTAMP")
+    if isinstance(operand, date):
+        return TemporalType("DATE")
+    if isinstance(operand, time):
+        return TemporalType("TIME")
+    return None
+
+
 def _select_signature(
     signatures: Sequence[DuckDBFunctionSignature],
-    argument_count: int,
+    operands: Sequence[object],
 ) -> DuckDBFunctionSignature:
+    argument_count = len(operands)
+    operand_types = [_infer_operand_type(operand) for operand in operands]
+    best_signature: DuckDBFunctionSignature | None = None
+    best_score: tuple[int, int] | None = None
+
     for signature in signatures:
         required = len(signature.parameter_types)
         if signature.varargs is not None:
-            if argument_count >= required:
-                return signature
-        elif argument_count == required:
-            return signature
+            if argument_count < required:
+                continue
+        elif argument_count != required:
+            continue
+
+        expected_types = list(signature.parameter_types)
+        if argument_count > len(expected_types):
+            if signature.varargs is None:
+                continue
+            expected_types.extend([signature.varargs] * (argument_count - len(expected_types)))
+
+        typed_matches = 0
+        typed_fallbacks = 0
+        compatible = True
+        for expected, actual in zip(expected_types, operand_types, strict=False):
+            if expected is None or actual is None:
+                if actual is not None and expected is None:
+                    typed_fallbacks += 1
+                continue
+            if expected.accepts(actual):
+                typed_matches += 1
+            else:
+                compatible = False
+                break
+
+        if not compatible:
+            continue
+
+        score = (typed_matches, -typed_fallbacks)
+        if best_score is None or score > best_score:
+            best_signature = signature
+            best_score = score
+
+    if best_signature is not None:
+        return best_signature
+
     function_name = signatures[0].function_name if signatures else "<unknown>"
     msg = (
         f"No DuckDB overload found for {function_name} with {argument_count} "
@@ -339,7 +396,10 @@ def call_duckdb_function(
     if not signatures:
         msg = "Function call requires at least one signature"
         raise ValueError(msg)
-    signature = _select_signature(cast(Sequence[DuckDBFunctionSignature], signatures), len(operands))
+    signature = _select_signature(
+        cast(Sequence[DuckDBFunctionSignature], signatures),
+        operands,
+    )
     arguments, dependencies = _build_arguments(signature, operands)
     sql = _render_sql(signature, arguments)
     expression_type = _expression_type_for_signature(signature, return_category)
@@ -362,7 +422,10 @@ def call_duckdb_filter_function(
         msg = "Function call requires at least one signature"
         raise ValueError(msg)
     condition = _coerce_operand(predicate, BooleanType("BOOLEAN"))
-    signature = _select_signature(cast(Sequence[DuckDBFunctionSignature], signatures), len(operands))
+    signature = _select_signature(
+        cast(Sequence[DuckDBFunctionSignature], signatures),
+        operands,
+    )
     arguments, dependencies = _build_arguments(signature, operands)
     sql = _render_sql(signature, arguments)
     clause = f"{sql} FILTER (WHERE {condition.render()})"
