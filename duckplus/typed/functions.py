@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable as IterableABC
 from dataclasses import dataclass
 from datetime import date, datetime, time
 from decimal import Decimal
@@ -346,10 +347,21 @@ def _build_arguments(
     return [expression.render() for expression in coerced], frozenset(dependencies)
 
 
-def _render_call(function_name: str, arguments: list[str]) -> str:
-    if not arguments:
+def _render_call(
+    function_name: str,
+    arguments: list[str],
+    *,
+    order_clause: str | None = None,
+) -> str:
+    body = ", ".join(arguments)
+    if order_clause:
+        if body:
+            body = f"{body} {order_clause}"
+        else:
+            body = order_clause
+    if not body:
         return f"{function_name}()"
-    return f"{function_name}({', '.join(arguments)})"
+    return f"{function_name}({body})"
 
 
 def _render_symbolic(function_name: str, arguments: list[str]) -> str:
@@ -361,10 +373,167 @@ def _render_symbolic(function_name: str, arguments: list[str]) -> str:
     return f"({joined})"
 
 
-def _render_sql(signature: DuckDBFunctionSignature, arguments: list[str]) -> str:
+def _render_sql(
+    signature: DuckDBFunctionSignature,
+    arguments: list[str],
+    *,
+    order_clause: str | None = None,
+) -> str:
     if signature.function_name.isidentifier():
-        return _render_call(signature.function_name, arguments)
+        return _render_call(
+            signature.function_name,
+            arguments,
+            order_clause=order_clause,
+        )
+    if order_clause is not None:
+        msg = "ORDER BY clause is not supported for symbolic DuckDB functions"
+        raise ValueError(msg)
     return _render_symbolic(signature.function_name, arguments)
+
+
+def _normalise_clause_operands(
+    operands: Iterable[object] | object | None,
+) -> list[object]:
+    if operands is None:
+        return []
+    if isinstance(operands, (list, tuple, set)):
+        return list(operands)
+    if isinstance(operands, (TypedExpression, str)):
+        return [operands]
+    if isinstance(operands, IterableABC):
+        return list(operands)
+    return [operands]
+
+
+def _normalise_sort_direction(direction: object) -> str:
+    if not isinstance(direction, str):
+        msg = "Order direction must be a string"
+        raise TypeError(msg)
+    normalised = direction.strip().upper()
+    if normalised not in {"ASC", "DESC"}:
+        msg = "Order direction must be 'ASC' or 'DESC'"
+        raise ValueError(msg)
+    return normalised
+
+
+def _coerce_order_clause_operand(
+    operand: object,
+) -> tuple[str, frozenset[ExpressionDependency]]:
+    if (
+        isinstance(operand, Mapping)
+        and "expression" in operand
+        and len(operand) <= 2
+    ):
+        expression_operand = operand["expression"]
+        direction = operand.get("direction")
+        direction_sql = (
+            _normalise_sort_direction(direction)
+            if direction is not None
+            else None
+        )
+        expression = _coerce_operand(expression_operand, None)
+        sql = expression.render()
+        if direction_sql is not None:
+            sql = f"{sql} {direction_sql}"
+        return sql, expression.dependencies
+    if (
+        isinstance(operand, tuple)
+        and len(operand) == 2
+        and isinstance(operand[1], str)
+        and operand[1].strip().upper() in {"ASC", "DESC"}
+    ):
+        expression_operand, direction = operand
+        direction_sql = _normalise_sort_direction(direction)
+        expression = _coerce_operand(expression_operand, None)
+        return f"{expression.render()} {direction_sql}", expression.dependencies
+    expression = _coerce_operand(operand, None)
+    return expression.render(), expression.dependencies
+
+
+def _build_order_clause(
+    operands: Iterable[object] | object | None,
+) -> tuple[str | None, frozenset[ExpressionDependency]]:
+    normalised = _normalise_clause_operands(operands)
+    if not normalised:
+        return None, frozenset()
+    clause_parts: list[str] = []
+    dependencies: set[ExpressionDependency] = set()
+    for operand in normalised:
+        sql, operand_dependencies = _coerce_order_clause_operand(operand)
+        clause_parts.append(sql)
+        dependencies.update(operand_dependencies)
+    clause_sql = ", ".join(clause_parts)
+    return f"ORDER BY {clause_sql}", frozenset(dependencies)
+
+
+def _build_window_clause(
+    partition_by: Iterable[object] | object | None,
+    order_by: Iterable[object] | object | None,
+    frame: str | None,
+) -> tuple[str | None, frozenset[ExpressionDependency]]:
+    partition_operands = TypedExpression._normalise_window_operands(partition_by)
+    order_operands = TypedExpression._normalise_window_operands(order_by)
+    dependencies: set[ExpressionDependency] = set()
+    components: list[str] = []
+
+    if partition_operands:
+        partition_sql: list[str] = []
+        for operand in partition_operands:
+            sql, operand_dependencies = TypedExpression._coerce_window_operand(operand)
+            partition_sql.append(sql)
+            dependencies.update(operand_dependencies)
+        components.append(f"PARTITION BY {', '.join(partition_sql)}")
+
+    if order_operands:
+        order_sql: list[str] = []
+        for operand in order_operands:
+            sql, operand_dependencies = TypedExpression._coerce_window_order_operand(operand)
+            order_sql.append(sql)
+            dependencies.update(operand_dependencies)
+        components.append(f"ORDER BY {', '.join(order_sql)}")
+
+    if frame is not None:
+        frame_sql = frame.strip()
+        if not frame_sql:
+            msg = "Window frame clause cannot be empty"
+            raise ValueError(msg)
+        components.append(frame_sql)
+
+    if not components:
+        return None, frozenset()
+
+    window_spec = " ".join(components)
+    return f"({window_spec})", frozenset(dependencies)
+
+
+def _compose_function_sql(
+    signature: DuckDBFunctionSignature,
+    arguments: list[str],
+    *,
+    order_by: Iterable[object] | object | None = None,
+    within_group: Iterable[object] | object | None = None,
+    partition_by: Iterable[object] | object | None = None,
+    over_order_by: Iterable[object] | object | None = None,
+    frame: str | None = None,
+) -> tuple[str, str | None, frozenset[ExpressionDependency]]:
+    order_clause, order_dependencies = _build_order_clause(order_by)
+    sql = _render_sql(signature, arguments, order_clause=order_clause)
+
+    dependencies: set[ExpressionDependency] = set(order_dependencies)
+
+    within_clause, within_dependencies = _build_order_clause(within_group)
+    dependencies.update(within_dependencies)
+    if within_clause is not None:
+        sql = f"{sql} WITHIN GROUP ({within_clause})"
+
+    window_clause, window_dependencies = _build_window_clause(
+        partition_by,
+        over_order_by,
+        frame,
+    )
+    dependencies.update(window_dependencies)
+
+    return sql, window_clause, frozenset(dependencies)
 
 
 def _expression_type_for_signature(
@@ -392,6 +561,11 @@ def call_duckdb_function(
     *,
     return_category: str,
     operands: Sequence[object],
+    order_by: Iterable[object] | object | None = None,
+    within_group: Iterable[object] | object | None = None,
+    partition_by: Iterable[object] | object | None = None,
+    over_order_by: Iterable[object] | object | None = None,
+    frame: str | None = None,
 ) -> TypedExpression:
     if not signatures:
         msg = "Function call requires at least one signature"
@@ -401,7 +575,18 @@ def call_duckdb_function(
         operands,
     )
     arguments, dependencies = _build_arguments(signature, operands)
-    sql = _render_sql(signature, arguments)
+    sql, window_clause, clause_dependencies = _compose_function_sql(
+        signature,
+        arguments,
+        order_by=order_by,
+        within_group=within_group,
+        partition_by=partition_by,
+        over_order_by=over_order_by,
+        frame=frame,
+    )
+    dependencies = frozenset((*dependencies, *clause_dependencies))
+    if window_clause is not None:
+        sql = f"{sql} OVER {window_clause}"
     expression_type = _expression_type_for_signature(signature, return_category)
     return _instantiate_expression(
         expression_type,
@@ -417,6 +602,11 @@ def call_duckdb_filter_function(
     *,
     return_category: str,
     operands: Sequence[object],
+    order_by: Iterable[object] | object | None = None,
+    within_group: Iterable[object] | object | None = None,
+    partition_by: Iterable[object] | object | None = None,
+    over_order_by: Iterable[object] | object | None = None,
+    frame: str | None = None,
 ) -> TypedExpression:
     if not signatures:
         msg = "Function call requires at least one signature"
@@ -427,8 +617,19 @@ def call_duckdb_filter_function(
         operands,
     )
     arguments, dependencies = _build_arguments(signature, operands)
-    sql = _render_sql(signature, arguments)
+    sql, window_clause, clause_dependencies = _compose_function_sql(
+        signature,
+        arguments,
+        order_by=order_by,
+        within_group=within_group,
+        partition_by=partition_by,
+        over_order_by=over_order_by,
+        frame=frame,
+    )
+    dependencies = frozenset((*dependencies, *clause_dependencies))
     clause = f"{sql} FILTER (WHERE {condition.render()})"
+    if window_clause is not None:
+        clause = f"{clause} OVER {window_clause}"
     expression_type = _expression_type_for_signature(signature, return_category)
     merged = frozenset((*dependencies, *condition.dependencies))
     return _instantiate_expression(
