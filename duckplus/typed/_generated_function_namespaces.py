@@ -10,7 +10,7 @@ Do not edit by hand; regenerate to pull in new function definitions.
 
 from __future__ import annotations
 
-from typing import ClassVar
+from typing import ClassVar, Iterable
 
 from .functions import (
     DuckDBFunctionDefinition,
@@ -137,7 +137,7 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def arg_max(self, *operands: object) -> BlobExpression:
+    def arg_max(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``arg_max``.
 
         Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.
@@ -157,8 +157,13 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
             self._ARG_MAX_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def arg_max_filter(self, predicate: object, *operands: object) -> BlobExpression:
+    def arg_max_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``arg_max`` with ``FILTER``.
 
         Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.
@@ -179,6 +184,11 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
             self._ARG_MAX_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _ARG_MAX_NULL_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -290,7 +300,7 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def arg_max_null(self, *operands: object) -> BlobExpression:
+    def arg_max_null(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``arg_max_null``.
 
         Finds the row with the maximum val. Calculates the arg expression at that row.
@@ -310,8 +320,13 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
             self._ARG_MAX_NULL_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def arg_max_null_filter(self, predicate: object, *operands: object) -> BlobExpression:
+    def arg_max_null_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``arg_max_null`` with ``FILTER``.
 
         Finds the row with the maximum val. Calculates the arg expression at that row.
@@ -332,6 +347,11 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
             self._ARG_MAX_NULL_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _ARG_MIN_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -443,7 +463,7 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def arg_min(self, *operands: object) -> BlobExpression:
+    def arg_min(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``arg_min``.
 
         Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.
@@ -463,8 +483,13 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
             self._ARG_MIN_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def arg_min_filter(self, predicate: object, *operands: object) -> BlobExpression:
+    def arg_min_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``arg_min`` with ``FILTER``.
 
         Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.
@@ -485,6 +510,11 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
             self._ARG_MIN_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _ARG_MIN_NULL_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -596,7 +626,7 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def arg_min_null(self, *operands: object) -> BlobExpression:
+    def arg_min_null(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``arg_min_null``.
 
         Finds the row with the minimum val. Calculates the arg expression at that row.
@@ -616,8 +646,13 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
             self._ARG_MIN_NULL_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def arg_min_null_filter(self, predicate: object, *operands: object) -> BlobExpression:
+    def arg_min_null_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``arg_min_null`` with ``FILTER``.
 
         Finds the row with the minimum val. Calculates the arg expression at that row.
@@ -638,6 +673,11 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
             self._ARG_MIN_NULL_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _ARGMAX_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -749,7 +789,7 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def argmax(self, *operands: object) -> BlobExpression:
+    def argmax(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``argmax``.
 
         Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.
@@ -769,8 +809,13 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
             self._ARGMAX_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def argmax_filter(self, predicate: object, *operands: object) -> BlobExpression:
+    def argmax_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``argmax`` with ``FILTER``.
 
         Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.
@@ -791,6 +836,11 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
             self._ARGMAX_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _ARGMIN_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -902,7 +952,7 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def argmin(self, *operands: object) -> BlobExpression:
+    def argmin(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``argmin``.
 
         Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.
@@ -922,8 +972,13 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
             self._ARGMIN_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def argmin_filter(self, predicate: object, *operands: object) -> BlobExpression:
+    def argmin_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``argmin`` with ``FILTER``.
 
         Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.
@@ -944,6 +999,11 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
             self._ARGMIN_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _MAX_BY_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -1055,7 +1115,7 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def max_by(self, *operands: object) -> BlobExpression:
+    def max_by(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``max_by``.
 
         Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.
@@ -1075,8 +1135,13 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
             self._MAX_BY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def max_by_filter(self, predicate: object, *operands: object) -> BlobExpression:
+    def max_by_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``max_by`` with ``FILTER``.
 
         Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.
@@ -1097,6 +1162,11 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
             self._MAX_BY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _MIN_BY_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -1208,7 +1278,7 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def min_by(self, *operands: object) -> BlobExpression:
+    def min_by(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``min_by``.
 
         Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.
@@ -1228,8 +1298,13 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
             self._MIN_BY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def min_by_filter(self, predicate: object, *operands: object) -> BlobExpression:
+    def min_by_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``min_by`` with ``FILTER``.
 
         Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.
@@ -1250,6 +1325,11 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
             self._MIN_BY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _IDENTIFIER_FUNCTIONS: ClassVar[dict[str, str]] = {
         'arg_max': 'arg_max',
@@ -1290,7 +1370,7 @@ class AggregateBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def bool_and(self, *operands: object) -> BooleanExpression:
+    def bool_and(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BooleanExpression:
         """Call DuckDB function ``bool_and``.
 
         Returns TRUE if every input value is TRUE, otherwise FALSE.
@@ -1302,8 +1382,13 @@ class AggregateBooleanFunctions(_StaticFunctionNamespace):
             self._BOOL_AND_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def bool_and_filter(self, predicate: object, *operands: object) -> BooleanExpression:
+    def bool_and_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BooleanExpression:
         """Call DuckDB function ``bool_and`` with ``FILTER``.
 
         Returns TRUE if every input value is TRUE, otherwise FALSE.
@@ -1316,6 +1401,11 @@ class AggregateBooleanFunctions(_StaticFunctionNamespace):
             self._BOOL_AND_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _BOOL_OR_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -1331,7 +1421,7 @@ class AggregateBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def bool_or(self, *operands: object) -> BooleanExpression:
+    def bool_or(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BooleanExpression:
         """Call DuckDB function ``bool_or``.
 
         Returns TRUE if any input value is TRUE, otherwise FALSE.
@@ -1343,8 +1433,13 @@ class AggregateBooleanFunctions(_StaticFunctionNamespace):
             self._BOOL_OR_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def bool_or_filter(self, predicate: object, *operands: object) -> BooleanExpression:
+    def bool_or_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BooleanExpression:
         """Call DuckDB function ``bool_or`` with ``FILTER``.
 
         Returns TRUE if any input value is TRUE, otherwise FALSE.
@@ -1357,6 +1452,11 @@ class AggregateBooleanFunctions(_StaticFunctionNamespace):
             self._BOOL_OR_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _IDENTIFIER_FUNCTIONS: ClassVar[dict[str, str]] = {
         'bool_and': 'bool_and',
@@ -1385,7 +1485,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def any_value(self, *operands: object) -> TypedExpression:
+    def any_value(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``any_value``.
 
         Returns the first non-NULL value from arg. This function is affected by ordering.
@@ -1397,8 +1497,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._ANY_VALUE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def any_value_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def any_value_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``any_value`` with ``FILTER``.
 
         Returns the first non-NULL value from arg. This function is affected by ordering.
@@ -1411,6 +1516,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._ANY_VALUE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _APPROX_QUANTILE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -1534,7 +1644,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def approx_quantile(self, *operands: object) -> TypedExpression:
+    def approx_quantile(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``approx_quantile``.
 
         Computes the approximate quantile using T-Digest.
@@ -1555,8 +1665,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._APPROX_QUANTILE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def approx_quantile_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def approx_quantile_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``approx_quantile`` with ``FILTER``.
 
         Computes the approximate quantile using T-Digest.
@@ -1578,6 +1693,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._APPROX_QUANTILE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _APPROX_TOP_K_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -1593,7 +1713,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def approx_top_k(self, *operands: object) -> TypedExpression:
+    def approx_top_k(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``approx_top_k``.
 
         Finds the k approximately most occurring values in the data set
@@ -1605,8 +1725,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._APPROX_TOP_K_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def approx_top_k_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def approx_top_k_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``approx_top_k`` with ``FILTER``.
 
         Finds the k approximately most occurring values in the data set
@@ -1619,6 +1744,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._APPROX_TOP_K_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _ARBITRARY_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -1634,7 +1764,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def arbitrary(self, *operands: object) -> TypedExpression:
+    def arbitrary(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``arbitrary``.
 
         Returns the first value (NULL or non-NULL) from arg. This function is affected by ordering.
@@ -1646,8 +1776,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._ARBITRARY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def arbitrary_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def arbitrary_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``arbitrary`` with ``FILTER``.
 
         Returns the first value (NULL or non-NULL) from arg. This function is affected by ordering.
@@ -1660,6 +1795,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._ARBITRARY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _ARG_MAX_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -2119,7 +2259,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def arg_max(self, *operands: object) -> TypedExpression:
+    def arg_max(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``arg_max``.
 
         Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.
@@ -2168,8 +2308,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._ARG_MAX_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def arg_max_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def arg_max_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``arg_max`` with ``FILTER``.
 
         Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.
@@ -2219,6 +2364,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._ARG_MAX_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _ARG_MAX_NULL_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -2666,7 +2816,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def arg_max_null(self, *operands: object) -> TypedExpression:
+    def arg_max_null(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``arg_max_null``.
 
         Finds the row with the maximum val. Calculates the arg expression at that row.
@@ -2714,8 +2864,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._ARG_MAX_NULL_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def arg_max_null_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def arg_max_null_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``arg_max_null`` with ``FILTER``.
 
         Finds the row with the maximum val. Calculates the arg expression at that row.
@@ -2764,6 +2919,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._ARG_MAX_NULL_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _ARG_MIN_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -3223,7 +3383,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def arg_min(self, *operands: object) -> TypedExpression:
+    def arg_min(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``arg_min``.
 
         Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.
@@ -3272,8 +3432,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._ARG_MIN_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def arg_min_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def arg_min_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``arg_min`` with ``FILTER``.
 
         Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.
@@ -3323,6 +3488,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._ARG_MIN_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _ARG_MIN_NULL_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -3770,7 +3940,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def arg_min_null(self, *operands: object) -> TypedExpression:
+    def arg_min_null(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``arg_min_null``.
 
         Finds the row with the minimum val. Calculates the arg expression at that row.
@@ -3818,8 +3988,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._ARG_MIN_NULL_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def arg_min_null_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def arg_min_null_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``arg_min_null`` with ``FILTER``.
 
         Finds the row with the minimum val. Calculates the arg expression at that row.
@@ -3868,6 +4043,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._ARG_MIN_NULL_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _ARGMAX_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -4327,7 +4507,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def argmax(self, *operands: object) -> TypedExpression:
+    def argmax(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``argmax``.
 
         Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.
@@ -4376,8 +4556,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._ARGMAX_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def argmax_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def argmax_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``argmax`` with ``FILTER``.
 
         Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.
@@ -4427,6 +4612,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._ARGMAX_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _ARGMIN_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -4886,7 +5076,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def argmin(self, *operands: object) -> TypedExpression:
+    def argmin(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``argmin``.
 
         Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.
@@ -4935,8 +5125,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._ARGMIN_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def argmin_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def argmin_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``argmin`` with ``FILTER``.
 
         Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.
@@ -4986,6 +5181,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._ARGMIN_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _ARRAY_AGG_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -5001,7 +5201,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def array_agg(self, *operands: object) -> TypedExpression:
+    def array_agg(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``array_agg``.
 
         Returns a LIST containing all the values of a column.
@@ -5013,8 +5213,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._ARRAY_AGG_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def array_agg_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def array_agg_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``array_agg`` with ``FILTER``.
 
         Returns a LIST containing all the values of a column.
@@ -5027,6 +5232,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._ARRAY_AGG_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _AVG_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -5078,7 +5288,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def avg(self, *operands: object) -> TypedExpression:
+    def avg(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``avg``.
 
         Calculates the average value for all tuples in x.
@@ -5093,8 +5303,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._AVG_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def avg_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def avg_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``avg`` with ``FILTER``.
 
         Calculates the average value for all tuples in x.
@@ -5110,6 +5325,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._AVG_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _BIT_AND_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -5137,7 +5357,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def bit_and(self, *operands: object) -> TypedExpression:
+    def bit_and(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``bit_and``.
 
         Returns the bitwise AND of all bits in a given expression.
@@ -5150,8 +5370,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._BIT_AND_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def bit_and_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def bit_and_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``bit_and`` with ``FILTER``.
 
         Returns the bitwise AND of all bits in a given expression.
@@ -5165,6 +5390,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._BIT_AND_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _BIT_OR_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -5192,7 +5422,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def bit_or(self, *operands: object) -> TypedExpression:
+    def bit_or(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``bit_or``.
 
         Returns the bitwise OR of all bits in a given expression.
@@ -5205,8 +5435,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._BIT_OR_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def bit_or_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def bit_or_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``bit_or`` with ``FILTER``.
 
         Returns the bitwise OR of all bits in a given expression.
@@ -5220,6 +5455,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._BIT_OR_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _BIT_XOR_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -5247,7 +5487,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def bit_xor(self, *operands: object) -> TypedExpression:
+    def bit_xor(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``bit_xor``.
 
         Returns the bitwise XOR of all bits in a given expression.
@@ -5260,8 +5500,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._BIT_XOR_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def bit_xor_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def bit_xor_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``bit_xor`` with ``FILTER``.
 
         Returns the bitwise XOR of all bits in a given expression.
@@ -5275,6 +5520,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._BIT_XOR_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _BITSTRING_AGG_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -5518,7 +5768,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def bitstring_agg(self, *operands: object) -> TypedExpression:
+    def bitstring_agg(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``bitstring_agg``.
 
         Returns a bitstring with bits set for each distinct value.
@@ -5549,8 +5799,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._BITSTRING_AGG_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def bitstring_agg_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def bitstring_agg_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``bitstring_agg`` with ``FILTER``.
 
         Returns a bitstring with bits set for each distinct value.
@@ -5582,6 +5837,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._BITSTRING_AGG_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _FIRST_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -5597,7 +5857,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def first(self, *operands: object) -> TypedExpression:
+    def first(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``first``.
 
         Returns the first value (NULL or non-NULL) from arg. This function is affected by ordering.
@@ -5609,8 +5869,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._FIRST_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def first_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def first_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``first`` with ``FILTER``.
 
         Returns the first value (NULL or non-NULL) from arg. This function is affected by ordering.
@@ -5623,6 +5888,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._FIRST_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _HISTOGRAM_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -5650,7 +5920,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def histogram(self, *operands: object) -> TypedExpression:
+    def histogram(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``histogram``.
 
         Returns a LIST of STRUCTs with the fields bucket and count.
@@ -5663,8 +5933,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._HISTOGRAM_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def histogram_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def histogram_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``histogram`` with ``FILTER``.
 
         Returns a LIST of STRUCTs with the fields bucket and count.
@@ -5678,6 +5953,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._HISTOGRAM_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _HISTOGRAM_EXACT_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -5693,7 +5973,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def histogram_exact(self, *operands: object) -> TypedExpression:
+    def histogram_exact(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``histogram_exact``.
 
         Returns a LIST of STRUCTs with the fields bucket and count matching the buckets exactly.
@@ -5705,8 +5985,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._HISTOGRAM_EXACT_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def histogram_exact_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def histogram_exact_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``histogram_exact`` with ``FILTER``.
 
         Returns a LIST of STRUCTs with the fields bucket and count matching the buckets exactly.
@@ -5719,6 +6004,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._HISTOGRAM_EXACT_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _LAST_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -5734,7 +6024,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def last(self, *operands: object) -> TypedExpression:
+    def last(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``last``.
 
         Returns the last value of a column. This function is affected by ordering.
@@ -5746,8 +6036,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._LAST_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def last_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def last_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``last`` with ``FILTER``.
 
         Returns the last value of a column. This function is affected by ordering.
@@ -5760,6 +6055,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._LAST_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _LIST_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -5775,7 +6075,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def list(self, *operands: object) -> TypedExpression:
+    def list(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``list``.
 
         Returns a LIST containing all the values of a column.
@@ -5787,8 +6087,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._LIST_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def list_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def list_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``list`` with ``FILTER``.
 
         Returns a LIST containing all the values of a column.
@@ -5801,6 +6106,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._LIST_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _MAX_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -5828,7 +6138,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def max(self, *operands: object) -> TypedExpression:
+    def max(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``max``.
 
         Returns the maximum value present in arg.
@@ -5841,8 +6151,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._MAX_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def max_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def max_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``max`` with ``FILTER``.
 
         Returns the maximum value present in arg.
@@ -5856,6 +6171,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._MAX_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _MAX_BY_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -6315,7 +6635,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def max_by(self, *operands: object) -> TypedExpression:
+    def max_by(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``max_by``.
 
         Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.
@@ -6364,8 +6684,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._MAX_BY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def max_by_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def max_by_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``max_by`` with ``FILTER``.
 
         Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.
@@ -6415,6 +6740,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._MAX_BY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _MEAN_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -6466,7 +6796,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def mean(self, *operands: object) -> TypedExpression:
+    def mean(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``mean``.
 
         Calculates the average value for all tuples in x.
@@ -6481,8 +6811,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._MEAN_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def mean_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def mean_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``mean`` with ``FILTER``.
 
         Calculates the average value for all tuples in x.
@@ -6498,6 +6833,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._MEAN_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _MEDIAN_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -6513,7 +6853,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def median(self, *operands: object) -> TypedExpression:
+    def median(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``median``.
 
         Returns the middle value of the set. NULL values are ignored. For even value counts, interpolate-able types (numeric, date/time) return the average of the two middle values. Non-interpolate-able types (everything else) return the lower of the two middle values.
@@ -6525,8 +6865,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._MEDIAN_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def median_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def median_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``median`` with ``FILTER``.
 
         Returns the middle value of the set. NULL values are ignored. For even value counts, interpolate-able types (numeric, date/time) return the average of the two middle values. Non-interpolate-able types (everything else) return the lower of the two middle values.
@@ -6539,6 +6884,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._MEDIAN_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _MIN_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -6566,7 +6916,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def min(self, *operands: object) -> TypedExpression:
+    def min(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``min``.
 
         Returns the minimum value present in arg.
@@ -6579,8 +6929,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._MIN_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def min_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def min_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``min`` with ``FILTER``.
 
         Returns the minimum value present in arg.
@@ -6594,6 +6949,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._MIN_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _MIN_BY_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -7053,7 +7413,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def min_by(self, *operands: object) -> TypedExpression:
+    def min_by(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``min_by``.
 
         Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.
@@ -7102,8 +7462,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._MIN_BY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def min_by_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def min_by_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``min_by`` with ``FILTER``.
 
         Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.
@@ -7153,6 +7518,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._MIN_BY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _MODE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -7168,7 +7538,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def mode(self, *operands: object) -> TypedExpression:
+    def mode(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``mode``.
 
         Returns the most frequent value for the values within x. NULL values are ignored.
@@ -7180,8 +7550,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._MODE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def mode_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def mode_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``mode`` with ``FILTER``.
 
         Returns the most frequent value for the values within x. NULL values are ignored.
@@ -7194,6 +7569,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._MODE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _QUANTILE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -7233,7 +7613,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def quantile(self, *operands: object) -> TypedExpression:
+    def quantile(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``quantile``.
 
         Returns the exact quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding exact quantiles.
@@ -7247,8 +7627,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._QUANTILE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def quantile_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def quantile_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``quantile`` with ``FILTER``.
 
         Returns the exact quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding exact quantiles.
@@ -7263,6 +7648,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._QUANTILE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _QUANTILE_CONT_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -7386,7 +7776,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def quantile_cont(self, *operands: object) -> TypedExpression:
+    def quantile_cont(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``quantile_cont``.
 
         Returns the interpolated quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding interpolated quantiles.	
@@ -7407,8 +7797,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._QUANTILE_CONT_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def quantile_cont_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def quantile_cont_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``quantile_cont`` with ``FILTER``.
 
         Returns the interpolated quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding interpolated quantiles.	
@@ -7430,6 +7825,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._QUANTILE_CONT_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _QUANTILE_DISC_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -7469,7 +7869,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def quantile_disc(self, *operands: object) -> TypedExpression:
+    def quantile_disc(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``quantile_disc``.
 
         Returns the exact quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding exact quantiles.
@@ -7483,8 +7883,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._QUANTILE_DISC_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def quantile_disc_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def quantile_disc_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``quantile_disc`` with ``FILTER``.
 
         Returns the exact quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding exact quantiles.
@@ -7499,6 +7904,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._QUANTILE_DISC_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _SUM_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -7514,7 +7924,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def sum(self, *operands: object) -> TypedExpression:
+    def sum(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``sum``.
 
         Calculates the sum value for all tuples in arg.
@@ -7526,8 +7936,13 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._SUM_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def sum_filter(self, predicate: object, *operands: object) -> TypedExpression:
+    def sum_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``sum`` with ``FILTER``.
 
         Calculates the sum value for all tuples in arg.
@@ -7540,6 +7955,11 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             self._SUM_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _IDENTIFIER_FUNCTIONS: ClassVar[dict[str, str]] = {
         'any_value': 'any_value',
@@ -7628,7 +8048,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def any_value(self, *operands: object) -> NumericExpression:
+    def any_value(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``any_value``.
 
         Returns the first non-NULL value from arg. This function is affected by ordering.
@@ -7640,8 +8060,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._ANY_VALUE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def any_value_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def any_value_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``any_value`` with ``FILTER``.
 
         Returns the first non-NULL value from arg. This function is affected by ordering.
@@ -7654,6 +8079,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._ANY_VALUE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _APPROX_COUNT_DISTINCT_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -7669,7 +8099,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def approx_count_distinct(self, *operands: object) -> NumericExpression:
+    def approx_count_distinct(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``approx_count_distinct``.
 
         Computes the approximate count of distinct elements using HyperLogLog.
@@ -7681,8 +8111,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._APPROX_COUNT_DISTINCT_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def approx_count_distinct_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def approx_count_distinct_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``approx_count_distinct`` with ``FILTER``.
 
         Computes the approximate count of distinct elements using HyperLogLog.
@@ -7695,6 +8130,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._APPROX_COUNT_DISTINCT_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _APPROX_QUANTILE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -7866,7 +8306,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def approx_quantile(self, *operands: object) -> NumericExpression:
+    def approx_quantile(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``approx_quantile``.
 
         Computes the approximate quantile using T-Digest.
@@ -7891,8 +8331,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._APPROX_QUANTILE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def approx_quantile_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def approx_quantile_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``approx_quantile`` with ``FILTER``.
 
         Computes the approximate quantile using T-Digest.
@@ -7918,6 +8363,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._APPROX_QUANTILE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _ARBITRARY_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -7933,7 +8383,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def arbitrary(self, *operands: object) -> NumericExpression:
+    def arbitrary(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``arbitrary``.
 
         Returns the first value (NULL or non-NULL) from arg. This function is affected by ordering.
@@ -7945,8 +8395,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._ARBITRARY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def arbitrary_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def arbitrary_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``arbitrary`` with ``FILTER``.
 
         Returns the first value (NULL or non-NULL) from arg. This function is affected by ordering.
@@ -7959,6 +8414,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._ARBITRARY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _ARG_MAX_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -8394,7 +8854,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def arg_max(self, *operands: object) -> NumericExpression:
+    def arg_max(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``arg_max``.
 
         Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.
@@ -8441,8 +8901,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._ARG_MAX_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def arg_max_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def arg_max_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``arg_max`` with ``FILTER``.
 
         Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.
@@ -8490,6 +8955,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._ARG_MAX_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _ARG_MAX_NULL_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -8925,7 +9395,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def arg_max_null(self, *operands: object) -> NumericExpression:
+    def arg_max_null(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``arg_max_null``.
 
         Finds the row with the maximum val. Calculates the arg expression at that row.
@@ -8972,8 +9442,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._ARG_MAX_NULL_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def arg_max_null_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def arg_max_null_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``arg_max_null`` with ``FILTER``.
 
         Finds the row with the maximum val. Calculates the arg expression at that row.
@@ -9021,6 +9496,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._ARG_MAX_NULL_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _ARG_MIN_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -9456,7 +9936,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def arg_min(self, *operands: object) -> NumericExpression:
+    def arg_min(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``arg_min``.
 
         Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.
@@ -9503,8 +9983,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._ARG_MIN_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def arg_min_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def arg_min_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``arg_min`` with ``FILTER``.
 
         Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.
@@ -9552,6 +10037,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._ARG_MIN_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _ARG_MIN_NULL_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -9987,7 +10477,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def arg_min_null(self, *operands: object) -> NumericExpression:
+    def arg_min_null(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``arg_min_null``.
 
         Finds the row with the minimum val. Calculates the arg expression at that row.
@@ -10034,8 +10524,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._ARG_MIN_NULL_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def arg_min_null_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def arg_min_null_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``arg_min_null`` with ``FILTER``.
 
         Finds the row with the minimum val. Calculates the arg expression at that row.
@@ -10083,6 +10578,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._ARG_MIN_NULL_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _ARGMAX_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -10518,7 +11018,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def argmax(self, *operands: object) -> NumericExpression:
+    def argmax(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``argmax``.
 
         Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.
@@ -10565,8 +11065,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._ARGMAX_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def argmax_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def argmax_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``argmax`` with ``FILTER``.
 
         Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.
@@ -10614,6 +11119,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._ARGMAX_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _ARGMIN_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -11049,7 +11559,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def argmin(self, *operands: object) -> NumericExpression:
+    def argmin(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``argmin``.
 
         Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.
@@ -11096,8 +11606,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._ARGMIN_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def argmin_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def argmin_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``argmin`` with ``FILTER``.
 
         Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.
@@ -11145,6 +11660,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._ARGMIN_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _AVG_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -11232,7 +11752,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def avg(self, *operands: object) -> NumericExpression:
+    def avg(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``avg``.
 
         Calculates the average value for all tuples in x.
@@ -11250,8 +11770,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._AVG_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def avg_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def avg_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``avg`` with ``FILTER``.
 
         Calculates the average value for all tuples in x.
@@ -11270,6 +11795,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._AVG_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _BIT_AND_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -11381,7 +11911,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def bit_and(self, *operands: object) -> NumericExpression:
+    def bit_and(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``bit_and``.
 
         Returns the bitwise AND of all bits in a given expression.
@@ -11401,8 +11931,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._BIT_AND_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def bit_and_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def bit_and_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``bit_and`` with ``FILTER``.
 
         Returns the bitwise AND of all bits in a given expression.
@@ -11423,6 +11958,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._BIT_AND_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _BIT_OR_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -11534,7 +12074,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def bit_or(self, *operands: object) -> NumericExpression:
+    def bit_or(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``bit_or``.
 
         Returns the bitwise OR of all bits in a given expression.
@@ -11554,8 +12094,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._BIT_OR_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def bit_or_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def bit_or_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``bit_or`` with ``FILTER``.
 
         Returns the bitwise OR of all bits in a given expression.
@@ -11576,6 +12121,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._BIT_OR_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _BIT_XOR_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -11687,7 +12237,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def bit_xor(self, *operands: object) -> NumericExpression:
+    def bit_xor(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``bit_xor``.
 
         Returns the bitwise XOR of all bits in a given expression.
@@ -11707,8 +12257,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._BIT_XOR_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def bit_xor_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def bit_xor_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``bit_xor`` with ``FILTER``.
 
         Returns the bitwise XOR of all bits in a given expression.
@@ -11729,6 +12284,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._BIT_XOR_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _CORR_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -11744,7 +12304,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def corr(self, *operands: object) -> NumericExpression:
+    def corr(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``corr``.
 
         Returns the correlation coefficient for non-NULL pairs in a group.
@@ -11756,8 +12316,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._CORR_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def corr_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def corr_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``corr`` with ``FILTER``.
 
         Returns the correlation coefficient for non-NULL pairs in a group.
@@ -11770,6 +12335,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._CORR_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _COUNT_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -11797,7 +12367,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def count(self, *operands: object) -> NumericExpression:
+    def count(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``count``.
 
         Returns the number of non-NULL values in arg.
@@ -11810,8 +12380,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._COUNT_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def count_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def count_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``count`` with ``FILTER``.
 
         Returns the number of non-NULL values in arg.
@@ -11825,6 +12400,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._COUNT_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _COUNT_IF_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -11840,7 +12420,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def count_if(self, *operands: object) -> NumericExpression:
+    def count_if(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``count_if``.
 
         Counts the total number of TRUE values for a boolean column
@@ -11852,8 +12432,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._COUNT_IF_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def count_if_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def count_if_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``count_if`` with ``FILTER``.
 
         Counts the total number of TRUE values for a boolean column
@@ -11866,6 +12451,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._COUNT_IF_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _COUNT_STAR_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -11881,7 +12471,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def count_star(self, *operands: object) -> NumericExpression:
+    def count_star(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``count_star``.
 
         Overloads:
@@ -11891,8 +12481,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._COUNT_STAR_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def count_star_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def count_star_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``count_star`` with ``FILTER``.
 
         Overloads:
@@ -11903,6 +12498,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._COUNT_STAR_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _COUNTIF_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -11918,7 +12518,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def countif(self, *operands: object) -> NumericExpression:
+    def countif(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``countif``.
 
         Counts the total number of TRUE values for a boolean column
@@ -11930,8 +12530,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._COUNTIF_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def countif_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def countif_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``countif`` with ``FILTER``.
 
         Counts the total number of TRUE values for a boolean column
@@ -11944,6 +12549,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._COUNTIF_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _COVAR_POP_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -11959,7 +12569,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def covar_pop(self, *operands: object) -> NumericExpression:
+    def covar_pop(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``covar_pop``.
 
         Returns the population covariance of input values.
@@ -11971,8 +12581,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._COVAR_POP_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def covar_pop_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def covar_pop_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``covar_pop`` with ``FILTER``.
 
         Returns the population covariance of input values.
@@ -11985,6 +12600,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._COVAR_POP_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _COVAR_SAMP_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -12000,7 +12620,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def covar_samp(self, *operands: object) -> NumericExpression:
+    def covar_samp(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``covar_samp``.
 
         Returns the sample covariance for non-NULL pairs in a group.
@@ -12012,8 +12632,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._COVAR_SAMP_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def covar_samp_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def covar_samp_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``covar_samp`` with ``FILTER``.
 
         Returns the sample covariance for non-NULL pairs in a group.
@@ -12026,6 +12651,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._COVAR_SAMP_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _ENTROPY_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -12041,7 +12671,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def entropy(self, *operands: object) -> NumericExpression:
+    def entropy(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``entropy``.
 
         Returns the log-2 entropy of count input-values.
@@ -12053,8 +12683,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._ENTROPY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def entropy_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def entropy_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``entropy`` with ``FILTER``.
 
         Returns the log-2 entropy of count input-values.
@@ -12067,6 +12702,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._ENTROPY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _FAVG_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -12082,7 +12722,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def favg(self, *operands: object) -> NumericExpression:
+    def favg(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``favg``.
 
         Calculates the average using a more accurate floating point summation (Kahan Sum)
@@ -12094,8 +12734,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._FAVG_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def favg_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def favg_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``favg`` with ``FILTER``.
 
         Calculates the average using a more accurate floating point summation (Kahan Sum)
@@ -12108,6 +12753,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._FAVG_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _FIRST_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -12123,7 +12773,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def first(self, *operands: object) -> NumericExpression:
+    def first(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``first``.
 
         Returns the first value (NULL or non-NULL) from arg. This function is affected by ordering.
@@ -12135,8 +12785,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._FIRST_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def first_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def first_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``first`` with ``FILTER``.
 
         Returns the first value (NULL or non-NULL) from arg. This function is affected by ordering.
@@ -12149,6 +12804,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._FIRST_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _FSUM_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -12164,7 +12824,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def fsum(self, *operands: object) -> NumericExpression:
+    def fsum(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``fsum``.
 
         Calculates the sum using a more accurate floating point summation (Kahan Sum).
@@ -12176,8 +12836,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._FSUM_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def fsum_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def fsum_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``fsum`` with ``FILTER``.
 
         Calculates the sum using a more accurate floating point summation (Kahan Sum).
@@ -12190,6 +12855,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._FSUM_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _KAHAN_SUM_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -12205,7 +12875,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def kahan_sum(self, *operands: object) -> NumericExpression:
+    def kahan_sum(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``kahan_sum``.
 
         Calculates the sum using a more accurate floating point summation (Kahan Sum).
@@ -12217,8 +12887,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._KAHAN_SUM_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def kahan_sum_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def kahan_sum_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``kahan_sum`` with ``FILTER``.
 
         Calculates the sum using a more accurate floating point summation (Kahan Sum).
@@ -12231,6 +12906,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._KAHAN_SUM_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _KURTOSIS_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -12246,7 +12926,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def kurtosis(self, *operands: object) -> NumericExpression:
+    def kurtosis(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``kurtosis``.
 
         Returns the excess kurtosis (Fisher’s definition) of all input values, with a bias correction according to the sample size
@@ -12258,8 +12938,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._KURTOSIS_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def kurtosis_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def kurtosis_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``kurtosis`` with ``FILTER``.
 
         Returns the excess kurtosis (Fisher’s definition) of all input values, with a bias correction according to the sample size
@@ -12272,6 +12957,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._KURTOSIS_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _KURTOSIS_POP_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -12287,7 +12977,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def kurtosis_pop(self, *operands: object) -> NumericExpression:
+    def kurtosis_pop(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``kurtosis_pop``.
 
         Returns the excess kurtosis (Fisher’s definition) of all input values, without bias correction
@@ -12299,8 +12989,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._KURTOSIS_POP_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def kurtosis_pop_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def kurtosis_pop_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``kurtosis_pop`` with ``FILTER``.
 
         Returns the excess kurtosis (Fisher’s definition) of all input values, without bias correction
@@ -12313,6 +13008,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._KURTOSIS_POP_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _LAST_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -12328,7 +13028,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def last(self, *operands: object) -> NumericExpression:
+    def last(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``last``.
 
         Returns the last value of a column. This function is affected by ordering.
@@ -12340,8 +13040,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._LAST_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def last_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def last_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``last`` with ``FILTER``.
 
         Returns the last value of a column. This function is affected by ordering.
@@ -12354,6 +13059,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._LAST_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _MAD_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -12453,7 +13163,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def mad(self, *operands: object) -> NumericExpression:
+    def mad(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``mad``.
 
         Returns the median absolute deviation for the values within x. NULL values are ignored. Temporal types return a positive INTERVAL.	
@@ -12472,8 +13182,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._MAD_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def mad_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def mad_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``mad`` with ``FILTER``.
 
         Returns the median absolute deviation for the values within x. NULL values are ignored. Temporal types return a positive INTERVAL.	
@@ -12493,6 +13208,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._MAD_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _MAX_BY_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -12928,7 +13648,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def max_by(self, *operands: object) -> NumericExpression:
+    def max_by(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``max_by``.
 
         Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.
@@ -12975,8 +13695,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._MAX_BY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def max_by_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def max_by_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``max_by`` with ``FILTER``.
 
         Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.
@@ -13024,6 +13749,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._MAX_BY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _MEAN_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -13111,7 +13841,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def mean(self, *operands: object) -> NumericExpression:
+    def mean(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``mean``.
 
         Calculates the average value for all tuples in x.
@@ -13129,8 +13859,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._MEAN_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def mean_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def mean_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``mean`` with ``FILTER``.
 
         Calculates the average value for all tuples in x.
@@ -13149,6 +13884,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._MEAN_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _MIN_BY_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -13584,7 +14324,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def min_by(self, *operands: object) -> NumericExpression:
+    def min_by(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``min_by``.
 
         Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.
@@ -13631,8 +14371,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._MIN_BY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def min_by_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def min_by_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``min_by`` with ``FILTER``.
 
         Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.
@@ -13680,6 +14425,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._MIN_BY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _PRODUCT_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -13695,7 +14445,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def product(self, *operands: object) -> NumericExpression:
+    def product(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``product``.
 
         Calculates the product of all tuples in arg.
@@ -13707,8 +14457,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._PRODUCT_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def product_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def product_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``product`` with ``FILTER``.
 
         Calculates the product of all tuples in arg.
@@ -13721,6 +14476,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._PRODUCT_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _QUANTILE_CONT_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -13916,7 +14676,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def quantile_cont(self, *operands: object) -> NumericExpression:
+    def quantile_cont(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``quantile_cont``.
 
         Returns the interpolated quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding interpolated quantiles.	
@@ -13943,8 +14703,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._QUANTILE_CONT_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def quantile_cont_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def quantile_cont_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``quantile_cont`` with ``FILTER``.
 
         Returns the interpolated quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding interpolated quantiles.	
@@ -13972,6 +14737,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._QUANTILE_CONT_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _REGR_AVGX_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -13987,7 +14757,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def regr_avgx(self, *operands: object) -> NumericExpression:
+    def regr_avgx(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_avgx``.
 
         Returns the average of the independent variable for non-NULL pairs in a group, where x is the independent variable and y is the dependent variable.
@@ -13999,8 +14769,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._REGR_AVGX_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def regr_avgx_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def regr_avgx_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_avgx`` with ``FILTER``.
 
         Returns the average of the independent variable for non-NULL pairs in a group, where x is the independent variable and y is the dependent variable.
@@ -14013,6 +14788,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._REGR_AVGX_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _REGR_AVGY_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -14028,7 +14808,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def regr_avgy(self, *operands: object) -> NumericExpression:
+    def regr_avgy(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_avgy``.
 
         Returns the average of the dependent variable for non-NULL pairs in a group, where x is the independent variable and y is the dependent variable.
@@ -14040,8 +14820,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._REGR_AVGY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def regr_avgy_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def regr_avgy_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_avgy`` with ``FILTER``.
 
         Returns the average of the dependent variable for non-NULL pairs in a group, where x is the independent variable and y is the dependent variable.
@@ -14054,6 +14839,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._REGR_AVGY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _REGR_COUNT_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -14069,7 +14859,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def regr_count(self, *operands: object) -> NumericExpression:
+    def regr_count(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_count``.
 
         Returns the number of non-NULL number pairs in a group.
@@ -14081,8 +14871,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._REGR_COUNT_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def regr_count_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def regr_count_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_count`` with ``FILTER``.
 
         Returns the number of non-NULL number pairs in a group.
@@ -14095,6 +14890,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._REGR_COUNT_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _REGR_INTERCEPT_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -14110,7 +14910,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def regr_intercept(self, *operands: object) -> NumericExpression:
+    def regr_intercept(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_intercept``.
 
         Returns the intercept of the univariate linear regression line for non-NULL pairs in a group.
@@ -14122,8 +14922,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._REGR_INTERCEPT_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def regr_intercept_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def regr_intercept_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_intercept`` with ``FILTER``.
 
         Returns the intercept of the univariate linear regression line for non-NULL pairs in a group.
@@ -14136,6 +14941,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._REGR_INTERCEPT_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _REGR_R2_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -14151,7 +14961,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def regr_r2(self, *operands: object) -> NumericExpression:
+    def regr_r2(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_r2``.
 
         Returns the coefficient of determination for non-NULL pairs in a group.
@@ -14163,8 +14973,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._REGR_R2_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def regr_r2_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def regr_r2_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_r2`` with ``FILTER``.
 
         Returns the coefficient of determination for non-NULL pairs in a group.
@@ -14177,6 +14992,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._REGR_R2_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _REGR_SLOPE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -14192,7 +15012,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def regr_slope(self, *operands: object) -> NumericExpression:
+    def regr_slope(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_slope``.
 
         Returns the slope of the linear regression line for non-NULL pairs in a group.
@@ -14204,8 +15024,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._REGR_SLOPE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def regr_slope_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def regr_slope_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_slope`` with ``FILTER``.
 
         Returns the slope of the linear regression line for non-NULL pairs in a group.
@@ -14218,6 +15043,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._REGR_SLOPE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _REGR_SXX_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -14233,7 +15063,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def regr_sxx(self, *operands: object) -> NumericExpression:
+    def regr_sxx(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_sxx``.
 
         Overloads:
@@ -14243,8 +15073,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._REGR_SXX_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def regr_sxx_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def regr_sxx_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_sxx`` with ``FILTER``.
 
         Overloads:
@@ -14255,6 +15090,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._REGR_SXX_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _REGR_SXY_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -14270,7 +15110,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def regr_sxy(self, *operands: object) -> NumericExpression:
+    def regr_sxy(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_sxy``.
 
         Returns the population covariance of input values
@@ -14282,8 +15122,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._REGR_SXY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def regr_sxy_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def regr_sxy_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_sxy`` with ``FILTER``.
 
         Returns the population covariance of input values
@@ -14296,6 +15141,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._REGR_SXY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _REGR_SYY_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -14311,7 +15161,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def regr_syy(self, *operands: object) -> NumericExpression:
+    def regr_syy(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_syy``.
 
         Overloads:
@@ -14321,8 +15171,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._REGR_SYY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def regr_syy_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def regr_syy_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_syy`` with ``FILTER``.
 
         Overloads:
@@ -14333,6 +15188,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._REGR_SYY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _RESERVOIR_QUANTILE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -14720,7 +15580,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def reservoir_quantile(self, *operands: object) -> NumericExpression:
+    def reservoir_quantile(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``reservoir_quantile``.
 
         Gives the approximate quantile using reservoir sampling, the sample size is optional and uses 8192 as a default size.
@@ -14763,8 +15623,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._RESERVOIR_QUANTILE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def reservoir_quantile_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def reservoir_quantile_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``reservoir_quantile`` with ``FILTER``.
 
         Gives the approximate quantile using reservoir sampling, the sample size is optional and uses 8192 as a default size.
@@ -14808,6 +15673,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._RESERVOIR_QUANTILE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _SEM_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -14823,7 +15693,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def sem(self, *operands: object) -> NumericExpression:
+    def sem(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``sem``.
 
         Returns the standard error of the mean
@@ -14835,8 +15705,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._SEM_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def sem_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def sem_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``sem`` with ``FILTER``.
 
         Returns the standard error of the mean
@@ -14849,6 +15724,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._SEM_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _SKEWNESS_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -14864,7 +15744,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def skewness(self, *operands: object) -> NumericExpression:
+    def skewness(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``skewness``.
 
         Returns the skewness of all input values.
@@ -14876,8 +15756,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._SKEWNESS_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def skewness_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def skewness_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``skewness`` with ``FILTER``.
 
         Returns the skewness of all input values.
@@ -14890,6 +15775,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._SKEWNESS_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _STDDEV_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -14905,7 +15795,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def stddev(self, *operands: object) -> NumericExpression:
+    def stddev(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``stddev``.
 
         Returns the sample standard deviation
@@ -14917,8 +15807,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._STDDEV_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def stddev_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def stddev_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``stddev`` with ``FILTER``.
 
         Returns the sample standard deviation
@@ -14931,6 +15826,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._STDDEV_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _STDDEV_POP_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -14946,7 +15846,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def stddev_pop(self, *operands: object) -> NumericExpression:
+    def stddev_pop(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``stddev_pop``.
 
         Returns the population standard deviation.
@@ -14958,8 +15858,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._STDDEV_POP_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def stddev_pop_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def stddev_pop_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``stddev_pop`` with ``FILTER``.
 
         Returns the population standard deviation.
@@ -14972,6 +15877,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._STDDEV_POP_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _STDDEV_SAMP_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -14987,7 +15897,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def stddev_samp(self, *operands: object) -> NumericExpression:
+    def stddev_samp(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``stddev_samp``.
 
         Returns the sample standard deviation
@@ -14999,8 +15909,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._STDDEV_SAMP_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def stddev_samp_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def stddev_samp_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``stddev_samp`` with ``FILTER``.
 
         Returns the sample standard deviation
@@ -15013,6 +15928,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._STDDEV_SAMP_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _SUM_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -15100,7 +16020,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def sum(self, *operands: object) -> NumericExpression:
+    def sum(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``sum``.
 
         Calculates the sum value for all tuples in arg.
@@ -15118,8 +16038,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._SUM_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def sum_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def sum_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``sum`` with ``FILTER``.
 
         Calculates the sum value for all tuples in arg.
@@ -15138,6 +16063,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._SUM_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _SUM_NO_OVERFLOW_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -15177,7 +16107,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def sum_no_overflow(self, *operands: object) -> NumericExpression:
+    def sum_no_overflow(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``sum_no_overflow``.
 
         Internal only. Calculates the sum value for all tuples in arg without overflow checks.
@@ -15191,8 +16121,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._SUM_NO_OVERFLOW_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def sum_no_overflow_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def sum_no_overflow_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``sum_no_overflow`` with ``FILTER``.
 
         Internal only. Calculates the sum value for all tuples in arg without overflow checks.
@@ -15207,6 +16142,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._SUM_NO_OVERFLOW_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _SUMKAHAN_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -15222,7 +16162,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def sumkahan(self, *operands: object) -> NumericExpression:
+    def sumkahan(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``sumkahan``.
 
         Calculates the sum using a more accurate floating point summation (Kahan Sum).
@@ -15234,8 +16174,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._SUMKAHAN_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def sumkahan_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def sumkahan_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``sumkahan`` with ``FILTER``.
 
         Calculates the sum using a more accurate floating point summation (Kahan Sum).
@@ -15248,6 +16193,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._SUMKAHAN_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _VAR_POP_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -15263,7 +16213,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def var_pop(self, *operands: object) -> NumericExpression:
+    def var_pop(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``var_pop``.
 
         Returns the population variance.
@@ -15275,8 +16225,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._VAR_POP_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def var_pop_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def var_pop_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``var_pop`` with ``FILTER``.
 
         Returns the population variance.
@@ -15289,6 +16244,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._VAR_POP_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _VAR_SAMP_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -15304,7 +16264,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def var_samp(self, *operands: object) -> NumericExpression:
+    def var_samp(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``var_samp``.
 
         Returns the sample variance of all input values.
@@ -15316,8 +16276,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._VAR_SAMP_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def var_samp_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def var_samp_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``var_samp`` with ``FILTER``.
 
         Returns the sample variance of all input values.
@@ -15330,6 +16295,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._VAR_SAMP_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _VARIANCE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -15345,7 +16315,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def variance(self, *operands: object) -> NumericExpression:
+    def variance(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``variance``.
 
         Returns the sample variance of all input values.
@@ -15357,8 +16327,13 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._VARIANCE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def variance_filter(self, predicate: object, *operands: object) -> NumericExpression:
+    def variance_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``variance`` with ``FILTER``.
 
         Returns the sample variance of all input values.
@@ -15371,6 +16346,11 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             self._VARIANCE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _IDENTIFIER_FUNCTIONS: ClassVar[dict[str, str]] = {
         'any_value': 'any_value',
@@ -15603,7 +16583,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def arg_max(self, *operands: object) -> VarcharExpression:
+    def arg_max(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``arg_max``.
 
         Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.
@@ -15623,8 +16603,13 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             self._ARG_MAX_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def arg_max_filter(self, predicate: object, *operands: object) -> VarcharExpression:
+    def arg_max_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``arg_max`` with ``FILTER``.
 
         Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.
@@ -15645,6 +16630,11 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             self._ARG_MAX_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _ARG_MAX_NULL_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -15756,7 +16746,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def arg_max_null(self, *operands: object) -> VarcharExpression:
+    def arg_max_null(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``arg_max_null``.
 
         Finds the row with the maximum val. Calculates the arg expression at that row.
@@ -15776,8 +16766,13 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             self._ARG_MAX_NULL_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def arg_max_null_filter(self, predicate: object, *operands: object) -> VarcharExpression:
+    def arg_max_null_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``arg_max_null`` with ``FILTER``.
 
         Finds the row with the maximum val. Calculates the arg expression at that row.
@@ -15798,6 +16793,11 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             self._ARG_MAX_NULL_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _ARG_MIN_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -15909,7 +16909,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def arg_min(self, *operands: object) -> VarcharExpression:
+    def arg_min(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``arg_min``.
 
         Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.
@@ -15929,8 +16929,13 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             self._ARG_MIN_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def arg_min_filter(self, predicate: object, *operands: object) -> VarcharExpression:
+    def arg_min_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``arg_min`` with ``FILTER``.
 
         Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.
@@ -15951,6 +16956,11 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             self._ARG_MIN_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _ARG_MIN_NULL_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -16062,7 +17072,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def arg_min_null(self, *operands: object) -> VarcharExpression:
+    def arg_min_null(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``arg_min_null``.
 
         Finds the row with the minimum val. Calculates the arg expression at that row.
@@ -16082,8 +17092,13 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             self._ARG_MIN_NULL_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def arg_min_null_filter(self, predicate: object, *operands: object) -> VarcharExpression:
+    def arg_min_null_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``arg_min_null`` with ``FILTER``.
 
         Finds the row with the minimum val. Calculates the arg expression at that row.
@@ -16104,6 +17119,11 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             self._ARG_MIN_NULL_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _ARGMAX_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -16215,7 +17235,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def argmax(self, *operands: object) -> VarcharExpression:
+    def argmax(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``argmax``.
 
         Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.
@@ -16235,8 +17255,13 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             self._ARGMAX_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def argmax_filter(self, predicate: object, *operands: object) -> VarcharExpression:
+    def argmax_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``argmax`` with ``FILTER``.
 
         Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.
@@ -16257,6 +17282,11 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             self._ARGMAX_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _ARGMIN_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -16368,7 +17398,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def argmin(self, *operands: object) -> VarcharExpression:
+    def argmin(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``argmin``.
 
         Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.
@@ -16388,8 +17418,13 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             self._ARGMIN_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def argmin_filter(self, predicate: object, *operands: object) -> VarcharExpression:
+    def argmin_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``argmin`` with ``FILTER``.
 
         Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.
@@ -16410,6 +17445,11 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             self._ARGMIN_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _GROUP_CONCAT_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -16437,7 +17477,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def group_concat(self, *operands: object) -> VarcharExpression:
+    def group_concat(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``group_concat``.
 
         Concatenates the column string values with an optional separator.
@@ -16450,8 +17490,13 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             self._GROUP_CONCAT_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def group_concat_filter(self, predicate: object, *operands: object) -> VarcharExpression:
+    def group_concat_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``group_concat`` with ``FILTER``.
 
         Concatenates the column string values with an optional separator.
@@ -16465,6 +17510,11 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             self._GROUP_CONCAT_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _LISTAGG_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -16492,7 +17542,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def listagg(self, *operands: object) -> VarcharExpression:
+    def listagg(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``listagg``.
 
         Concatenates the column string values with an optional separator.
@@ -16505,8 +17555,13 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             self._LISTAGG_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def listagg_filter(self, predicate: object, *operands: object) -> VarcharExpression:
+    def listagg_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``listagg`` with ``FILTER``.
 
         Concatenates the column string values with an optional separator.
@@ -16520,6 +17575,11 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             self._LISTAGG_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _MAX_BY_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -16631,7 +17691,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def max_by(self, *operands: object) -> VarcharExpression:
+    def max_by(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``max_by``.
 
         Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.
@@ -16651,8 +17711,13 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             self._MAX_BY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def max_by_filter(self, predicate: object, *operands: object) -> VarcharExpression:
+    def max_by_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``max_by`` with ``FILTER``.
 
         Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.
@@ -16673,6 +17738,11 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             self._MAX_BY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _MIN_BY_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -16784,7 +17854,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def min_by(self, *operands: object) -> VarcharExpression:
+    def min_by(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``min_by``.
 
         Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.
@@ -16804,8 +17874,13 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             self._MIN_BY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def min_by_filter(self, predicate: object, *operands: object) -> VarcharExpression:
+    def min_by_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``min_by`` with ``FILTER``.
 
         Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.
@@ -16826,6 +17901,11 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             self._MIN_BY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _STRING_AGG_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
                     DuckDBFunctionDefinition(
@@ -16853,7 +17933,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
-    def string_agg(self, *operands: object) -> VarcharExpression:
+    def string_agg(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``string_agg``.
 
         Concatenates the column string values with an optional separator.
@@ -16866,8 +17946,13 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             self._STRING_AGG_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
-    def string_agg_filter(self, predicate: object, *operands: object) -> VarcharExpression:
+    def string_agg_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``string_agg`` with ``FILTER``.
 
         Concatenates the column string values with an optional separator.
@@ -16881,6 +17966,11 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             self._STRING_AGG_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
+            order_by=order_by,
+            within_group=within_group,
+            partition_by=partition_by,
+            over_order_by=over_order_by,
+            frame=frame,
         )
     _IDENTIFIER_FUNCTIONS: ClassVar[dict[str, str]] = {
         'arg_max': 'arg_max',

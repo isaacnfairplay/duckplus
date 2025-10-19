@@ -371,11 +371,20 @@ def _render_method(
             str | None,
         ]
     ],
+    function_type: str,
     filter_variant: bool = False,
     symbol: str | None = None,
     original_name: str | None = None,
 ) -> str:
     signature = "predicate: object, *operands: object" if filter_variant else "*operands: object"
+    if function_type == "aggregate":
+        signature += (
+            ", order_by: Iterable[object] | object | None = None,"
+            " within_group: Iterable[object] | object | None = None,"
+            " partition_by: Iterable[object] | object | None = None,"
+            " over_order_by: Iterable[object] | object | None = None,"
+            " frame: str | None = None"
+        )
     lines = [f"    def {method_name}(self, {signature}) -> {expression}:"]
     lines.append(
         _docstring_for_function(
@@ -393,6 +402,17 @@ def _render_method(
                 f"            self.{constant_name},",
                 "            return_category=self.return_category,",
                 "            operands=operands,",
+                *(
+                    [
+                        "            order_by=order_by,",
+                        "            within_group=within_group,",
+                        "            partition_by=partition_by,",
+                        "            over_order_by=over_order_by,",
+                        "            frame=frame,",
+                    ]
+                    if function_type == "aggregate"
+                    else []
+                ),
                 "        )",
             ]
         )
@@ -403,6 +423,17 @@ def _render_method(
                 f"            self.{constant_name},",
                 "            return_category=self.return_category,",
                 "            operands=operands,",
+                *(
+                    [
+                        "            order_by=order_by,",
+                        "            within_group=within_group,",
+                        "            partition_by=partition_by,",
+                        "            over_order_by=over_order_by,",
+                        "            frame=frame,",
+                    ]
+                    if function_type == "aggregate"
+                    else []
+                ),
                 "        )",
             ]
         )
@@ -463,6 +494,7 @@ def _render_namespace(
                 expression=expression,
                 constant_name=constant_name,
                 overloads=identifiers[function_name],
+                function_type=function_type,
             )
         )
         if function_type == "aggregate":
@@ -473,6 +505,7 @@ def _render_namespace(
                     expression=expression,
                     constant_name=constant_name,
                     overloads=identifiers[function_name],
+                    function_type=function_type,
                     filter_variant=True,
                     original_name=function_name,
                 )
@@ -487,6 +520,7 @@ def _render_namespace(
                 expression=expression,
                 constant_name=constant_name,
                 overloads=symbols[symbol_name],
+                function_type=function_type,
                 symbol=symbol_name,
             )
         )
@@ -557,14 +591,39 @@ def _render_stub_namespace(
         lines.append("    ...")
         return "\n".join(lines)
     for function_name in sorted(identifiers):
-        lines.append(f"    def {function_name}(self, *operands: object) -> {expression}: ...")
         if function_type == "aggregate":
-            lines.append(
-                f"    def {function_name}_filter(self, predicate: object, *operands: object) -> {expression}: ..."
+            extra = (
+                "order_by: Iterable[object] | object | None = ..., "
+                "within_group: Iterable[object] | object | None = ..., "
+                "partition_by: Iterable[object] | object | None = ..., "
+                "over_order_by: Iterable[object] | object | None = ..., "
+                "frame: str | None = ..."
             )
+            signature = "".join(extra)
+            lines.append(
+                f"    def {function_name}(self, *operands: object, {signature}) -> {expression}: ..."
+            )
+            lines.append(
+                f"    def {function_name}_filter(self, predicate: object, *operands: object, {signature}) -> {expression}: ..."
+            )
+        else:
+            lines.append(f"    def {function_name}(self, *operands: object) -> {expression}: ...")
     for symbol_name in sorted(symbols):
         method_name = _symbol_method_name(symbol_name)
-        lines.append(f"    def {method_name}(self, *operands: object) -> {expression}: ...")
+        if function_type == "aggregate":
+            extra = (
+                "order_by: Iterable[object] | object | None = ..., "
+                "within_group: Iterable[object] | object | None = ..., "
+                "partition_by: Iterable[object] | object | None = ..., "
+                "over_order_by: Iterable[object] | object | None = ..., "
+                "frame: str | None = ..."
+            )
+            signature = "".join(extra)
+            lines.append(
+                f"    def {method_name}(self, *operands: object, {signature}) -> {expression}: ..."
+            )
+        else:
+            lines.append(f"    def {method_name}(self, *operands: object) -> {expression}: ...")
     return "\n".join(lines)
 
 
@@ -655,7 +714,7 @@ def main() -> None:
     output_lines: list[str] = [
         "from __future__ import annotations",
         "",
-        "from typing import ClassVar",
+        "from typing import ClassVar, Iterable",
         "",
         "from .functions import (",
         "    DuckDBFunctionDefinition,",
@@ -671,7 +730,7 @@ def main() -> None:
     stub_lines: list[str] = [
         "from __future__ import annotations",
         "",
-        "from typing import Callable, ClassVar, Generic, Mapping, Tuple, TypeVar",
+        "from typing import Callable, ClassVar, Generic, Iterable, Mapping, Tuple, TypeVar",
         "",
         "from .expression import BlobExpression, BooleanExpression, GenericExpression, NumericExpression, TypedExpression, VarcharExpression",
         "",
