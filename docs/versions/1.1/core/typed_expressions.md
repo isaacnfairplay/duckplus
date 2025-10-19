@@ -6,10 +6,18 @@ validate column references early. Unlike plain strings, typed expressions know
 their DuckDB logical type, whether they are nullable, and which columns they
 depend on. That context powers validation across the rest of the package.
 
+```{note}
+An experimental, statically defined variant of the DSL lives under
+``duckplus.static_typed``. Import ``static_ducktype`` from the package root to
+opt into the new API while ``duckplus.typed`` continues to ship unchanged for
+existing integrations.
+```
+
 ## Creating typed expressions
 
 Use the :mod:`duckplus.typed.ducktype` factory to construct expression objects
-based on DuckDB types:
+based on DuckDB types. The same factory is exposed from the experimental
+``duckplus.static_typed`` namespace as :data:`duckplus.static_ducktype`.
 
 ```python
 from duckplus.typed import ducktype

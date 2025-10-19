@@ -62,3 +62,14 @@ disable = [
     "missing-function-docstring",
     "duplicate-code",
 ]
+
+[tool.mypy]
+python_version = "3.12"
+
+[[tool.mypy.overrides]]
+module = "duckplus.typed.expressions.casting"
+disable_error_code = ["attr-defined"]
+
+[[tool.mypy.overrides]]
+module = "duckplus.static_typed.expressions"
+disable_error_code = ["attr-defined"]
