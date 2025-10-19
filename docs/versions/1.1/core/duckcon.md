@@ -97,18 +97,20 @@ immutable relation APIs.
 
 ## Registering custom helpers
 
-Every :class:`DuckCon` instance keeps a registry of lazily bound helper
-functions. Use :meth:`DuckCon.register_helper
+Helpers bind directly onto the :class:`DuckCon` class so every instance exposes
+the same fluent surface. Use :meth:`DuckCon.register_helper
 <duckplus.duckcon.DuckCon.register_helper>` to attach a callable that receives
-the active ``DuckDBPyConnection``. DuckPlus pre-registers the packaged file
-readers (``read_csv``, ``read_parquet``, ``read_json``) and extension-backed
-connectors (``read_odbc_query``, ``read_odbc_table``, ``read_excel``) so you can
-call them as methods on the manager or via :meth:`DuckCon.apply_helper
+the active ``DuckDBPyConnection``; the method wraps it in a bound method for you.
+DuckPlus ships file readers (``read_csv``, ``read_parquet``, ``read_json``) and
+extension-backed connectors (``read_odbc_query``, ``read_odbc_table``,
+``read_excel``) that decorate themselves with
+:func:`duckplus.io.duckcon_helper` at import time.
+Call the helpers as methods on the manager or via :meth:`DuckCon.apply_helper
 <duckplus.duckcon.DuckCon.apply_helper>` without importing :mod:`duckplus.io`.
 Pass ``overwrite=True`` to replace these defaults with a project-specific
-implementation. This registry is a handy escape hatch for environment-specific
-functionality such as registering a ``parquet_scan`` macro or enabling custom
-pragmas.
+implementation. Direct binding keeps helper discovery IDE-friendly while still
+offering an escape hatch for environment-specific functionality such as
+registering a ``parquet_scan`` macro or enabling custom pragmas.
 
 ```python
 def _apply_pragmas(connection, pragmas):
@@ -121,9 +123,10 @@ with manager:
     manager.apply_helper("set_pragmas", {"threads": 4, "memory_limit": "4GB"})
 ```
 
-Helpers are namespaced per manager; calling :meth:`DuckCon.apply_helper
-<duckplus.duckcon.DuckCon.apply_helper>` before the connection opens will raise a
-clear ``RuntimeError`` pointing back to ``DuckCon.connection``.
+Because helpers close over :meth:`DuckCon.connection`, calling
+:meth:`DuckCon.apply_helper <duckplus.duckcon.DuckCon.apply_helper>` before the
+connection opens will raise a clear ``RuntimeError`` pointing back to
+``DuckCon.connection``.
 
 ## Testing patterns
 

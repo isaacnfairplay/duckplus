@@ -6,7 +6,7 @@ from __future__ import annotations
 from os import PathLike, fspath
 from pathlib import Path
 from collections.abc import Iterable, Mapping, Sequence
-from typing import Any, TypedDict, cast
+from typing import Any, Callable, TypeVar, TypedDict, cast
 
 import duckdb  # type: ignore[import-not-found]
 
@@ -15,6 +15,7 @@ from ..duckcon import DuckCon
 from ..relation import Relation
 
 __all__ = [
+    "duckcon_helper",
     "read_csv",
     "read_parquet",
     "read_json",
@@ -24,6 +25,15 @@ __all__ = [
 ]
 
 PathLikeInput = Path | PathLike[str] | str
+
+HelperFunction = TypeVar("HelperFunction", bound=Callable[..., Any])
+
+
+def duckcon_helper(helper: HelperFunction) -> HelperFunction:
+    """Attach DuckDB I/O helper ``helper`` to :class:`DuckCon`."""
+
+    setattr(DuckCon, helper.__name__, helper)
+    return helper
 
 
 def _ensure_path(value: PathLikeInput) -> Path | str:
@@ -414,6 +424,7 @@ def _build_json_options(
     return cast(JSONReadKeywordOptions, options)
 
 
+@duckcon_helper
 def read_csv(
     duckcon: DuckCon,
     source: Path | Sequence[Path],
@@ -517,6 +528,7 @@ def read_csv(
     return Relation.from_relation(duckcon, relation)
 
 
+@duckcon_helper
 def read_parquet(
     duckcon: DuckCon,
     source: Path | Sequence[Path],
@@ -572,6 +584,7 @@ def read_parquet(
     return Relation.from_relation(duckcon, relation)
 
 
+@duckcon_helper
 def read_json(
     duckcon: DuckCon,
     source: Path | Sequence[Path],
@@ -627,6 +640,7 @@ def read_json(
     return Relation.from_relation(duckcon, relation)
 
 
+@duckcon_helper
 def read_odbc_query(
     duckcon: DuckCon,
     connection_string: str,
@@ -644,6 +658,7 @@ def read_odbc_query(
     )
 
 
+@duckcon_helper
 def read_odbc_table(
     duckcon: DuckCon,
     connection_string: str,
@@ -654,6 +669,7 @@ def read_odbc_table(
     return Relation.from_odbc_table(duckcon, connection_string, table)
 
 
+@duckcon_helper
 def read_excel(
     duckcon: DuckCon,
     source: str | PathLike[str],

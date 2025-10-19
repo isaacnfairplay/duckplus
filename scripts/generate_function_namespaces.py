@@ -375,6 +375,7 @@ def _render_method(
     filter_variant: bool = False,
     symbol: str | None = None,
     original_name: str | None = None,
+    registered_names: tuple[str, ...] | None = None,
 ) -> str:
     signature = "predicate: object, *operands: object" if filter_variant else "*operands: object"
     if function_type == "aggregate":
@@ -385,7 +386,17 @@ def _render_method(
             " over_order_by: Iterable[object] | object | None = None,"
             " frame: str | None = None"
         )
-    lines = [f"    def {method_name}(self, {signature}) -> {expression}:"]
+    decorator_parts: list[str] = []
+    if registered_names:
+        decorator_parts.append(", ".join(repr(name) for name in registered_names))
+    if symbol is not None:
+        decorator_parts.append(f"symbols=({symbol!r},)")
+    decorator_call = ", ".join(part for part in decorator_parts if part)
+    if decorator_call:
+        lines = [f"    @duckdb_function({decorator_call})"]
+    else:
+        lines = ["    @duckdb_function()"]
+    lines.append(f"    def {method_name}(self, {signature}) -> {expression}:")
     lines.append(
         _docstring_for_function(
             original_name or method_name,
@@ -481,6 +492,9 @@ def _render_namespace(
     doc_category = RETURN_CATEGORY_DOCS.get(category, category)
     doc = f"DuckDB {function_type} functions returning {doc_category} results."
     expression = CATEGORY_TO_EXPRESSION[category]
+    identifier_registry: dict[str, str] = {}
+    symbol_registry: dict[str, str] = {}
+
     lines: list[str] = [f"class {class_name}(_StaticFunctionNamespace):", f"    \"\"\"{doc}\"\"\""]
     lines.append("    __slots__ = ()")
     lines.append("    function_type: ClassVar[str] = " + repr(function_type))
@@ -495,8 +509,10 @@ def _render_namespace(
                 constant_name=constant_name,
                 overloads=identifiers[function_name],
                 function_type=function_type,
+                registered_names=(function_name,),
             )
         )
+        identifier_registry[function_name] = function_name
         if function_type == "aggregate":
             filter_name = f"{function_name}_filter"
             lines.append(
@@ -508,8 +524,10 @@ def _render_namespace(
                     function_type=function_type,
                     filter_variant=True,
                     original_name=function_name,
+                    registered_names=(filter_name,),
                 )
             )
+            identifier_registry[filter_name] = filter_name
     for symbol_name in sorted(symbols):
         constant_name = _signature_constant_name(symbol_name)
         method_name = _symbol_method_name(symbol_name)
@@ -522,26 +540,24 @@ def _render_namespace(
                 overloads=symbols[symbol_name],
                 function_type=function_type,
                 symbol=symbol_name,
+                registered_names=(),
             )
         )
-    if identifiers:
-        mapping_lines = ["    _IDENTIFIER_FUNCTIONS: ClassVar[dict[str, str]] = {"]
-        for function_name in sorted(identifiers):
-            mapping_lines.append(f"        {function_name!r}: '{function_name}',")
-            if function_type == "aggregate":
-                filter_key = f"{function_name}_filter"
-                mapping_lines.append(f"        {filter_key!r}: '{filter_key}',")
-        mapping_lines.append("    }")
-        lines.append("\n".join(mapping_lines))
+        symbol_registry[symbol_name] = method_name
+    if identifier_registry:
+        lines.append("")
+        lines.append("    _IDENTIFIER_FUNCTIONS: ClassVar[dict[str, str]] = {")
+        for alias, method_name in identifier_registry.items():
+            lines.append(f"        {alias!r}: {method_name!r},")
+        lines.append("    }")
     else:
         lines.append("    _IDENTIFIER_FUNCTIONS: ClassVar[dict[str, str]] = {}")
-    if symbols:
-        symbol_lines = ["    _SYMBOLIC_FUNCTIONS: ClassVar[dict[str, str]] = {"]
-        for symbol_name in sorted(symbols):
-            method_name = _symbol_method_name(symbol_name)
-            symbol_lines.append(f"        {symbol_name!r}: '{method_name}',")
-        symbol_lines.append("    }")
-        lines.append("\n".join(symbol_lines))
+    if symbol_registry:
+        lines.append("")
+        lines.append("    _SYMBOLIC_FUNCTIONS: ClassVar[dict[str, str]] = {")
+        for alias, method_name in symbol_registry.items():
+            lines.append(f"        {alias!r}: {method_name!r},")
+        lines.append("    }")
     else:
         lines.append("    _SYMBOLIC_FUNCTIONS: ClassVar[dict[str, str]] = {}")
     return "\n".join(lines)
@@ -720,6 +736,7 @@ def main() -> None:
         "    DuckDBFunctionDefinition,",
         "    DuckDBFunctionSignature,",
         "    _StaticFunctionNamespace,",
+        "    duckdb_function,",
         "    call_duckdb_filter_function,",
         "    call_duckdb_function,",
         ")",

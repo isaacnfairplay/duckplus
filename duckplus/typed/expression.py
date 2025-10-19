@@ -47,14 +47,7 @@ from .select import SelectStatementBuilder
 from .types import DecimalType, DuckDBType
 
 
-_DECIMAL_EXPRESSION_CACHE: dict[tuple[int, int], type[NumericExpression]] = {}
-
-
-def _get_decimal_expression(precision: int, scale: int) -> type[NumericExpression]:
-    key = (precision, scale)
-    if key in _DECIMAL_EXPRESSION_CACHE:
-        return _DECIMAL_EXPRESSION_CACHE[key]
-
+def _create_decimal_expression(precision: int, scale: int) -> type[NumericExpression]:
     class DecimalExpression(NumericExpression):  # type: ignore[misc]
         __slots__ = ()
 
@@ -63,16 +56,44 @@ def _get_decimal_expression(precision: int, scale: int) -> type[NumericExpressio
             return DecimalType(precision, scale)
 
         @classmethod
-        def default_literal_type(cls, value: NumericOperand) -> DuckDBType:  # type: ignore[override]
+        def default_literal_type(
+            cls, value: NumericOperand
+        ) -> DuckDBType:  # type: ignore[override]
             return DecimalType(precision, scale)
 
     DecimalExpression.__name__ = f"Decimal{precision}_{scale}Expression"
-    _DECIMAL_EXPRESSION_CACHE[key] = DecimalExpression
+    DecimalExpression.__qualname__ = DecimalExpression.__name__
     return DecimalExpression
 
 
+def _build_decimal_factories() -> tuple[tuple[str, NumericFactory], ...]:
+    factories: list[tuple[str, NumericFactory]] = []
+    for precision in range(1, 39):
+        for scale in range(0, precision + 1):
+            name = f"Decimal_{precision}_{scale}"
+            expression_type = _create_decimal_expression(precision, scale)
+            factories.append((name, NumericFactory(expression_type)))
+    return tuple(factories)
+
+
+_DECIMAL_FACTORY_ITEMS = _build_decimal_factories()
+_DECIMAL_FACTORY_NAMES = tuple(name for name, _ in _DECIMAL_FACTORY_ITEMS)
+
+
+def _attach_decimal_factories(
+    namespace: type["DuckTypeNamespace"],
+) -> type["DuckTypeNamespace"]:
+    for name, factory in _DECIMAL_FACTORY_ITEMS:
+        setattr(namespace, name, factory)
+    namespace._DECIMAL_FACTORY_NAMES = _DECIMAL_FACTORY_NAMES
+    return namespace
+
+
+@_attach_decimal_factories
 class DuckTypeNamespace:
     """Container exposing typed expression factories."""
+
+    _DECIMAL_FACTORY_NAMES: tuple[str, ...] = ()
 
     def __init__(self) -> None:
         self.Numeric = NumericFactory()
@@ -106,17 +127,18 @@ class DuckTypeNamespace:
 
         return NumericExpression._raw("row_number()")
 
-    def _register_decimal_factories(self) -> None:
-        for precision in range(1, 39):
-            for scale in range(0, precision + 1):
-                name = f"Decimal_{precision}_{scale}"
-                expression_type = _get_decimal_expression(precision, scale)
-                setattr(self, name, NumericFactory(expression_type))
-                self._decimal_names.append(name)
-
     @property
     def decimal_factory_names(self) -> tuple[str, ...]:
         return tuple(self._decimal_names)
+
+    # Transitional shim -------------------------------------------------
+    def _register_decimal_factories(self) -> None:
+        """Rebind decimal factories for compatibility with legacy callers."""
+
+        self._decimal_names = []
+        for name in type(self)._DECIMAL_FACTORY_NAMES:
+            setattr(self, name, getattr(type(self), name))
+            self._decimal_names.append(name)
 
 
 ducktype = DuckTypeNamespace()
