@@ -19,7 +19,6 @@ _SPACE_BEFORE_CLOSE_PAREN_RE = re.compile(r"\s+\)")
 _SPACE_BEFORE_OPEN_BRACKET_RE = re.compile(r"\s+\[")
 _SPACE_AFTER_OPEN_BRACKET_RE = re.compile(r"\[\s+")
 _SPACE_BEFORE_CLOSE_BRACKET_RE = re.compile(r"\s+\]")
-_COMMA_WITH_OPTIONAL_SPACE_RE = re.compile(r"\s*,\s*")
 _TYPE_FAMILY_BREAK_RE = re.compile(r"[\[(]")
 
 _NUMERIC_BASE_RE = re.compile(
@@ -77,6 +76,7 @@ def normalize_type(type_spec: str | None) -> str | None:
     in_single_quote = False
     in_double_quote = False
     pending_space = False
+    last_was_comma = False
     components: list[str] = []
 
     for char in text:
@@ -84,6 +84,7 @@ def normalize_type(type_spec: str | None) -> str | None:
             if pending_space and components:
                 components.append(" ")
             pending_space = False
+            last_was_comma = False
             in_single_quote = not in_single_quote
             components.append(char)
             continue
@@ -91,6 +92,7 @@ def normalize_type(type_spec: str | None) -> str | None:
             if pending_space and components:
                 components.append(" ")
             pending_space = False
+            last_was_comma = False
             in_double_quote = not in_double_quote
             components.append(char)
             continue
@@ -98,14 +100,26 @@ def normalize_type(type_spec: str | None) -> str | None:
             if pending_space and components:
                 components.append(" ")
             pending_space = False
+            last_was_comma = False
             components.append(char)
             continue
         if char.isspace():
+            if last_was_comma:
+                continue
             pending_space = True
+            continue
+        if char == ",":
+            if pending_space and components:
+                pending_space = False
+            if components and components[-1] == " ":
+                components.pop()
+            components.append(", ")
+            last_was_comma = True
             continue
         if pending_space and components:
             components.append(" ")
         pending_space = False
+        last_was_comma = False
         components.append(char.upper() if char.isalpha() else char)
 
     normalised = "".join(components).strip()
@@ -118,7 +132,6 @@ def normalize_type(type_spec: str | None) -> str | None:
     normalised = _SPACE_BEFORE_OPEN_BRACKET_RE.sub("[", normalised)
     normalised = _SPACE_AFTER_OPEN_BRACKET_RE.sub("[", normalised)
     normalised = _SPACE_BEFORE_CLOSE_BRACKET_RE.sub("]", normalised)
-    normalised = _COMMA_WITH_OPTIONAL_SPACE_RE.sub(", ", normalised)
 
     return normalised
 
