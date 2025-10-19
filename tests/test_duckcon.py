@@ -1,4 +1,6 @@
 from collections.abc import Iterable, Mapping, Sequence
+import inspect
+import pickle
 from pathlib import Path
 from typing import Any
 
@@ -64,6 +66,20 @@ def test_duckcon_registers_default_io_helpers(tmp_path: Path) -> None:
 
     with pytest.raises(RuntimeError, match="connection must be open"):
         manager.read_csv(csv_path)
+
+
+def test_duckcon_helpers_support_introspection() -> None:
+    helper = DuckCon.__dict__["read_csv"]
+
+    assert helper is io_helpers.read_csv
+    assert helper.__module__ == "duckplus.io"
+    assert inspect.getdoc(helper) and "Load a CSV file" in inspect.getdoc(helper)
+
+    signature = inspect.signature(helper)
+    assert list(signature.parameters)[:2] == ["duckcon", "source"]
+
+    assert inspect.getdoc(DuckCon.read_csv) == inspect.getdoc(helper)
+    assert pickle.loads(pickle.dumps(helper)) is helper
 def test_duckcon_registers_read_odbc_and_excel_helpers(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

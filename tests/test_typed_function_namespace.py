@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import inspect
+import pickle
+
 from duckplus.typed.expression import DuckTypeNamespace, GenericExpression
 from duckplus.typed._generated_function_namespaces import AggregateNumericFunctions
 from duckplus.typed.functions import _StaticFunctionNamespace, duckdb_function
@@ -67,4 +70,21 @@ def test_aggregate_namespace_preserves_filter_aliases() -> None:
     assert "sum_filter" in namespace._IDENTIFIER_FUNCTIONS
     assert namespace.get("sum") is not None
     assert namespace.get("sum_filter") is not None
+
+
+def test_aggregate_namespace_methods_are_introspectable() -> None:
+    namespace = AggregateNumericFunctions()
+    method = type(namespace).__dict__["arg_max"]
+
+    assert method.__module__.startswith("duckplus.typed._generated_function_namespaces")
+    assert method.__qualname__.startswith("AggregateNumericFunctions.")
+
+    doc = inspect.getdoc(method)
+    assert doc and "Call DuckDB function ``arg_max``." in doc
+
+    signature = inspect.signature(method)
+    assert "operands" in signature.parameters
+    assert "order_by" in signature.parameters
+
+    assert pickle.loads(pickle.dumps(method)) is method
 
