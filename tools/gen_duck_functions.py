@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import sys
 import re
+from collections import defaultdict
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Iterable, Mapping, Sequence
 
@@ -144,7 +145,13 @@ def _root_type(type_spec: str) -> str:
 
 
 def family_for_first_param(parameter_types: Sequence[str | None] | None) -> str:
-    """Return a coarse family for the first parameter in ``parameter_types``."""
+    """Return a coarse family for the first parameter in ``parameter_types``.
+
+    The classification is intentionally broad because the generator routes
+    overloads to typed namespaces solely by looking at the first argument. The
+    helper keeps that routing logic well-isolated so the accompanying unit tests
+    can document the behaviour without touching the DuckDB catalog.
+    """
 
     if not parameter_types:
         return "generic"
@@ -174,6 +181,61 @@ def family_for_first_param(parameter_types: Sequence[str | None] | None) -> str:
         return "boolean"
 
     return "generic"
+
+
+def partition_functions(
+    records: Iterable[DuckDBFunctionRecord],
+) -> tuple[
+    dict[str, dict[str, list[DuckDBFunctionRecord]]],
+    dict[str, dict[str, list[DuckDBFunctionRecord]]],
+]:
+    """Split function ``records`` into scalar and aggregate namespace buckets.
+
+    DuckPlus exposes helpers such as ``ducktype.Numeric`` by inspecting the
+    first argument of a DuckDB function. ``family_for_first_param`` captures that
+    routing, and this helper simply groups records so downstream generators can
+    iterate stable, namespace-ordered dictionaries without consulting DuckDB.
+    """
+
+    namespace_by_family = {
+        "numeric": "Numeric",
+        "boolean": "Boolean",
+        "varchar": "Varchar",
+        "blob": "Blob",
+        "temporal": "Temporal",
+        "generic": "Generic",
+    }
+
+    scalar: dict[str, dict[str, list[DuckDBFunctionRecord]]] = defaultdict(
+        lambda: defaultdict(list)
+    )
+    aggregate: dict[str, dict[str, list[DuckDBFunctionRecord]]] = defaultdict(
+        lambda: defaultdict(list)
+    )
+
+    for record in records:
+        if record.function_type == "scalar":
+            target = scalar
+        elif record.function_type == "aggregate":
+            target = aggregate
+        else:
+            continue
+
+        namespace = namespace_by_family.get(record.family, "Generic")
+        target[namespace][record.function_name].append(record)
+
+    def _freeze(
+        bucket: dict[str, dict[str, list[DuckDBFunctionRecord]]]
+    ) -> dict[str, dict[str, list[DuckDBFunctionRecord]]]:
+        frozen: dict[str, dict[str, list[DuckDBFunctionRecord]]] = {}
+        for namespace in sorted(bucket):
+            functions = bucket[namespace]
+            frozen[namespace] = {
+                name: functions[name] for name in sorted(functions)
+            }
+        return frozen
+
+    return _freeze(scalar), _freeze(aggregate)
 
 
 def get_functions(
