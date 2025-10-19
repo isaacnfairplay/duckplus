@@ -1,239 +1,67 @@
 # Implementation Roadmap
 
 ## Preflight Discovery Questions
-Answer these before starting any TODO item to confirm the work is understood and scoped.
-1. What specific behaviour or feature does the TODO item request, and how does it fit into the existing API surface?
-2. Which modules, classes, or utilities appear to own this responsibility today, and where should changes likely live?
-3. What supporting documentation, tests, or historical implementations (including Git history) should be reviewed first (remember to check the versioned Sphinx docs under `docs/versions/<release>/`)?
-4. What success criteria, edge cases, and failure behaviours must be exercised to consider the task complete?
-5. How will this change be validated (tests, linters, examples), and are new fixtures or sample data required?
+Answer these before starting any TODO item to confirm scope and alignment with the direct-Python design constraint.
+1. How does the change reinforce the fluent API ethos (method chaining, typed helpers) without introducing runtime-loaded metadata structures?
+2. Which concrete modules, classes, or decorators should host the behaviour so that registration happens through Python imports alone?
+3. What existing documentation, tests, or historical commits demonstrate the expected ergonomics, and how will they inform a purely Python implementation?
+4. Which success criteria and edge cases ensure the new behaviour integrates cleanly with the rest of the API without relying on dynamic registries?
+5. Which validation steps (pytest, mypy, uvx, pylint, documentation rebuilds) are required to prove the behaviour matches expectations?
 
-### Preflight Answers – Column addition helper dependencies
-1. Update `Relation.add` to validate each expression against the original relation so columns introduced in the same call can no longer be referenced, including when typed expressions provide dependency metadata.
-2. The `duckplus.relation.Relation` class owns column creation helpers today, so changes belong in `duckplus/relation.py`, with tests in `tests/test_relation.py`.
-3. Review the existing `Relation.add` implementation along with its unit tests to mirror validation patterns and understand current error handling.
-4. Confirm column order is preserved, that newly introduced aliases are rejected when referenced immediately, and that error messages remain informative.
-5. Exercise the behaviour with new pytest coverage and run the mypy, pylint, and pytest suites per the repository policy.
+## Fluent Function API Migration
+### Goal
+Reorient the function exposure strategy so every helper is defined directly in Python modules or classes, removing the need for runtime dict/dataclass registries while keeping the fluent API expressive.
 
-### Preflight Notes – Window function helpers
-1. Extend typed expressions with an ergonomic `over` helper so windowed aggregates integrate with the fluent API without falling back to raw SQL strings.
-2. The implementation should live alongside existing typed expression logic, primarily in `duckplus/typed/expressions/base.py`, with alias-aware handling in related classes.
-3. Review `duckplus/typed/expression.py`, the expression subclasses, and `tests/test_typed_expression.py` to mirror current construction patterns and dependency tracking.
-4. The helper must render correct `OVER (...)` clauses, merge partition/order dependencies, support direction keywords, validate inputs, and keep chaining behaviour (including aliasing) intact.
-5. Cover the behaviour with new unit tests, update the typed API docs, and run the mypy/pylint/pytest suite to satisfy the repository's pre-commit policy.
+### Tasks
+- [ ] Inventory all current registry-style loaders and identify the modules where they live.
+- [ ] Replace data-driven registries with import-time decorators or explicit class attributes so availability is controlled by Python execution order instead of runtime parsing.
+- [ ] Ensure all registration helpers live beside their implementations to preserve discoverability and IDE support.
+- [ ] Update tests to reflect the absence of runtime loaders and verify functions remain serialisable/documentable through Python introspection alone.
+- [ ] Document the new convention in `docs/contributing.md` and API guides so future work naturally follows the direct-Python model.
 
-### Preflight Answers – Typed if_exists support
-1. Extend the typed SELECT builder with `if_exists` options so column projections and star modifiers automatically skip clauses targeting missing columns, mirroring the relation helpers' soft behaviours.
-2. The logic belongs in `duckplus/typed/select.py` with validation covered by `tests/test_typed_expression.py` and documentation in `docs/typed_api.md`.
-3. Review the existing select-builder helpers and relation-level `*_if_exists` methods to align validation patterns, plus inspect current typed expression tests for coverage expectations.
-4. Ensure optional components only render when their column dependencies exist, raise clear errors for ambiguous dependencies, and leave required projections untouched while updating docs to explain the workflow.
-5. Validate via targeted pytest coverage for the new paths and run the mypy, uvx, and pylint suites alongside the full pytest run per repository policy.
+## DuckDB Function Module Layout
+### Goal
+Adopt a one-function-per-file pattern for DuckDB wrappers where it improves clarity and reuse, enabling decorators to register each function with compatible types during import.
 
-### Preflight Answers – Relation.aggregate helper
-1. Implement `Relation.aggregate` to wrap DuckDB's relation aggregation while validating group-by columns and aggregation expressions against the immutable metadata cached on `Relation`.
-2. The behaviour belongs in `duckplus/relation.py`, with new unit tests extending `tests/test_relation.py` and documentation updates landing in `docs/relation.md`.
-3. Review DuckDB's `DuckDBPyRelation.aggregate` semantics alongside existing column helper implementations to mirror error handling, plus inspect typed expression factories for aggregation helpers.
-4. Verify grouped results preserve column order, ensure typed and SQL aggregates reject unknown dependencies, cover filter handling, and exercise duplicate alias and connection state edge cases.
-5. Validate with pytest plus the repository-standard mypy, uvx, and pylint runs to maintain quality gates.
+### Tasks
+- [ ] Audit existing DuckDB function wrappers to determine sensible module boundaries (e.g. aggregates, math, string, date/time).
+- [ ] Create per-function modules that expose the function implementation and decorate registration with the relevant typed categories.
+- [ ] Provide shared base utilities (e.g. in `duckplus/functions/_base.py`) to hold common decorator logic without reintroducing data-driven registries.
+- [ ] Update import barrels (such as `duckplus/functions/__init__.py`) to expose the decorated functions while keeping import side effects explicit and testable.
+- [ ] Adjust documentation and examples to reference the new module paths.
 
-### Preflight Answers – Relation.filter helper
-1. Build a `Relation.filter` wrapper that composes boolean SQL snippets and typed expressions to return a filtered relation while keeping the original untouched.
-2. The logic should live in `duckplus/relation.py`, likely reusing the filter normalisation introduced for `aggregate`, with coverage added to `tests/test_relation.py`.
-3. Study the new `_normalise_filter_clauses` helper, DuckDB's relation `.filter` API, and the typed boolean expression utilities to align behaviour and dependency validation.
-4. Ensure conditions validate column references, support chaining multiple filters, surface clear errors for non-boolean expressions, and respect connection state expectations.
-5. Confirm correctness with dedicated pytest scenarios alongside the mandated mypy, uvx, and pylint suites before completion.
+## Typed Expression Alignment
+### Goal
+Keep typed expressions first-class while ensuring their helpers follow the same direct-Python registration pattern.
 
-### Preflight Answers – As-of join helper
-1. Add `Relation.asof_join` to wrap DuckDB's ASOF JOIN while composing equality pairs, ordering comparisons, and optional tolerances without mutating input relations.
-2. Implement the helper in `duckplus/relation.py`, extend regression coverage in `tests/test_relation.py`, and document behaviour and alias requirements in `docs/relation.md`.
-3. Review the existing join helpers, typed expression dependency validation, and DuckDB's ASOF JOIN semantics to mirror error handling and projection rules.
-4. Ensure shared column ordering remains stable, ordering comparisons honour backward/forward modes, tolerance clauses filter rows predictably, and typed expressions require the documented `left`/`right` aliases with helpful diagnostics.
-5. Validate via focused pytest scenarios plus the repository-standard mypy, uvx, and pylint runs prior to completion.
+### Tasks
+- [ ] Refactor any typed expression factories that currently build behaviour from dict definitions to use explicit classes or functions.
+- [ ] Where helper suites remain large, split them into submodules (`duckplus/typed/expressions/<category>.py`) so decorators can register variants without data tables.
+- [ ] Expand test coverage to assert decorators correctly attach metadata (SQL rendering, dependencies) during import.
+- [ ] Synchronise type stubs and documentation with the new module structure.
 
-### Notes for "Transformation helpers"
-1. We need a `Relation.transform` helper that issues `SELECT * REPLACE` statements so callers can rewrite existing columns while preserving immutability.
-2. The behaviour naturally belongs on `duckplus.relation.Relation`, building on the stored `DuckCon` and underlying `DuckDBPyRelation` metadata.
-3. Review DuckDB's `SELECT * REPLACE` syntax and existing relation tests in `tests/test_relation.py` to align expectations.
-4. The helper must validate requested columns exist, surface clear errors for bad references, support ergonomic casting, and leave other columns untouched.
-5. We'll extend unit tests to cover replacement logic, casting shortcuts, error handling, and run mypy/pylint/pytest per project policy.
+## Relation API Refinement
+### Goal
+Review relation helpers to ensure no lingering runtime loading remains and that new module structure integrates cleanly.
 
----
+### Tasks
+- [ ] Inspect relation helper factories for indirect registries (e.g. transform/aggregate helper lists) and rewrite them as explicit method definitions or mixins.
+- [ ] Where cross-cutting behaviours exist, create mixin classes that can be inherited and composed rather than populated via runtime loops.
+- [ ] Update tests to ensure relation helpers remain chainable and maintain immutability guarantees after refactors.
 
-- [x] Add a DuckCon class with a context manager that will be easy to extend for io operations
-- [x] Add a relation class that is immutable and has the DuckCon and a duckdbpy connection under the hood with some metadata stored like columns and Duckdb types (as varchar for now)
+## Documentation Refresh
+### Goal
+Communicate the direct-Python design principle across contributor and user-facing materials.
 
-## Column Manipulation Utilities
-- [ ] Transformation helpers
-  - [x] Implement `Relation.transform(**replacements)` that issues a `SELECT * REPLACE` statement and validates referenced columns.
-  - [x] Provide ergonomic overloads for simple casts, e.g. `relation.transform(column="column::INTEGER")`.
-- [ ] Rename helpers
-  - [x] Implement `Relation.rename(**renames)` backed by `SELECT * RENAME` and ensure conflicting names raise clear errors.
-  - [x] Add `rename_if_exists` soft variant that skips missing columns with warnings/logging.
-- [x] Column addition helpers
-  - [x] Implement `Relation.add(**expressions)` using `SELECT *, <expr> AS <alias>`.
-  - [x] Validate `Relation.add` expressions against the original relation so newly added columns cannot be referenced in the same call.
-- [ ] Column subset helpers
-  - [x] Implement `Relation.keep(*columns)` to project only requested columns, raising on unknown names by default.
-  - [x] Provide `keep_if_exists` variant that tolerates absent columns.
-- [ ] Column drop helpers
-  - [x] Implement `Relation.drop(*columns)` using `SELECT * EXCLUDE` semantics with strict validation.
-  - [x] Provide `drop_if_exists` soft variant mirroring `keep_if_exists` behaviour.
+### Tasks
+- [ ] Update contributor docs to describe the decorator-based registration workflow and rationale against runtime loaders.
+- [ ] Provide migration notes highlighting the benefits (import-time safety, IDE compatibility, easier debugging).
+- [ ] Revise API reference pages to point to the new module layout and ensure Sphinx autodoc picks up the decorated functions.
 
-## Typed Expression API
-- [x] Design fluent `ducktype` factory with concrete types (e.g. `Numeric`, `Varchar`, `Blob`).
-  - [x] Ensure concrete types remain composable so future composed/aggregated types (structs, lists) can wrap them without loss of metadata.
-- [x] Surface aggregation helpers, e.g. `ducktype.Numeric.Aggregate.sum("sales") -> "sum(sales)"`.
-- [x] Enable expression comparisons (`ducktype.Varchar("customer") == "prime"`) and joins between differently named columns.
-- [x] Support aliasing and renaming via methods like `.alias("my_customer")` with dict/str serialization.
-- [x] Add window function construction helpers on typed expressions.
-- [x] Introduce a fluent CASE expression builder that composes with typed operands, including nested usage.
-- [x] Fill out typed helper coverage for audited DuckDB scalar functions (see `docs/versions/1.1/api/typed/function_catalog.md`).
-  - [x] Numeric expressions: expose DuckDB's math/statistical helpers (`acos`, `asin`, `atan`, `cos`, `exp`, `ln`, `log10`, `pow`, `sqrt`, `tan`, etc.), rounding/sign tools (`round`, `trunc`, `sign`, `abs`), integer bit operations (`bit_count`, `xor`, `mod`), UUID metrics, and interval/time part extractors surfaced under numeric return types.
-  - [x] Date expressions: expose arithmetic, calendar, and aggregator helpers (`add`, `subtract`, `century`, `decade`, `dayofweek`, `isodow`, `isinf`, `isfinite`, `julian`, `last_day`, `monthname`, `timezone`, `timezone_hour`, `timezone_minute`, `week`, `weekday`, `weekofyear`, `yearweek`, `approx_quantile`, `arg_max`, `arg_min`, `max_by`, `min_by`, `quantile_cont`, etc.) so the `DATE` factory no longer requires raw SQL for common extracts.
-  - [x] Time expressions: surface time-of-day math and statistics (`add`, `subtract`, `avg`, `mean`, `mad`, `quantile_cont`, `epoch`, `epoch_ms`, `epoch_ns`, `epoch_us`, `hour`, `minute`, `second`, `microsecond`, `millisecond`, `nanosecond`) via dedicated helpers.
-  - [x] Timestamp expressions: mirror the calendar/series helpers available as DuckDB functions (`add`, `subtract`, `age`, `generate_series`, `range`, `timezone`, `timezone_hour`, `timezone_minute`, `strftime`, `isinf`, `isfinite`, and the date-part extractors) while surfacing the aggregator wrappers (`approx_quantile`, `arg_max`, `arg_min`, `max_by`, `min_by`, `mean`, `quantile_cont`, etc.) so `TIMESTAMP` values integrate with the fluent API.
-  - [x] Timestamp with time zone expressions: provide the timezone-aware variants of the timestamp helpers (`add`, `subtract`, `age`, `generate_series`, `timezone`, `timezone_hour`, `timezone_minute`, `strftime`, `isinf`, `isfinite`, plus the `approx_quantile`/`arg_max`/`max_by` family) for the `TIMESTAMP_TZ` factories.
-  - [x] High-precision timestamp expressions: wire `Timestamp_ns` helpers for nanosecond utilities (`epoch_ns`, `nanosecond`, `strftime`) to avoid hand-written SQL when working with sub-microsecond data.
-  - [x] Interval expressions: add typed interval math and normalisation helpers (`add`, `subtract`, `multiply`, `time_bucket`, `normalized_interval`, `century`, `decade`, `week`, `yearweek`, `avg`, `mean`, etc.) so interval arithmetic composes with other expressions.
-  - [x] Varchar expressions (string -> varchar): port collation/normalisation/string transforms including the ICU collate family, casing helpers (`lower`, `upper`, `ucase`), padding/trimming (`lpad`, `rpad`, `ltrim`, `rtrim`, `trim`), substring/split helpers (`substr`, `substring_grapheme`, `split`, `string_to_array`), JSON serializers (`json_array`, `json_object`, `json_quote`), and checksum encoders (`md5`, `sha1`, `sha256`, `uuid`, etc.).
-  - [x] Varchar expressions (string -> numeric): implement length and similarity metrics (`char_length`, `character_length`, `length_grapheme`, `damerau_levenshtein`, `jaro_similarity`, `levenshtein`, `jaccard`, `hamming`, `mismatches`), positional helpers (`instr`, `position`, `strpos`), and sequence counters (`currval`, `nextval`, `unicode`).
-  - [x] Varchar expressions (string -> boolean): add predicate helpers (`contains`, `starts_with`, `ends_with`, `prefix`, `suffix`, `like_escape`, `ilike_escape`, `not_like_escape`, `not_ilike_escape`, `regexp_matches`, `regexp_full_match`, `json_contains`, `json_exists`, `json_valid`, `in_search_path`).
-  - [x] Varchar/Blob conversions: surface encoding helpers on both expression types (`encode`, `from_base64`, `from_binary`, `from_hex`, `unbin`, `unhex`, `base64`, `decode`, `to_base64`).
-  - [x] Blob expressions: extend binary helpers to cover DuckDB's encoding/hashing family (`base64`, `to_base64`, `decode`, `hex`, `to_hex`, `md5`, `md5_number`, `sha1`, `sha256`) alongside length/repetition and aggregator wrappers (`octet_length`, `repeat`, `arg_max`, `arg_min`, `max_by`, `min_by`).
-  - [x] Boolean expressions: expose typed boolean aggregations and metadata helpers (`bool_and`, `bool_or`, `count_if`, `countif`, `current_schemas`, `sum`) that currently require raw function calls.
-  - [x] UUID expressions: add fluent wrappers for `uuid_extract_timestamp` and `uuid_extract_version` so UUID introspection composes with typed queries.
-  - [x] Collection factories: design typed list/map/struct expression wrappers so DuckDB's `array_*`, `list_*`, `map_contains`, `struct_contains`, and related helpers (e.g. `array_apply`, `array_filter`, `array_sort`, `list_transform`, `map_contains`, `struct_has`) can be surfaced with dependency tracking instead of raw SQL.
-- [x] Provide a fluent SELECT statement builder for assembling projection lists.
-- [x] Add if_exists options to allow better support of column management operations and make any operations that happen on an if_exists predicated on its existence
-
-### Notes for "Typed Expression API"
-1. Rich expression objects should expose column dependency metadata so helpers like `Relation.add` can validate references to both existing and newly-created columns.
-2. Once expressions carry type information, revisit column helpers (`add`, `transform`, and future subset/drop utilities) to accept expression instances alongside raw SQL strings for safer composition.
-
-## Aggregation and Filtering
-- [x] Implement the fluent `Relation.aggregate()` builder with component, agg, and having chaining plus validation of group columns.
-- [x] Implement `Relation.filter(*conditions)` compatible with typed expressions and raw SQL snippets.
-
-## Advanced Joins
-- [x] Implement "error on column conflict" joins (inner/left/right/outer/semi) that auto-join shared columns and allow explicit conditions.
-- [x] Implement "asof" join leveraging the expression API for ordering and tolerance configuration.
-
-## IO and Appenders
-- [x] Provide IO helpers for CSV, Parquet, and other common formats, reusing `DuckCon` where possible.
-- [x] Add appenders for CSV and NDJSON plus specialised insert tooling (consult long-term Git history for reference patterns).
-- [x] Create a table interfacing API for managed inserts into DuckDB tables.
-
-### Preflight Answers – IO reader keyword fidelity
-1. Ensure each reader helper continues to expose the documented keyword arguments explicitly instead of forwarding `**kwargs`, keeping IDE completions reliable.
-2. The behaviour lives in the IO helper modules (e.g. `duckplus/io/csv.py`, `duckplus/io/parquet.py`), with typing support defined in a shared alias module if helpful.
-3. Review prior reader implementations and DuckDB's Python API signatures to mirror names, defaults, and validation semantics.
-   DuckDB's `read_parquet` helper does not expose a `columns` keyword, so wrappers
-   should stay aligned with the documented parameter set.
-4. Validate that positional and keyword usage both function, that typos surface informative errors, and that auto-complete metadata remains intact.
-5. Cover the behaviour with targeted unit tests per format and exercise mypy/pylint/pytest along with any stub updates to keep editors happy.
-6. Remember that `DuckDBPyConnection.read_csv` prefers Python-specific names (`delimiter`, `quotechar`, `escapechar`, `decimal`, `skiprows`, etc.); table-function aliases like `delim` or `quote` must be normalised and should raise clear errors when conflicting values are provided.
-
-### Preflight Answers – IO reader keyword regression tests
-1. Exercise each `duckplus.io.read_*` helper by calling it with a representative set of keyword-only options to confirm the explicit signatures remain wired correctly.
-2. Extend `tests/test_io_helpers.py` with new parameterised cases that cover the CSV, Parquet, and JSON readers, reusing the existing fixture helpers to produce temporary files.
-3. Review historical regressions around alias handling (`delimiter` vs `delim`, etc.) so new tests assert the behaviour and error messages documented in `docs/io.md`.
-4. Validate that the helpers continue to reject conflicting aliases while accepting keyword-only usage for optional parameters, mirroring the documented snippets.
-5. Run pytest, mypy, uvx, and pylint to guarantee the reader signatures stay in sync with the documentation and type hints.
-
-### Preflight Answers – File append helpers
-1. Introduce relation-driven append helpers that operate directly on CSV and Parquet files, supporting unique identifier or all-column anti joins before writing.
-2. Implement the behaviour on `duckplus.relation.Relation`, leaning on DuckDB's file readers for existing data while keeping the connection lifecycle identical to other relation helpers.
-3. Document mutate semantics (CSV defaults to in-place append; Parquet requires an opt-in rewrite) and explain temporary file usage for Parquet safety.
-4. Cover the workflows with new pytest scenarios and update `docs/relation.md`/`docs/io.md` to point at the relation-based appenders.
-5. Continue running mypy, uvx, pylint, and pytest per repository policy to guard against regressions.
-6. Stress append helpers with large batch writes and ``match_all_columns`` deduplication scenarios to ensure file safety paths stay covered.
-
-### Preflight Answers – Table interfacing API
-1. Managed table helpers should live alongside `DuckCon` and reuse the existing relation metadata, ensuring inserts only run when the connection is open and the relation originates from the same manager.
-2. Shared utilities in `duckplus/_table_utils.py` handle identifier quoting, column normalisation, and transactional inserts so future appenders and table wrappers stay consistent.
-3. Tests in `tests/test_table.py` cover create/overwrite behaviour, default-respecting target columns, raw DuckDB relations, and cross-connection validation scenarios for regression coverage.
-
-### IO reader ergonomics
-- [x] Mirror DuckDB's CSV reader signature explicitly (e.g. `filename`, `header`, `delim`, etc.) and share a typed alias for reuse across helpers without masking keyword visibility.
-- [x] Apply the explicit keyword signature pattern to Parquet, JSON, and other file readers to guarantee parity with DuckDB defaults.
-  - DuckDB's connection helpers sometimes rename table-function arguments (`compression`, `binary_as_string`, etc.), so audit the accepted Python keywords before codifying aliases to avoid the mismatch we saw on CSV.
-- [x] Document each reader's callable signature within `docs/io.md`, emphasising IDE support and providing examples for keyword usage.
-- [x] Add regression tests that instantiate each reader via keyword arguments to guard against accidental signature regressions.
-
-## Known needed extension additions
-- [x] Package nano-ODBC community extension support with a `DuckCon.load_nano_odbc()` helper and usage docs.
-- [x] Surface the Excel community extension through a `Relation.from_excel` convenience that loads and documents available parameters.
-- [x] Audit DuckDB bundled extensions (e.g. HTTPFS, Spatial) and queue helpers for any not yet wrapped by the relation API.
-
-## File-backed IO Operations
-- [x] Add `Relation.append_csv` and `Relation.append_parquet` helpers that append directly to files with optional unique-id or all-column deduplication.
-- [x] Ensure Parquet appends rewrite targets via temporary files and document the mutate defaults across formats.
-- [x] Refresh the documentation to highlight the relation-first append workflow and its duplicate-avoidance options.
-- [x] Expand integration tests to stress large append batches and edge cases for the new file helpers.
-
-## Practitioner Quality-of-Life Utilities
-- [x] Provide lightweight data profiling helpers (row counts, null ratios) to aid exploratory analysis directly from relations.
-- [x] Add schema diff utilities to compare relations or files and surface column-type drift warnings.
-- [x] Offer sample data exporters (to Pandas/Arrow/Polars) with batching options for notebook workflows, mirroring the parity guarantees of other IO helpers such as Parquet and CSV readers.
-
-## Typed Expression Enforcement
-- [x] Ensure column construction and aggregation helpers exclusively depend on the typed expression API across the relation surface.
-- [x] Remove or refactor legacy helpers that bypass typed expressions, updating docs and deprecation notes accordingly.
-- [x] Remove legacy code, since this is pre 1.0 breaking change is expected
-
-## Prepare for 1.0 release ##
-- [x] Check for bugs with extensive additional testing
-- [ ] Fix bugs
-- [x] Make sure we will not need to make any api engine changes as we add future extensions (open closed principle)
-- [x] Develop deep and easy to read documentation and demos across the entire api and put in a versioned folder
-- [x] Setup release to pypi for project with settings Repository: `isaacnfairplay/duckplus` Workflow: `python-publish.yml` Environment name: `pypi`
-- [x] Make sure package can be installed and used as a package and ensure imports resolve correcty when installed (test in an environment, use pip install git `repo_path.git`
-- [x] setup sphinx docs to show the 1.0 documentation but also support having multiple doc versions
-- [x] setup shinx to use github pages (independent of release, users will be directed to the latest numbered version released but have toggle)
-- [x] update pyproject.toml with new tags
-
-# hopefully stop for a while
-## Extension Integrations
-
-_Deprioritised until preceding roadmap items land; revisit once core ergonomics are delivered._
-  - [ ] Add relation helpers for the bundled extensions documented in `docs/extensions_audit.md` starting with HTTPFS support.
-  - [ ] Design spatial data helpers that wrap DuckDB's `spatial` extension capabilities.
-  - [ ] Provide full-text search helpers aligned with the `fts` extension.
-  - [ ] Explore inet/address utilities that light up the `inet` extension within the relation API.
-  - [ ] ~~Determine whether autocomplete exposure is worthwhile for DuckPlus and implement or document accordingly.~~ (Not pursuing: CLI-only Linux shell extension.)
-  - [ ] ~~Evaluate TPC-H/TPC-DS wrapper expectations and add ergonomic helpers if they fit the roadmap.~~ (Not pursuing: benchmark data generation helpers fall outside DuckPlus scope.)
-  - [ ] ~~Investigate UI/encodings extension ergonomics and codify helper coverage or document exclusions.~~ (Not pursuing: bundled UI/encoding workflows do not translate to the relation API.)
-  - [ ] Prioritise community extension integrations that materially extend DuckPlus ergonomics. See `docs/community_extension_targets.md` for the API impact plan that keeps these bullets scoped.
-    - [ ] Provide archive helpers around the `zipfs` extension.
-      - Targets: `_load_zipfs` on `DuckCon`, `duckplus.io` reader enhancements for `zip://` URIs, relation factories for archived CSV/Parquet assets.
-    - [ ] Surface YAML ingestion helpers for the `yaml` extension.
-      - Targets: `_load_yaml` on `DuckCon`, `Relation.from_yaml`/`duckplus.io.read_yaml`, typed schema mapping utilities.
-    - [ ] Explore HTML/XML scraping helpers leveraging the `webbed` extension.
-      - Targets: `_load_webbed` on `DuckCon`, `duckplus.io` scraping helpers (e.g. `read_html` wrappers), typed XPath/CSS expression helpers.
-    - [ ] Package stochastic distribution helpers from the `stochastic` extension.
-      - Targets: typed expression library for distribution and sampling functions, relation helper coverage for stochastic result columns.
-    - [ ] Integrate the `msolap` extension for Analysis Services connectivity.
-      - Targets: `_load_msolap` on `DuckCon`, connection/IO helpers that return relations bound to remote cube queries.
-    - [ ] Add Markdown document ingestion via the `markdown` extension.
-      - Targets: `_load_markdown` on `DuckCon`, `duckplus.io` readers for Markdown tables/sections, relation transformation utilities for structured content.
-    - [ ] Evaluate miniplot visualisation helpers from the `miniplot` extension.
-      - Targets: typed expression formatting helpers, relation export utilities that render ASCII/Unicode plots.
-    - [ ] Surface trie-backed lookup ergonomics through the `marisa` extension.
-      - Targets: typed expression DSL for MARISA functions, relation helpers for building/applying trie indexes.
-    - [ ] Provide HDF5 ingestion support with the `hdf5` extension.
-      - Targets: `_load_hdf5` on `DuckCon`, `Relation.from_hdf5`/`duckplus.io.read_hdf5`, schema mapping for dataset selection.
-    - [ ] Wrap RapidFuzz similarity functions via the `rapidfuzz` extension.
-      - Targets: typed expression wrappers for fuzzy comparisons, relation filter/sort helpers that compose similarity scores.
-
-### Preflight Answers – Extension enablement
-1. Provide thin wrappers that manage extension installation/registration while keeping connection lifecycle rules intact.
-2. Changes will live near `duckplus/extensions.py` (or equivalent) and integrate with `DuckCon` so sessions can opt-in cleanly.
-3. Review DuckDB's extension loading docs plus community guidance for nano-ODBC and Excel to mirror configuration nuances.
-4. Ensure helpers surface clear errors when extensions are unavailable, offer idempotent loading, and integrate with the IO roadmap entries.
-5. Validate behaviour with targeted pytest cases using DuckDB's extension availability flags and document manual installation steps when needed.
-6. Offline environments require pre-installed community bundles; nano-ODBC tests look for `DUCKPLUS_TEST_ODBC_*` environment variables to target a real data source before running.
-
-## Demo Showcase Expansion
-- [ ] Curate a catalogue of 40 opinionated demos that highlight relation immutability, typed expressions, IO parity, and appender workflows.
-- [ ] Provide scenario grouping (analytics, data engineering, extension usage, interoperability) so each demo reinforces the tool's design pillars.
-- [ ] Outline validation criteria and storytelling beats for every demo to ensure they communicate the intended best practices.
+## Quality Gates
+The following checks remain mandatory before merging any work:
+- mypy
+- uvx
+- pylint
+- pytest (full suite)
+- Documentation build if relevant changes are made
