@@ -36,7 +36,7 @@ def cast_expression(
 
     function = "TRY_CAST" if try_cast else "CAST"
     sql = f"{function}({expression.render()} AS {duck_type.render()})"
-    return expression_type._raw(  # pylint: disable=protected-access
+    return expression_type(
         sql,
         dependencies=expression.dependencies,
         duck_type=duck_type,

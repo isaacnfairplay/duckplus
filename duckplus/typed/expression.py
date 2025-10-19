@@ -63,7 +63,9 @@ def _get_decimal_expression(precision: int, scale: int) -> type[NumericExpressio
             return DecimalType(precision, scale)
 
         @classmethod
-        def default_literal_type(cls, value: NumericOperand) -> DuckDBType:  # type: ignore[override]
+        def default_literal_type(
+            cls, value: NumericOperand
+        ) -> DuckDBType:  # type: ignore[override]
             return DecimalType(precision, scale)
 
     DecimalExpression.__name__ = f"Decimal{precision}_{scale}Expression"

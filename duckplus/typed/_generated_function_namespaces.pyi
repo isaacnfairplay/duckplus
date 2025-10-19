@@ -7,9 +7,9 @@ Do not edit by hand; regenerate to pull in new function definitions.
 
 from __future__ import annotations
 
-from typing import Callable, ClassVar, Generic, Mapping, Tuple, TypeVar
+from typing import Callable, ClassVar, Generic, Mapping, TypeVar
 
-from .expression import BlobExpression, BooleanExpression, GenericExpression, NumericExpression, TypedExpression, VarcharExpression
+from .expression import BlobExpression, BooleanExpression, NumericExpression, TypedExpression, VarcharExpression
 
 class DuckDBFunctionDefinition: ...
 class DuckDBFunctionSignature: ...

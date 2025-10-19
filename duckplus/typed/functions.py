@@ -282,23 +282,24 @@ def _select_signature(
     best_signature: DuckDBFunctionSignature | None = None
     best_score: tuple[int, int] | None = None
 
-    for signature in signatures:
+    def _evaluate_signature(
+        signature: DuckDBFunctionSignature,
+    ) -> tuple[int, int] | None:
         required = len(signature.parameter_types)
         if signature.varargs is not None:
             if argument_count < required:
-                continue
+                return None
         elif argument_count != required:
-            continue
+            return None
 
         expected_types = list(signature.parameter_types)
         if argument_count > len(expected_types):
             if signature.varargs is None:
-                continue
+                return None
             expected_types.extend([signature.varargs] * (argument_count - len(expected_types)))
 
         typed_matches = 0
         typed_fallbacks = 0
-        compatible = True
         for expected, actual in zip(expected_types, operand_types, strict=False):
             if expected is None or actual is None:
                 if actual is not None and expected is None:
@@ -306,14 +307,15 @@ def _select_signature(
                 continue
             if expected.accepts(actual):
                 typed_matches += 1
-            else:
-                compatible = False
-                break
+                continue
+            return None
 
-        if not compatible:
+        return (typed_matches, -typed_fallbacks)
+
+    for signature in signatures:
+        score = _evaluate_signature(signature)
+        if score is None:
             continue
-
-        score = (typed_matches, -typed_fallbacks)
         if best_score is None or score > best_score:
             best_signature = signature
             best_score = score

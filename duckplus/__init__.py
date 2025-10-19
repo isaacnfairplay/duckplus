@@ -61,11 +61,14 @@ __all__ = [
     "select",
 ]
 
-for _decimal_name in ducktype.decimal_factory_names:
-    globals()[_decimal_name] = getattr(ducktype, _decimal_name)
-    __all__.append(_decimal_name)
+def _register_decimal_factories() -> None:
+    for name in ducktype.decimal_factory_names:
+        globals()[name] = getattr(ducktype, name)
+        __all__.append(name)
 
-del _decimal_name
+
+_register_decimal_factories()
+del _register_decimal_factories
 
 try:  # pragma: no branch - small module guard
     from .duckcon import DuckCon

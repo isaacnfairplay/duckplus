@@ -347,7 +347,7 @@ if TYPE_CHECKING:  # pragma: no cover - import for typing only
     from .table import Table
 
 
-from . import io as _io_helpers  # pylint: disable=wrong-import-position
+from . import io as _io_helpers  # pylint: disable=wrong-import-position  # noqa: E402
 
 DuckCon.read_csv = _io_helpers.read_csv  # type: ignore[attr-defined]
 DuckCon.read_parquet = _io_helpers.read_parquet  # type: ignore[attr-defined]

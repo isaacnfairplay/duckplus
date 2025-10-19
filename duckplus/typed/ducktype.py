@@ -34,10 +34,13 @@ Timestamp_us = ducktype.Timestamp_us
 Timestamp_ns = ducktype.Timestamp_ns
 Timestamp_tz = ducktype.Timestamp_tz
 
-for _decimal_name in ducktype.decimal_factory_names:
-    globals()[_decimal_name] = getattr(ducktype, _decimal_name)
+def _register_decimal_factories() -> None:
+    for name in ducktype.decimal_factory_names:
+        globals()[name] = getattr(ducktype, name)
 
-del _decimal_name
+
+_register_decimal_factories()
+del _register_decimal_factories
 
 
 def select() -> SelectStatementBuilder:

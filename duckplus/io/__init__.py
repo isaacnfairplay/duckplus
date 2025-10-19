@@ -8,8 +8,6 @@ from pathlib import Path
 from collections.abc import Iterable, Mapping, Sequence
 from typing import Any, TypedDict, cast
 
-import duckdb  # type: ignore[import-not-found]
-
 from .._table_utils import quote_identifier, require_connection
 from ..duckcon import DuckCon
 from ..relation import Relation
