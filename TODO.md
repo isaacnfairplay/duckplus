@@ -28,12 +28,13 @@ Answer these before starting any TODO item to confirm scope and alignment with t
 - `duckplus.typed._generated_function_namespaces` remains dictionary-driven: each namespace class hard-codes `_IDENTIFIER_FUNCTIONS` mappings and instantiates aggregate/ scalar/window registries at module import. Until the generator emits decorator-decorated methods, any rewrite must preserve the literal mappings consumed by current tests and namespace consumers.【F:duckplus/typed/_generated_function_namespaces.py†L1334-L1380】【F:duckplus/typed/_generated_function_namespaces.py†L45667-L45686】【F:tests/test_typed_function_namespace.py†L33-L47】
 - `duckplus.typed.expression.DuckTypeNamespace` decorates the class with `_attach_decimal_factories` to plant every decimal helper as an attribute, then runs `_register_decimal_factories` per instance to rebuild the legacy `_decimal_names` list. Tests and docs depend on `decimal_factory_names` and manual re-registration staying available during the transition.【F:duckplus/typed/expression.py†L79-L142】【F:tests/test_typed_function_namespace.py†L49-L65】【F:docs/typed_api.md†L41-L56】
 - `duckplus.typed.__init__` and `duckplus.typed.ducktype` still loop through `ducktype.decimal_factory_names` to inject the dynamically attached decimal helpers into their module globals. This preserves import ergonomics for callers (`from duckplus import Decimal_18_2`) while the underlying factories move toward decorator-driven attachment.【F:duckplus/typed/__init__.py†L52-L100】【F:duckplus/typed/ducktype.py†L9-L41】
+- Full snapshot recorded in `docs/registry_inventory.md` for reference.【F:docs/registry_inventory.md†L1-L41】
 
 ### Goal
 Reorient the function exposure strategy so every helper is defined directly in Python modules or classes, removing the need for runtime dict/dataclass registries while keeping the fluent API expressive.
 
 ### Tasks
-- [ ] Inventory all current registry-style loaders and identify the modules where they live.
+- [x] Inventory all current registry-style loaders and identify the modules where they live. *(Documented in `docs/registry_inventory.md`.)*
 - [x] Replace data-driven registries with import-time decorators or explicit class attributes so availability is controlled by Python execution order instead of runtime parsing. *(DuckCon helpers, typed namespaces, decimal factories, and type parser aliases now activate at import time.)*
 - [x] Ensure all registration helpers live beside their implementations to preserve discoverability and IDE support. *(I/O helpers now define ``duckcon_helper`` in ``duckplus.io`` so binding lives with the helper implementations while ``duckplus.duckcon`` proxies for compatibility.)*
 - [ ] Update tests to reflect the absence of runtime loaders and verify functions remain serialisable/documentable through Python introspection alone.
