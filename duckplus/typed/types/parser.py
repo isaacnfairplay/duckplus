@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Callable, Iterable, Mapping
+from typing import Iterable
 
 from .base import (
     BlobType,
@@ -23,45 +23,104 @@ from .base import (
 )
 from .collections import ArrayType, EnumType, ListType, MapType, StructField, StructType, UnionType
 
-_SIMPLE_TYPE_FACTORIES: Mapping[str, Callable[[], DuckDBType]] = {
-    "BOOLEAN": lambda: BooleanType("BOOLEAN"),
-    "BOOL": lambda: BooleanType("BOOL"),
-    "LOGICAL": lambda: BooleanType("LOGICAL"),
-    "BLOB": lambda: BlobType("BLOB"),
-    "BYTEA": lambda: BlobType("BYTEA"),
-    "VARBINARY": lambda: BlobType("VARBINARY"),
-    "VARCHAR": lambda: VarcharType("VARCHAR"),
-    "STRING": lambda: VarcharType("STRING"),
-    "TEXT": lambda: VarcharType("TEXT"),
-    "JSON": lambda: VarcharType("JSON"),
-    "UUID": lambda: VarcharType("UUID"),
-    "UTINYINT": lambda: IntegerType("UTINYINT"),
-    "USMALLINT": lambda: IntegerType("USMALLINT"),
-    "UINTEGER": lambda: IntegerType("UINTEGER"),
-    "UBIGINT": lambda: IntegerType("UBIGINT"),
-    "TINYINT": lambda: IntegerType("TINYINT"),
-    "SMALLINT": lambda: IntegerType("SMALLINT"),
-    "INTEGER": lambda: IntegerType("INTEGER"),
-    "BIGINT": lambda: IntegerType("BIGINT"),
-    "HUGEINT": lambda: IntegerType("HUGEINT"),
-    "FLOAT": lambda: FloatingType("FLOAT"),
-    "REAL": lambda: FloatingType("REAL"),
-    "DOUBLE": lambda: FloatingType("DOUBLE"),
-    "INTERVAL": lambda: IntervalType("INTERVAL"),
-    "NUMERIC": lambda: NumericType("NUMERIC"),
-    "DECIMAL": lambda: NumericType("DECIMAL"),
-    "DATE": lambda: TemporalType("DATE"),
-    "TIME": lambda: TemporalType("TIME"),
-    "TIMESTAMP": lambda: TemporalType("TIMESTAMP"),
-    "TIMESTAMPTZ": lambda: TemporalType("TIMESTAMPTZ"),
-    "TIMESTAMP WITH TIME ZONE": lambda: TemporalType("TIMESTAMPTZ"),
-    "TIME WITH TIME ZONE": lambda: TemporalType("TIMETZ"),
-    "BIT": lambda: NumericType("BIT"),
-    "VARBIT": lambda: NumericType("VARBIT"),
-    "ANY": lambda: GenericType("ANY"),
-    "UNKNOWN": UnknownType,
-    "IDENTIFIER": lambda: IdentifierType("IDENTIFIER"),
-}
+_BOOLEAN_ALIASES = ("BOOLEAN", "BOOL", "LOGICAL")
+_BLOB_ALIASES = ("BLOB", "BYTEA", "VARBINARY")
+_VARCHAR_ALIASES = ("VARCHAR", "STRING", "TEXT", "JSON", "UUID")
+_UNSIGNED_INTEGER_ALIASES = ("UTINYINT", "USMALLINT", "UINTEGER", "UBIGINT")
+_SIGNED_INTEGER_ALIASES = ("TINYINT", "SMALLINT", "INTEGER", "BIGINT", "HUGEINT")
+_FLOATING_ALIASES = ("FLOAT", "REAL", "DOUBLE")
+_NUMERIC_ALIASES = ("NUMERIC", "DECIMAL", "BIT", "VARBIT")
+_TEMPORAL_ALIASES = ("DATE", "TIME", "TIMESTAMP", "TIMESTAMPTZ")
+
+
+def _boolean_type(name: str) -> DuckDBType | None:
+    if name in _BOOLEAN_ALIASES:
+        return BooleanType(name)
+    return None
+
+
+def _blob_type(name: str) -> DuckDBType | None:
+    if name in _BLOB_ALIASES:
+        return BlobType(name)
+    return None
+
+
+def _varchar_type(name: str) -> DuckDBType | None:
+    if name in _VARCHAR_ALIASES:
+        return VarcharType(name)
+    return None
+
+
+def _integer_type(name: str) -> DuckDBType | None:
+    if name in _UNSIGNED_INTEGER_ALIASES or name in _SIGNED_INTEGER_ALIASES:
+        return IntegerType(name)
+    return None
+
+
+def _floating_type(name: str) -> DuckDBType | None:
+    if name in _FLOATING_ALIASES:
+        return FloatingType(name)
+    return None
+
+
+def _interval_type(name: str) -> DuckDBType | None:
+    if name == "INTERVAL":
+        return IntervalType("INTERVAL")
+    return None
+
+
+def _numeric_type(name: str) -> DuckDBType | None:
+    if name in _NUMERIC_ALIASES:
+        return NumericType(name)
+    return None
+
+
+def _temporal_type(name: str) -> DuckDBType | None:
+    if name in _TEMPORAL_ALIASES:
+        return TemporalType(name)
+    if name == "TIMESTAMP WITH TIME ZONE":
+        return TemporalType("TIMESTAMPTZ")
+    if name == "TIME WITH TIME ZONE":
+        return TemporalType("TIMETZ")
+    return None
+
+
+def _generic_alias_type(name: str) -> DuckDBType | None:
+    if name == "ANY":
+        return GenericType("ANY")
+    return None
+
+
+def _unknown_type(name: str) -> DuckDBType | None:
+    if name == "UNKNOWN":
+        return UnknownType()
+    return None
+
+
+def _identifier_type(name: str) -> DuckDBType | None:
+    if name == "IDENTIFIER":
+        return IdentifierType("IDENTIFIER")
+    return None
+
+
+def _build_simple_type(name: str) -> DuckDBType | None:
+    for factory in (
+        _boolean_type,
+        _blob_type,
+        _varchar_type,
+        _integer_type,
+        _floating_type,
+        _interval_type,
+        _numeric_type,
+        _temporal_type,
+        _generic_alias_type,
+        _unknown_type,
+        _identifier_type,
+    ):
+        result = factory(name)
+        if result is not None:
+            return result
+    return None
 
 
 def parse_type(type_spec: str | None) -> DuckDBType | None:
@@ -100,11 +159,11 @@ class _TypeParser:
         if self._peek() == "(":
             result = self._parse_parameterised(upper)
         else:
-            factory = _SIMPLE_TYPE_FACTORIES.get(upper)
-            if factory is not None:
-                result = factory()
-            else:
+            simple_type = _build_simple_type(upper)
+            if simple_type is None:
                 result = GenericType(upper)
+            else:
+                result = simple_type
         return self._apply_array_suffix(result)
 
     # Parsing helpers -------------------------------------------------

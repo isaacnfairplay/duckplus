@@ -7,7 +7,8 @@ from __future__ import annotations
 import importlib
 from dataclasses import dataclass
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, Any, Optional
+from functools import wraps
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
 from typing import Literal
 import warnings
 
@@ -70,8 +71,6 @@ class DuckCon:  # pylint: disable=too-many-instance-attributes
         self.extra_extensions = extensions
         self.connect_kwargs = connect_kwargs
         self._connection: Optional[duckdb.DuckDBPyConnection] = None
-        self._helpers: dict[str, Callable[[duckdb.DuckDBPyConnection, Any], Any]] = {}
-        self._register_default_helpers()
 
     def __enter__(self) -> duckdb.DuckDBPyConnection:
         if self._connection is not None:
@@ -125,60 +124,28 @@ class DuckCon:  # pylint: disable=too-many-instance-attributes
         *,
         overwrite: bool = False,
     ) -> None:
-        """Register an I/O helper callable.
+        """Register a helper as a bound method on :class:`DuckCon`."""
 
-        Parameters
-        ----------
-        name:
-            Name used to reference the helper.
-        helper:
-            Callable that receives the active connection as its first argument.
-        overwrite:
-            Whether to overwrite an existing helper with the same name.
-        """
-
-        if not overwrite and name in self._helpers:
+        if hasattr(DuckCon, name) and not overwrite:
             raise ValueError(f"Helper '{name}' is already registered.")
-        self._helpers[name] = helper
+
+        @wraps(helper)
+        def bound(self: "DuckCon", *args: Any, **kwargs: Any) -> Any:
+            return helper(self.connection, *args, **kwargs)
+
+        setattr(DuckCon, name, bound)
 
     def apply_helper(self, name: str, *args: Any, **kwargs: Any) -> Any:
         """Execute a registered helper with the active connection."""
 
-        if name not in self._helpers:
-            raise KeyError(f"Helper '{name}' is not registered.")
-        helper = self._helpers[name]
-        return helper(self.connection, *args, **kwargs)
+        try:
+            helper = cast(Callable[..., Any], getattr(self, name))
+        except AttributeError as exc:
+            raise KeyError(f"Helper '{name}' is not registered.") from exc
 
-    def _register_default_helpers(self) -> None:
-        """Preload built-in I/O helpers into the helper registry."""
-
-        # Avoid importing duckplus.io at module import time to sidestep circular
-        # imports. The local import keeps the binding cost low and mirrors the
-        # lazy nature of helper registration.
-        from . import io as io_helpers  # pylint: disable=import-outside-toplevel
-
-        defaults: dict[str, Callable[..., Any]] = {
-            "read_csv": io_helpers.read_csv,
-            "read_parquet": io_helpers.read_parquet,
-            "read_json": io_helpers.read_json,
-            "read_odbc_query": io_helpers.read_odbc_query,
-            "read_odbc_table": io_helpers.read_odbc_table,
-            "read_excel": io_helpers.read_excel,
-        }
-
-        for name, helper in defaults.items():
-            if name in self._helpers:
-                continue
-
-            def _bound_helper(
-                _connection: duckdb.DuckDBPyConnection,
-                *args: Any,
-                _helper: Callable[["DuckCon", Any], Any] = helper,
-                **kwargs: Any,
-            ) -> Any:
-                return _helper(self, *args, **kwargs)
-
-            self._helpers[name] = _bound_helper
+        if not callable(helper):
+            raise TypeError(f"Attribute '{name}' is not callable.")
+        return helper(*args, **kwargs)
 
     def load_nano_odbc(self, *, install: bool = True) -> None:
         """Install and load the nano-ODBC community extension.
@@ -347,11 +314,18 @@ if TYPE_CHECKING:  # pragma: no cover - import for typing only
     from .table import Table
 
 
-from . import io as _io_helpers  # pylint: disable=wrong-import-position
+HelperFunction = TypeVar("HelperFunction", bound=Callable[..., Any])
 
-DuckCon.read_csv = _io_helpers.read_csv  # type: ignore[attr-defined]
-DuckCon.read_parquet = _io_helpers.read_parquet  # type: ignore[attr-defined]
-DuckCon.read_json = _io_helpers.read_json  # type: ignore[attr-defined]
-DuckCon.read_odbc_query = _io_helpers.read_odbc_query  # type: ignore[attr-defined]
-DuckCon.read_odbc_table = _io_helpers.read_odbc_table  # type: ignore[attr-defined]
-DuckCon.read_excel = _io_helpers.read_excel  # type: ignore[attr-defined]
+
+if TYPE_CHECKING:  # pragma: no cover - re-export for type checking
+    from .io import duckcon_helper as duckcon_helper
+else:
+
+    def duckcon_helper(helper: HelperFunction) -> HelperFunction:
+        """Proxy to :mod:`duckplus.io`'s decorator at call time."""
+
+        from .io import duckcon_helper as _duckcon_helper
+
+        return _duckcon_helper(helper)
+
+

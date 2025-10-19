@@ -39,6 +39,7 @@ blob_literal = ducktype.Blob.literal(b"\x00\xFF")
 ```
 
 Numeric literals automatically tighten their DuckDB type based on the provided value. For example, `ducktype.Numeric.literal(1)` is typed as `UTINYINT` while larger integers flow through progressively wider integer types before falling back to `NUMERIC`. `Decimal` instances capture precision and scale so downstream consumers retain the full metadata.
+Legacy integrations that manually called `ducktype._register_decimal_factories()` (or inspected `_decimal_names`) continue to work, but new instances automatically expose every decimal combination and publish the available names through `decimal_factory_names`.
 
 Varchar expressions support Pythonic concatenation with literal operands:
 
@@ -216,7 +217,9 @@ The type objects can be extended for nested types by composing the helpers expos
 
 Typed functions validate argument compatibility against the DuckDB type hierarchy. Narrow integer expressions (for example, a `UTINYINT` literal) can satisfy broader parameter slots such as `UINTEGER` or `UBIGINT` thanks to the ordered integer families baked into the type metadata, while incompatible widths raise clear errors during helper invocation.
 
-The full DuckDB function catalog is statically generated into Python source and exposed via the `SCALAR_FUNCTIONS`, `AGGREGATE_FUNCTIONS`, and `WINDOW_FUNCTIONS` namespaces re-exported from `duckplus.typed`. Every helper is defined as a real method with a docstring summarising its DuckDB overloads, so editors and REPLs can introspect the API without consulting any runtime registries. The same data feeds the shipped type stub, keeping completions and signatures available even without a DuckDB connection.
+The full DuckDB function catalog is statically generated into Python source and exposed via the `SCALAR_FUNCTIONS`, `AGGREGATE_FUNCTIONS`, and `WINDOW_FUNCTIONS` namespaces re-exported from `duckplus.typed`. Every helper is a concrete method decorated with `duckdb_function`, which registers the DuckDB identifier (and any symbolic operators) when the module imports. This keeps the API introspectable without relying on runtime-populated registries, and the same data feeds the shipped type stub so completions remain available even without a DuckDB connection.
+
+For callers that previously inspected `_IDENTIFIER_FUNCTIONS` or `_SYMBOLIC_FUNCTIONS` directly, those dictionaries remain populated so legacy discovery code keeps functioning during the decorator transition.
 
 ```python
 from duckplus.typed import SCALAR_FUNCTIONS

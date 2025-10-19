@@ -9,10 +9,10 @@
 The `duckplus.io` module provides thin wrappers around DuckDB's file readers
 that integrate with :class:`duckplus.DuckCon`. Each helper expects an open
 `DuckCon` context and returns an immutable :class:`duckplus.Relation` that keeps
-a reference to the managing connection. The helpers also register on every
-``DuckCon`` instance, so calling ``manager.read_csv(...)`` or
-``manager.apply_helper("read_excel", ...)`` works without importing
-``duckplus.io`` explicitly.
+a reference to the managing connection. Import-time application of
+:func:`duckplus.io.duckcon_helper` binds every helper onto ``DuckCon``, so
+calling ``manager.read_csv(...)`` or ``manager.apply_helper("read_excel", ...)``
+works without importing ``duckplus.io`` explicitly.
 
 Every reader exposes its full keyword signature directly in Python so editors
 and type checkers surface the supported options. The ``duckcon`` manager and

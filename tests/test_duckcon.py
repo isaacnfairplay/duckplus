@@ -5,7 +5,7 @@ from typing import Any
 import duckdb
 import pytest
 
-from duckplus import DuckCon, Relation
+from duckplus import DuckCon, Relation, io as io_helpers
 from duckplus.duckcon import ExtensionInfo
 
 
@@ -31,6 +31,8 @@ def test_duckcon_helper_extension_point() -> None:
 
     manager.register_helper("echo", echo_helper)
 
+    assert DuckCon.echo is not None
+
     with manager:
         assert manager.apply_helper("echo", 42) == 42
 
@@ -47,6 +49,8 @@ def test_duckcon_registers_default_io_helpers(tmp_path: Path) -> None:
     csv_path.write_text("value\n1\n2\n", encoding="utf-8")
 
     manager = DuckCon()
+
+    assert DuckCon.read_csv is io_helpers.read_csv
 
     with manager:
         via_method = manager.read_csv(csv_path)

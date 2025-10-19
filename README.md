@@ -6,8 +6,8 @@ codebase so an AI or human teammate can adopt the same defaults quickly.
 
 ## TL;DR
 - Manage DuckDB connections with `DuckCon`; it installs optional extensions,
-  tracks helper functions, and guarantees cleanup through the context manager
-  protocol.【F:duckplus/duckcon.py†L35-L111】
+  binds helper functions via decorators, and guarantees cleanup through the context manager
+  protocol.【F:duckplus/duckcon.py†L35-L181】
 - Wrap every transformation in the immutable `Relation` layer so column names,
   types, and dependencies stay validated as you compose pipelines.【F:duckplus/relation.py†L36-L142】【F:duckplus/relation.py†L466-L520】
 - Use `ducktype` factories for any SQL expression; they encode dependencies,
@@ -18,12 +18,13 @@ codebase so an AI or human teammate can adopt the same defaults quickly.
 - Prefer the I/O, schema, and table helpers exposed from the package root for
   consistent error handling and identifier quoting. Built-in readers such as
   ``DuckCon.read_csv``, ``DuckCon.read_parquet``, and ``DuckCon.read_excel``
-  ship pre-registered so you can call them directly from the manager.【F:duckplus/__init__.py†L7-L44】【F:duckplus/duckcon.py†L73-L181】【F:duckplus/io/__init__.py†L1-L648】【F:duckplus/schema.py†L1-L118】【F:duckplus/table.py†L1-L64】
+  ship pre-registered via :func:`duckplus.io.duckcon_helper`, so you can call
+  them directly from the manager.【F:duckplus/__init__.py†L7-L44】【F:duckplus/duckcon.py†L73-L181】【F:duckplus/io/__init__.py†L1-L661】【F:duckplus/schema.py†L1-L118】【F:duckplus/table.py†L1-L64】
 
 ## Repository Layout
 | Area | Purpose | Highlights |
 | --- | --- | --- |
-| `duckplus/duckcon.py` | Connection lifecycle | Extension discovery, helper registry, strict context usage.【F:duckplus/duckcon.py†L35-L181】 |
+| `duckplus/duckcon.py` | Connection lifecycle | Extension discovery, decorator-driven helper binding, strict context usage.【F:duckplus/duckcon.py†L35-L214】 |
 | `duckplus/relation.py` | Immutable relational DSL | Column/type caching, dependency validation, pandas/arrow/polars sampling.【F:duckplus/relation.py†L36-L231】 |
 | `duckplus/typed/` | Legacy expression factories | Namespace-driven expression builders, aggregate factories, dependency graphs.【F:duckplus/typed/ducktype.py†L1-L27】【F:duckplus/typed/expressions/generic.py†L17-L135】 |
 | `duckplus/static_typed/` | Experimental static expressions | Statically defined typed expressions, explicit casts, and window helpers for migration adopters.【F:duckplus/static_typed/expressions.py†L1-L292】【F:duckplus/static_typed/casting.py†L1-L63】 |
@@ -48,9 +49,9 @@ codebase so an AI or human teammate can adopt the same defaults quickly.
 4. **Helper Registration Beats Raw SQL** – Use `DuckCon.register_helper` for I/O
    or custom routines so callers can invoke them through `apply_helper` without
    re-plumbing connections. Core helpers like `read_csv`, `read_parquet`, and
-   `read_json` register automatically so the connection manager always exposes
-   the common file readers. Override them with `overwrite=True` when custom
-   behaviour is required.【F:duckplus/duckcon.py†L73-L159】
+   `read_json` bind at import time via :func:`duckplus.io.duckcon_helper`, so
+   every manager exposes the common file readers. Override them with
+   `overwrite=True` when custom behaviour is required.【F:duckplus/duckcon.py†L73-L170】【F:duckplus/io/__init__.py†L1-L661】
 5. **Schema Drift is a First-Class Signal** – Rely on `schema.diff_relations`
    and `schema.diff_files` to compare datasets and emit warnings when types
    change unexpectedly, instead of building ad-hoc checks.【F:duckplus/schema.py†L1-L140】

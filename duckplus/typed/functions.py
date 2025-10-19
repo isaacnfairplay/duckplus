@@ -14,10 +14,12 @@ from typing import (
     Any,
     Callable,
     ClassVar,
+    Generic,
     Iterable,
     Mapping,
     Sequence,
     Tuple,
+    TypeVar,
     cast,
 )
 
@@ -75,15 +77,67 @@ class DuckDBFunctionDefinition(DuckDBFunctionSignature):
     """Alias for backwards compatibility with the generator API."""
 
 
-class _StaticFunctionNamespace:
+_NamespaceExprT = TypeVar("_NamespaceExprT", bound=TypedExpression)
+
+
+class _StaticFunctionNamespace(Generic[_NamespaceExprT]):
     """Registry exposing DuckDB functions for a single return category."""
 
     function_type: ClassVar[str]
     return_category: ClassVar[str]
-    _IDENTIFIER_FUNCTIONS: ClassVar[Mapping[str, str]]
-    _SYMBOLIC_FUNCTIONS: ClassVar[Mapping[str, str]]
+    _IDENTIFIER_FUNCTIONS: ClassVar[dict[str, str]]
+    _SYMBOLIC_FUNCTIONS: ClassVar[dict[str, str]]
 
-    def __getitem__(self, name: str) -> Callable[..., TypedExpression]:
+    def __init_subclass__(cls) -> None:
+        super().__init_subclass__()
+        inherited_identifiers = dict(getattr(cls, "_IDENTIFIER_FUNCTIONS", ()))
+        inherited_symbols = dict(getattr(cls, "_SYMBOLIC_FUNCTIONS", ()))
+        cls._IDENTIFIER_FUNCTIONS = inherited_identifiers
+        cls._SYMBOLIC_FUNCTIONS = inherited_symbols
+        for attribute_name, attribute in cls.__dict__.items():
+            identifiers = cast(
+                tuple[str, ...] | None,
+                getattr(attribute, "__duckdb_identifiers__", None),
+            )
+            symbols = cast(
+                tuple[str, ...] | None,
+                getattr(attribute, "__duckdb_symbols__", None),
+            )
+            if identifiers or symbols:
+                cls._register_function(
+                    attribute_name,
+                    names=identifiers or (),
+                    symbols=symbols or (),
+                )
+
+    @classmethod
+    def _register_function(
+        cls,
+        attribute_name: str,
+        *,
+        names: tuple[str, ...],
+        symbols: tuple[str, ...],
+    ) -> None:
+        if "_IDENTIFIER_FUNCTIONS" not in cls.__dict__:
+            cls._IDENTIFIER_FUNCTIONS = {}
+        if "_SYMBOLIC_FUNCTIONS" not in cls.__dict__:
+            cls._SYMBOLIC_FUNCTIONS = {}
+        for identifier in names:
+            existing = cls._IDENTIFIER_FUNCTIONS.get(identifier)
+            if existing is not None and existing != attribute_name:
+                # Transitional compatibility: prefer the class-defined mapping when
+                # legacy namespaces still declare `_IDENTIFIER_FUNCTIONS` manually.
+                continue
+            cls._IDENTIFIER_FUNCTIONS[identifier] = attribute_name
+        for symbol in symbols:
+            existing = cls._SYMBOLIC_FUNCTIONS.get(symbol)
+            if existing is not None and existing != attribute_name:
+                # Transitional compatibility: keep the original symbol mapping when
+                # older namespaces pre-populated `_SYMBOLIC_FUNCTIONS`.
+                continue
+            cls._SYMBOLIC_FUNCTIONS[symbol] = attribute_name
+
+    def __getitem__(self, name: str) -> Callable[..., _NamespaceExprT]:
         method = self.get(name)
         if method is None:  # pragma: no cover - defensive guard
             raise KeyError(name)
@@ -92,14 +146,14 @@ class _StaticFunctionNamespace:
     def get(
         self,
         name: str,
-        default: Callable[..., TypedExpression] | None = None,
-    ) -> Callable[..., TypedExpression] | None:
+        default: Callable[..., _NamespaceExprT] | None = None,
+    ) -> Callable[..., _NamespaceExprT] | None:
         method_name = self._IDENTIFIER_FUNCTIONS.get(name)
         if method_name is None:
             method_name = self._SYMBOLIC_FUNCTIONS.get(name)
         if method_name is None:
             return default
-        return cast(Callable[..., TypedExpression], getattr(self, method_name))
+        return cast(Callable[..., _NamespaceExprT], getattr(self, method_name))
 
     def __contains__(self, name: object) -> bool:
         if not isinstance(name, str):  # pragma: no cover - defensive guard
@@ -107,9 +161,9 @@ class _StaticFunctionNamespace:
         return name in self._IDENTIFIER_FUNCTIONS or name in self._SYMBOLIC_FUNCTIONS
 
     @property
-    def symbols(self) -> Mapping[str, Callable[..., TypedExpression]]:
+    def symbols(self) -> Mapping[str, Callable[..., _NamespaceExprT]]:
         return {
-            symbol: cast(Callable[..., TypedExpression], getattr(self, method_name))
+            symbol: cast(Callable[..., _NamespaceExprT], getattr(self, method_name))
             for symbol, method_name in self._SYMBOLIC_FUNCTIONS.items()
         }
 
@@ -117,6 +171,28 @@ class _StaticFunctionNamespace:
         members = set(self._IDENTIFIER_FUNCTIONS)
         members.update(self._SYMBOLIC_FUNCTIONS)
         return sorted(members)
+
+
+def duckdb_function(
+    *names: str,
+    symbols: Iterable[str] = (),
+) -> Callable[[Callable[..., _NamespaceExprT]], Callable[..., _NamespaceExprT]]:
+    """Decorator registering functions on typed namespaces at definition time."""
+
+    alias_names = tuple(dict.fromkeys(names))
+    normalized_symbols = tuple(dict.fromkeys(symbols))
+
+    def decorator(
+        func: Callable[..., _NamespaceExprT],
+    ) -> Callable[..., _NamespaceExprT]:
+        normalized_names = alias_names
+        if not normalized_names and not normalized_symbols:
+            normalized_names = (func.__name__,)
+        setattr(func, "__duckdb_identifiers__", normalized_names)
+        setattr(func, "__duckdb_symbols__", normalized_symbols)
+        return func
+
+    return decorator
 
 
 _TEMPORAL_EXPRESSION_BY_NAME: Mapping[str, type[TemporalExpression]] = {
@@ -644,6 +720,7 @@ __all__ = [
     "DuckDBFunctionDefinition",
     "DuckDBFunctionSignature",
     "_StaticFunctionNamespace",
+    "duckdb_function",
     "call_duckdb_filter_function",
     "call_duckdb_function",
 ]

@@ -97,7 +97,7 @@ parameters explicit so scripts remain self-documenting. Highlights include:
 Consult the docstrings in :mod:`duckplus.io` for the full argument lists. When an
 extension is required, DuckPlus will attempt to install it automatically or
 raise an actionable message if the environment is offline. Call
-``manager.apply_helper("read_csv", ...)`` to route through the registry
+``manager.apply_helper("read_csv", ...)`` to route through the bound helper
 directly, or pass
 ``overwrite=True`` to :meth:`DuckCon.register_helper
 <duckplus.duckcon.DuckCon.register_helper>` if you need to replace the defaults
