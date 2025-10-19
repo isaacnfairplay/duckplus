@@ -11,5 +11,12 @@ versions/1.1/index
 versions/1.0/index
 ```
 
+```{toctree}
+:maxdepth: 1
+:caption: Contributor guides
+
+contributing
+```
+
 Use the version switcher in the navigation bar to browse documentation for
 older releases once they are published.

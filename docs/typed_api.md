@@ -8,6 +8,14 @@
 
 DuckPlus exposes a typed expression builder that mirrors DuckDB's type system. Expressions record their DuckDB type metadata and column or table dependencies so downstream helpers can validate usage across complex queries.
 
+```{tip}
+Typed helpers register through normal Python imports. Decorators such as
+:func:`duckplus.typed.functions.duckdb_function` attach each helper to its
+namespace class during module import, keeping IDEs and documentation aligned
+with the runtime objects. Avoid adding new registry dictionaries—prefer explicit
+methods or mixins instead.
+```
+
 ## Core Factories
 
 ```python
