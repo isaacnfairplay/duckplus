@@ -70,6 +70,7 @@ pipelines stay easy to reason about.
 ```python
 from duckplus import DuckCon, Relation
 from duckplus.typed import ducktype
+# Or opt into the experimental static API: from duckplus import static_ducktype
 
 manager = DuckCon()
 with manager as con:
@@ -100,6 +101,7 @@ validate column references ahead of time.
 
 ```python
 from duckplus.typed import ducktype
+# Experimental alternative: from duckplus import static_ducktype
 
 amount = ducktype.Numeric("amount")
 discount = ducktype.Numeric("discount")

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from . import static_typed  # pylint: disable=unused-import
 from . import typed  # pylint: disable=unused-import
 from .typed import (
     Blob,
@@ -29,6 +30,7 @@ from .typed import (
     ducktype,
     select,
 )
+from .static_typed import ducktype as static_ducktype
 
 __all__ = [
     "DuckCon",
@@ -37,7 +39,9 @@ __all__ = [
     "io",
     "schema",
     "typed",
+    "static_typed",
     "ducktype",
+    "static_ducktype",
     "Numeric",
     "Varchar",
     "Boolean",
@@ -61,6 +65,7 @@ __all__ = [
     "select",
 ]
 
+_decimal_name: str
 for _decimal_name in ducktype.decimal_factory_names:
     globals()[_decimal_name] = getattr(ducktype, _decimal_name)
     __all__.append(_decimal_name)
