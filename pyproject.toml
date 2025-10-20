@@ -6,6 +6,10 @@ build-backend = "setuptools.build_meta"
 include = ["duckplus*"]
 exclude = ["node_modules*"]
 
+[tool.setuptools.package-data]
+"duckplus.typed" = ["*.pyi"]
+"duckplus.typed.expressions" = ["*.pyi"]
+
 [project]
 name = "duckplus"
 version = "1.1.6"
