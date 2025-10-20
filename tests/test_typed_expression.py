@@ -27,6 +27,23 @@ def test_numeric_column_carries_metadata() -> None:
     assert expression.duck_type.render() == "NUMERIC"
 
 
+def test_decimal_column_uses_decimal_metadata() -> None:
+    expression = ducktype.Decimal_10_2("amount")
+    assert expression.render() == '"amount"'
+    assert expression.dependencies == {col_dep('amount')}
+    assert expression.duck_type.render() == "DECIMAL(10, 2)"
+
+
+def test_decimal_literal_binary_operation_tracks_dependencies() -> None:
+    literal = ducktype.Decimal_8_3.literal(Decimal("1.234"))
+    column = ducktype.Decimal_8_3("discount")
+    expression = literal + column
+
+    assert expression.render() == '(1.234 + "discount")'
+    assert expression.dependencies == {col_dep('discount')}
+    assert expression.duck_type.render() == "DECIMAL(8, 3)"
+
+
 def test_numeric_column_with_table_dependency() -> None:
     expression = ducktype.Numeric("total", table="orders")
     assert expression.render() == '"orders"."total"'
