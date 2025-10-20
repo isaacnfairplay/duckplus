@@ -947,8 +947,8 @@ def test_aggregate_builder_blocks_mutation_after_finalisation() -> None:
 
         builder = relation.aggregate()
         assert builder.start_agg() is builder
-        builder.agg(ducktype.Numeric("amount").sum().alias("total"))
-        builder.agg(ducktype.Numeric("amount").avg().alias("average"))
+        builder = builder.agg(ducktype.Numeric("amount").sum().alias("total"))
+        builder = builder.agg(ducktype.Numeric("amount").avg().alias("average"))
 
         aggregated = builder.by("category")
         assert aggregated.columns == ("category", "total", "average")
@@ -960,6 +960,32 @@ def test_aggregate_builder_blocks_mutation_after_finalisation() -> None:
 
         with pytest.raises(RuntimeError, match="Cannot call component"):
             builder.component("amount > 0")
+
+
+def test_aggregate_builder_returns_new_builder_instances() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(_AGGREGATE_SOURCE_SQL),
+        )
+
+        base_builder = relation.aggregate()
+        with_filters = base_builder.component("amount > 1")
+
+        assert with_filters is not base_builder
+
+        aggregation = ducktype.Numeric("amount").sum().alias("total")
+        with_aggregation = with_filters.agg(aggregation)
+
+        assert with_aggregation is not with_filters
+
+        with pytest.raises(ValueError, match="requires at least one aggregation expression"):
+            base_builder.by("category")
+
+        aggregated = with_aggregation.by("category")
+
+    assert aggregated.columns == ("category", "total")
 
 
 def test_select_builder_projects_columns_and_typed_expressions() -> None:
@@ -1013,6 +1039,27 @@ def test_select_builder_if_exists_skips_missing_dependencies() -> None:
         ("a",),
         ("b",),
     ]
+
+
+def test_select_builder_if_exists_includes_available_dependencies() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(_AGGREGATE_SOURCE_SQL),
+        )
+
+        projected = (
+            relation.select()
+            .column("category")
+            .column(
+                ducktype.Numeric("amount").alias("total"),
+                if_exists=True,
+            )
+            .from_()
+        )
+
+    assert projected.columns == ("category", "total")
 
 
 def test_select_builder_rejects_missing_dependencies() -> None:
@@ -1081,8 +1128,8 @@ def test_select_builder_blocks_mutation_after_materialisation() -> None:
         )
 
         builder = relation.select()
-        builder.column(ducktype.Numeric("amount").alias("value"))
-        builder.star(exclude=("amount",))
+        builder = builder.column(ducktype.Numeric("amount").alias("value"))
+        builder = builder.star(exclude=("amount",))
         projected = builder.from_()
         assert projected.columns == ("value", "category")
 
@@ -1094,6 +1141,27 @@ def test_select_builder_blocks_mutation_after_materialisation() -> None:
 
         with pytest.raises(RuntimeError, match="Cannot call from"):
             builder.from_()
+
+
+def test_select_builder_returns_new_builder_instances() -> None:
+    manager = DuckCon()
+    with manager as connection:
+        relation = Relation.from_relation(
+            manager,
+            connection.sql(_AGGREGATE_SOURCE_SQL),
+        )
+
+        base_builder = relation.select()
+        new_builder = base_builder.column("category")
+
+        assert new_builder is not base_builder
+
+        with pytest.raises(ValueError, match="requires at least one column"):
+            base_builder.from_()
+
+        projected = new_builder.from_()
+
+    assert projected.columns == ("category",)
 
 
 def test_aggregate_rejects_unknown_group_by_columns() -> None:
