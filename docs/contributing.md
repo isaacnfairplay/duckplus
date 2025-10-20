@@ -13,6 +13,12 @@ signatures straight from the objects we ship.
   :func:`duckplus.typed.functions.duckdb_function` (or analogous decorators) to
   attach behaviour when a module imports. Avoid storing callables in module- or
   class-level dictionaries for later registration.
+- **Group DuckDB helpers into domain modules.** Follow the
+  :mod:`duckplus.functions` pattern so each helper lives in a regular Python
+  module, imports its registration side effects explicitly, and exposes the
+  helper through the ``SIDE_EFFECT_MODULES`` tuple for discoverability. The
+  {doc}`versions/1.2/core/function_modules` guide describes the pattern using the
+  approximation aggregates as a reference implementation.
 - **Prefer module-level definitions.** Helpers, mixins, and expression
   factories should live in standard Python modules so import order alone
   determines which behaviours are available. Do not rely on runtime discovery
