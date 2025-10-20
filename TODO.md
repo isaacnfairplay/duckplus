@@ -27,6 +27,7 @@ Answer these before starting any TODO item to confirm scope and alignment with t
 9. `_StaticFunctionNamespace` preserves legacy `_IDENTIFIER_FUNCTIONS`/`_SYMBOLIC_FUNCTIONS` mappings so older generated modules and caller introspection continue to work while decorator-populated namespaces land.
 10. `DuckTypeNamespace` still exposes `_register_decimal_factories` and `_decimal_names` so downstream namespaces can rebuild decimal helpers without depending on the removed cache.
 11. Contributor docs and API guides now describe the decorator-based registration pattern so new helpers default to direct Python attachments.
+12. The deprecation schedule for `scripts/generate_function_namespaces.py` is published in `docs/function_namespace_generator_retirement.md`; review it whenever per-function modules land to keep the migration window accurate.
 
 ## Fluent Function API Migration
 ### Registry Inventory
@@ -47,7 +48,7 @@ Reorient the function exposure strategy so every helper is defined directly in P
 - [x] Ensure all registration helpers live beside their implementations to preserve discoverability and IDE support. *(I/O helpers now define ``duckcon_helper`` in ``duckplus.io`` so binding lives with the helper implementations while ``duckplus.duckcon`` proxies for compatibility.)*
 - [x] Update tests to reflect the absence of runtime loaders and verify functions remain serialisable/documentable through Python introspection alone. *(New assertions cover docstrings, signatures, and picklability for import-time helper attachments.)*
 - [x] Document the new convention in `docs/contributing.md` and API guides so future work naturally follows the direct-Python model.
-- [ ] Schedule retirement of `scripts/generate_function_namespaces.py` once decorator-driven per-function modules fully replace the generated catalog, and document the migration window for contributors.
+- [x] Schedule retirement of `scripts/generate_function_namespaces.py` once decorator-driven per-function modules fully replace the generated catalog, and document the migration window for contributors. *(Documented in `docs/function_namespace_generator_retirement.md` with staged release targets.)*
 
 ## DuckDB Function Module Layout
 ### Goal
