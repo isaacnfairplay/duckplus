@@ -26,7 +26,8 @@ codebase so an AI or human teammate can adopt the same defaults quickly.
 | --- | --- | --- |
 | `duckplus/duckcon.py` | Connection lifecycle | Extension discovery, decorator-driven helper binding, strict context usage.【F:duckplus/duckcon.py†L35-L214】 |
 | `duckplus/relation.py` | Immutable relational DSL | Column/type caching, dependency validation, pandas/arrow/polars sampling.【F:duckplus/relation.py†L36-L231】 |
-| `duckplus/typed/` | Legacy expression factories | Namespace-driven expression builders, aggregate factories, dependency graphs.【F:duckplus/typed/ducktype.py†L1-L27】【F:duckplus/typed/expressions/generic.py†L17-L135】 |
+| `duckplus/typed/` | Legacy expression factories | Namespace-driven expression builders, aggregate factories, dependency graphs, decorator-managed decimal helpers.【F:duckplus/typed/ducktype.py†L1-L27】【F:duckplus/typed/expressions/generic.py†L17-L135】【F:duckplus/typed/expressions/decimal.py†L1-L94】 |
+| `duckplus/functions/aggregate/` | DuckDB aggregate helpers | Decorator-registered wrappers with side-effect imports that expose approximation suites directly from Python modules.【F:duckplus/functions/aggregate/__init__.py†L1-L46】【F:duckplus/functions/aggregate/approximation.py†L1-L200】 |
 | `duckplus/static_typed/` | Experimental static expressions | Statically defined typed expressions, explicit casts, and window helpers for migration adopters.【F:duckplus/static_typed/expressions.py†L1-L292】【F:duckplus/static_typed/casting.py†L1-L63】 |
 | `duckplus/io/` | File readers | Normalised options, identifier quoting, connection guards for CSV/Parquet/JSON.【F:duckplus/io/__init__.py†L1-L194】 |
 | `duckplus/schema.py` | Schema diff tooling | Drift detection with warnings plus file-based comparisons.【F:duckplus/schema.py†L1-L140】 |

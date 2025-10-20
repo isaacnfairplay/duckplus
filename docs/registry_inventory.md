@@ -29,12 +29,14 @@ remains in place.
 
 ## Decimal factory module
 - **Module:** `duckplus/typed/expressions/decimal.py`
-- **Mechanism:** `register_decimal_factories` decorates `DuckTypeNamespace` so
-  every decimal helper binds directly to the class during definition while the
-  module itself exports each factory as a normal attribute.
+- **Mechanism:** The
+  :func:`duckplus.typed.expressions.decimal.register_decimal_factories`
+  decorator applies at class definition time so every decimal helper binds
+  directly to :class:`DuckTypeNamespace` while the module exports each factory
+  as a normal attribute.
 - **Notes:** Importing the module attaches factories without any runtime
   rebinding. Consumer modules can now re-export the helpers using standard
-  imports instead of mutating `globals()`.
+  imports instead of mutating ``globals()``.
 
 ## Namespace generator script
 - **Module:** `scripts/generate_function_namespaces.py`

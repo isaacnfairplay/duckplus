@@ -29,8 +29,8 @@ like ``mypy`` can confirm the expression shapes.  Running::
 
 produces output similar to::
 
-    note: Revealed type is "duckplus.typed.expression.NumericExpression"
-    note: Revealed type is "duckplus.typed.expression.NumericExpression"
+    note: Revealed type is "duckplus.typed.expressions.numeric.NumericExpression"
+    note: Revealed type is "duckplus.typed.expressions.numeric.NumericExpression"
 
 This gives immediate assurance that downstream helpers receive strongly typed
 expressions with preserved dependencies.

@@ -70,6 +70,8 @@ Adopt a one-function-per-file pattern for DuckDB wrappers where it improves clar
 - [x] Update import barrels (such as `duckplus/functions/__init__.py`) to expose the decorated functions while keeping import side effects explicit and testable.
 - [ ] Adjust documentation and examples to reference the new module paths.
 
+Aggregate helpers currently ship from ``duckplus/functions/aggregate/`` so contributors can browse approximation wrappers directly without relying on generated dictionaries.【F:duckplus/functions/aggregate/__init__.py†L1-L46】【F:duckplus/functions/aggregate/approximation.py†L1-L200】
+
 ## Typed Expression Alignment
 ### Goal
 Keep typed expressions first-class while ensuring their helpers follow the same direct-Python registration pattern.
@@ -79,6 +81,7 @@ Keep typed expressions first-class while ensuring their helpers follow the same 
 - [ ] Where helper suites remain large, split them into submodules (`duckplus/typed/expressions/<category>.py`) so decorators can register variants without data tables.
 - [ ] Expand test coverage to assert decorators correctly attach metadata (SQL rendering, dependencies) during import.
 - [ ] Synchronise type stubs and documentation with the new module structure.
+- [x] Documented the decimal decorator module and removed shim references across guides so contributors rely on ``duckplus.typed.expressions.decimal`` directly.【F:docs/typed_api.md†L41-L63】【F:docs/versions/1.1/core/typed_expressions.md†L25-L53】【F:docs/versions/1.0/core/typed_expressions.md†L13-L31】
 
 ## Relation API Refinement
 ### Goal

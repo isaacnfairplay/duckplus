@@ -38,7 +38,11 @@ supports (``ducktype.Timestamp_s``, ``ducktype.Timestamp_ms``,
 ``ducktype.Timestamp_tz`` for ``TIMESTAMP WITH TIME ZONE`` columns. Decimal
 storage is also enumerated via ``ducktype.Decimal_<width>_<scale>`` factories so
 typed expressions can match DuckDB's ``DECIMAL`` permutations without manual
-type strings.
+type strings. The factories live in
+:mod:`duckplus.typed.expressions.decimal`, which applies the
+:func:`duckplus.typed.expressions.decimal.register_decimal_factories`
+decorator to :class:`duckplus.typed.expression.DuckTypeNamespace` so the
+helpers bind during class creation.
 
 Expressions know which columns they depend on. Combining expressions merges
 those dependencies so downstream helpers can ensure referenced columns exist.
