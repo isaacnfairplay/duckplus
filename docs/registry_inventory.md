@@ -51,4 +51,5 @@ remains in place.
   attributes mentioned above.
 - **Notes:** The script encodes the remaining reliance on registries; once the
   runtime namespaces are hand-authored Python modules the generator can be
-  retired entirely.
+  retired entirely. See :doc:`function_namespace_generator_retirement` for the
+  deprecation timeline and migration checkpoints that gate removal.

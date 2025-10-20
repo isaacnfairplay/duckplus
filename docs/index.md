@@ -16,6 +16,7 @@ versions/1.0/index
 :caption: Contributor guides
 
 contributing
+function_namespace_generator_retirement
 ```
 
 Use the version switcher in the navigation bar to browse documentation for
