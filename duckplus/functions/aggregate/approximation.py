@@ -7,13 +7,13 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, cast
 
-from duckplus.typed.expression import NumericExpression, TypedExpression
-from duckplus.typed.functions import (
-    DuckDBFunctionDefinition,
-    call_duckdb_filter_function,
-    call_duckdb_function,
-    duckdb_function,
+from duckplus.functions._base import (
+    invoke_duckdb_filter_function,
+    invoke_duckdb_function,
+    register_duckdb_function,
 )
+from duckplus.typed.expression import NumericExpression, TypedExpression
+from duckplus.typed.functions import DuckDBFunctionDefinition
 from duckplus.typed.types import parse_type
 
 if TYPE_CHECKING:  # pragma: no cover - import cycle guard for type checkers
@@ -39,7 +39,7 @@ _APPROX_COUNT_DISTINCT_SIGNATURES: tuple[DuckDBFunctionDefinition, ...] = (
 )
 
 
-@duckdb_function("approx_count_distinct")
+@register_duckdb_function("approx_count_distinct")
 def approx_count_distinct(
     self: "AggregateNumericFunctions",
     *operands: object,
@@ -59,7 +59,7 @@ def approx_count_distinct(
 
     return cast(
         NumericExpression,
-        call_duckdb_function(
+        invoke_duckdb_function(
             _APPROX_COUNT_DISTINCT_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
@@ -72,7 +72,7 @@ def approx_count_distinct(
     )
 
 
-@duckdb_function("approx_count_distinct_filter")
+@register_duckdb_function("approx_count_distinct_filter")
 def approx_count_distinct_filter(
     self: "AggregateNumericFunctions",
     predicate: object,
@@ -93,7 +93,7 @@ def approx_count_distinct_filter(
 
     return cast(
         NumericExpression,
-        call_duckdb_filter_function(
+        invoke_duckdb_filter_function(
             predicate,
             _APPROX_COUNT_DISTINCT_SIGNATURES,
             return_category=self.return_category,
@@ -231,7 +231,7 @@ _APPROX_QUANTILE_GENERIC_SIGNATURES: tuple[DuckDBFunctionDefinition, ...] = (
 )
 
 
-@duckdb_function("approx_quantile")
+@register_duckdb_function("approx_quantile")
 def approx_quantile_generic(
     self: "AggregateGenericFunctions",
     *operands: object,
@@ -260,7 +260,7 @@ def approx_quantile_generic(
 
     return cast(
         TypedExpression,
-        call_duckdb_function(
+        invoke_duckdb_function(
             _APPROX_QUANTILE_GENERIC_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
@@ -273,7 +273,7 @@ def approx_quantile_generic(
     )
 
 
-@duckdb_function("approx_quantile_filter")
+@register_duckdb_function("approx_quantile_filter")
 def approx_quantile_generic_filter(
     self: "AggregateGenericFunctions",
     predicate: object,
@@ -303,7 +303,7 @@ def approx_quantile_generic_filter(
 
     return cast(
         TypedExpression,
-        call_duckdb_filter_function(
+        invoke_duckdb_filter_function(
             predicate,
             _APPROX_QUANTILE_GENERIC_SIGNATURES,
             return_category=self.return_category,
@@ -489,7 +489,7 @@ _APPROX_QUANTILE_NUMERIC_SIGNATURES: tuple[DuckDBFunctionDefinition, ...] = (
 )
 
 
-@duckdb_function("approx_quantile")
+@register_duckdb_function("approx_quantile")
 def approx_quantile_numeric(
     self: "AggregateNumericFunctions",
     *operands: object,
@@ -522,7 +522,7 @@ def approx_quantile_numeric(
 
     return cast(
         NumericExpression,
-        call_duckdb_function(
+        invoke_duckdb_function(
             _APPROX_QUANTILE_NUMERIC_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
@@ -535,7 +535,7 @@ def approx_quantile_numeric(
     )
 
 
-@duckdb_function("approx_quantile_filter")
+@register_duckdb_function("approx_quantile_filter")
 def approx_quantile_numeric_filter(
     self: "AggregateNumericFunctions",
     predicate: object,
@@ -569,7 +569,7 @@ def approx_quantile_numeric_filter(
 
     return cast(
         NumericExpression,
-        call_duckdb_filter_function(
+        invoke_duckdb_filter_function(
             predicate,
             _APPROX_QUANTILE_NUMERIC_SIGNATURES,
             return_category=self.return_category,
@@ -599,7 +599,7 @@ _APPROX_TOP_K_SIGNATURES: tuple[DuckDBFunctionDefinition, ...] = (
 )
 
 
-@duckdb_function("approx_top_k")
+@register_duckdb_function("approx_top_k")
 def approx_top_k(
     self: "AggregateGenericFunctions",
     *operands: object,
@@ -619,7 +619,7 @@ def approx_top_k(
 
     return cast(
         TypedExpression,
-        call_duckdb_function(
+        invoke_duckdb_function(
             _APPROX_TOP_K_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
@@ -632,7 +632,7 @@ def approx_top_k(
     )
 
 
-@duckdb_function("approx_top_k_filter")
+@register_duckdb_function("approx_top_k_filter")
 def approx_top_k_filter(
     self: "AggregateGenericFunctions",
     predicate: object,
@@ -653,7 +653,7 @@ def approx_top_k_filter(
 
     return cast(
         TypedExpression,
-        call_duckdb_filter_function(
+        invoke_duckdb_filter_function(
             predicate,
             _APPROX_TOP_K_SIGNATURES,
             return_category=self.return_category,
@@ -695,7 +695,7 @@ _HISTOGRAM_SIGNATURES: tuple[DuckDBFunctionDefinition, ...] = (
 )
 
 
-@duckdb_function("histogram")
+@register_duckdb_function("histogram")
 def histogram(
     self: "AggregateGenericFunctions",
     *operands: object,
@@ -716,7 +716,7 @@ def histogram(
 
     return cast(
         TypedExpression,
-        call_duckdb_function(
+        invoke_duckdb_function(
             _HISTOGRAM_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
@@ -729,7 +729,7 @@ def histogram(
     )
 
 
-@duckdb_function("histogram_filter")
+@register_duckdb_function("histogram_filter")
 def histogram_filter(
     self: "AggregateGenericFunctions",
     predicate: object,
@@ -751,7 +751,7 @@ def histogram_filter(
 
     return cast(
         TypedExpression,
-        call_duckdb_filter_function(
+        invoke_duckdb_filter_function(
             predicate,
             _HISTOGRAM_SIGNATURES,
             return_category=self.return_category,
@@ -784,7 +784,7 @@ _HISTOGRAM_EXACT_SIGNATURES: tuple[DuckDBFunctionDefinition, ...] = (
 )
 
 
-@duckdb_function("histogram_exact")
+@register_duckdb_function("histogram_exact")
 def histogram_exact(
     self: "AggregateGenericFunctions",
     *operands: object,
@@ -804,7 +804,7 @@ def histogram_exact(
 
     return cast(
         TypedExpression,
-        call_duckdb_function(
+        invoke_duckdb_function(
             _HISTOGRAM_EXACT_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
@@ -817,7 +817,7 @@ def histogram_exact(
     )
 
 
-@duckdb_function("histogram_exact_filter")
+@register_duckdb_function("histogram_exact_filter")
 def histogram_exact_filter(
     self: "AggregateGenericFunctions",
     predicate: object,
@@ -838,7 +838,7 @@ def histogram_exact_filter(
 
     return cast(
         TypedExpression,
-        call_duckdb_filter_function(
+        invoke_duckdb_filter_function(
             predicate,
             _HISTOGRAM_EXACT_SIGNATURES,
             return_category=self.return_category,
