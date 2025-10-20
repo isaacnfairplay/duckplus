@@ -18,6 +18,12 @@ amount = ducktype.Numeric("amount")
 customer = ducktype.Varchar("customer")
 ```
 
+Decimal factories ship from :mod:`duckplus.typed.expressions.decimal`, which
+decorates :class:`duckplus.typed.expression.DuckTypeNamespace` via
+:func:`duckplus.typed.expressions.decimal.register_decimal_factories` so the
+``ducktype.Decimal_<width>_<scale>`` helpers bind during class creation without
+any runtime registry shims.
+
 Expressions know which columns they depend on. Combining expressions merges
 those dependencies so downstream helpers can ensure referenced columns exist.
 You can inspect dependencies directly via
