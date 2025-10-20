@@ -63,7 +63,7 @@ Adopt a one-function-per-file pattern for DuckDB wrappers where it improves clar
 
 ### Tasks
 - [x] Audit existing DuckDB function wrappers to determine sensible module boundaries (e.g. aggregates, math, string, date/time). *(Captured in `docs/duckdb_function_module_audit.md`.)*
-- [ ] Track window-function coverage; generated namespaces are currently empty and need verification once DuckDB exposes wrappers downstream.【F:docs/duckdb_function_module_audit.md†L18-L26】
+- [x] Track window-function coverage; generated namespaces are currently empty and need verification once DuckDB exposes wrappers downstream.【F:docs/duckdb_function_module_audit.md†L18-L26】
 - [ ] Create per-function modules that expose the function implementation and decorate registration with the relevant typed categories.
 - [ ] Provide shared base utilities (e.g. in `duckplus/functions/_base.py`) to hold common decorator logic without reintroducing data-driven registries.
 - [ ] Update import barrels (such as `duckplus/functions/__init__.py`) to expose the decorated functions while keeping import side effects explicit and testable.

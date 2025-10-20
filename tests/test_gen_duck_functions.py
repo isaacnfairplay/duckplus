@@ -45,7 +45,7 @@ def test_partition_functions_groups_by_namespace_and_type() -> None:
     )
     ignored_window = _record(name="row_number", function_type="window", family="generic")
 
-    scalar_map, aggregate_map = partition_functions(
+    scalar_map, aggregate_map, window_map = partition_functions(
         [
             scalar_numeric,
             aggregate_temporal,
@@ -70,6 +70,8 @@ def test_partition_functions_groups_by_namespace_and_type() -> None:
     assert "Generic" not in scalar_map
     assert "Generic" not in aggregate_map
 
+    assert window_map == {"Generic": {"row_number": [ignored_window]}}
+
 
 def test_partition_functions_sorts_function_names() -> None:
     scalar_records = [
@@ -78,7 +80,8 @@ def test_partition_functions_sorts_function_names() -> None:
         _record(name="ascii", function_type="scalar", family="varchar"),
     ]
 
-    scalar_map, _ = partition_functions(reversed(scalar_records))
+    scalar_map, _, window_map = partition_functions(reversed(scalar_records))
 
     assert list(scalar_map) == ["Varchar"]
     assert list(scalar_map["Varchar"].keys()) == ["ascii", "lower", "upper"]
+    assert window_map == {}
