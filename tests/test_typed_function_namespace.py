@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
+import importlib
 import inspect
 import pickle
 
+import pytest
+
+from duckplus.typed import ExpressionDependency
 from duckplus.typed.expression import DuckTypeNamespace, GenericExpression
 from duckplus.typed.expressions import decimal as decimal_module
 from duckplus.typed._generated_function_namespaces import (
@@ -56,13 +61,53 @@ def test_static_namespace_preserves_legacy_mappings() -> None:
     assert namespace._SYMBOLIC_FUNCTIONS["!!"] == "modern_symbol"
 
 
-def test_ducktype_namespace_decimal_factories_register_via_decorator() -> None:
-    namespace = DuckTypeNamespace()
+def test_decimal_factories_expose_metadata_at_import_time() -> None:
+    module = importlib.reload(decimal_module)
 
-    assert namespace.decimal_factory_names == decimal_module.DECIMAL_FACTORY_NAMES
-    assert hasattr(namespace, "Decimal_1_0")
-    assert getattr(namespace, "Decimal_10_2") is decimal_module.Decimal_10_2
-    assert getattr(type(namespace), "Decimal_10_2") is decimal_module.Decimal_10_2
+    expression = module.Decimal_10_2("balance")
+    assert expression.render() == '"balance"'
+    assert expression.dependencies == {ExpressionDependency.column("balance")}
+    assert expression.duck_type.render() == "DECIMAL(10, 2)"
+
+    literal = module.Decimal_4_3.literal(Decimal("1.234"))
+    assert literal.render() == "1.234"
+    assert literal.dependencies == frozenset()
+    assert literal.duck_type.render() == "DECIMAL(4, 3)"
+
+    namespace = DuckTypeNamespace()
+    assert namespace.decimal_factory_names == module.DECIMAL_FACTORY_NAMES
+    namespace_factory = getattr(type(namespace), "Decimal_10_2")
+    assert namespace_factory.expression_type.default_type().render() == "DECIMAL(10, 2)"
+
+
+def test_decimal_registration_rejects_duplicate_factories(monkeypatch: pytest.MonkeyPatch) -> None:
+    duplicate_items = (
+        ("Decimal_1_0", decimal_module.Decimal_1_0),
+        ("Decimal_1_0", decimal_module.Decimal_1_0),
+    )
+    monkeypatch.setattr(decimal_module, "_DECIMAL_FACTORY_ITEMS", duplicate_items, raising=False)
+
+    with pytest.raises(ValueError, match="Duplicate decimal factory name"):
+        register_target = type("DuplicateNamespace", (object,), {})
+        decimal_module.register_decimal_factories(register_target)
+
+
+def test_decimal_registration_requires_decimal_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
+    class BadExpression(decimal_module.NumericExpression):
+        __slots__ = ()
+
+    bad_factory = decimal_module.NumericFactory(BadExpression)
+
+    monkeypatch.setattr(
+        decimal_module,
+        "_DECIMAL_FACTORY_ITEMS",
+        (("Decimal_2_1", bad_factory),),
+        raising=False,
+    )
+
+    with pytest.raises(ValueError, match="must expose DecimalType metadata"):
+        register_target = type("MetadataNamespace", (object,), {})
+        decimal_module.register_decimal_factories(register_target)
 
 
 def test_aggregate_namespace_preserves_filter_aliases() -> None:
