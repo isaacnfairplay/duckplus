@@ -6,7 +6,7 @@ import pytest
 
 from duckplus.duckcon import DuckCon
 from duckplus.examples import sales_pipeline
-from duckplus.relation import Relation
+from duckplus.typed import ducktype
 
 
 @pytest.fixture()
@@ -90,49 +90,54 @@ def test_run_sales_demo_returns_projection_sql() -> None:
 def _fan_out_sales_demo(
     demo_data: sales_pipeline.SalesDemoData, copies: int
 ) -> sales_pipeline.SalesDemoData:
+    if copies <= 0:
+        msg = "copies must be a positive integer"
+        raise ValueError(msg)
+
     duckcon = demo_data.orders.duckcon
-    connection = duckcon.connection
 
-    orders_sql = demo_data.orders.relation.sql_query()
-    returns_sql = demo_data.returns.relation.sql_query()
-
-    order_step_row = connection.sql(
-        f"WITH base AS ({orders_sql}) SELECT MAX(order_id) FROM base"
-    ).fetchone()
-    order_step = int(order_step_row[0]) + 1 if order_step_row and order_step_row[0] else 1
-
-    expanded_orders = connection.sql(
-        f"""
-        WITH base AS ({orders_sql})
-        SELECT
-            order_id + ({order_step} * copy_index) AS order_id,
-            order_date,
-            region,
-            customer,
-            order_total,
-            shipping_cost,
-            channel,
-            is_repeat
-        FROM base
-        CROSS JOIN generate_series(0, {copies} - 1) AS copies(copy_index)
-        """
+    max_order_id_relation = (
+        demo_data.orders.aggregate()
+        .start_agg()
+        .agg(ducktype.Numeric.Aggregate.max("order_id"), alias="max_order_id")
+        .all()
     )
+    max_order_row = max_order_id_relation.relation.fetchone()
+    max_order_id = int(max_order_row[0]) if max_order_row and max_order_row[0] else 0
+    order_step = max_order_id + 1 if max_order_id else 1
 
-    expanded_returns = connection.sql(
-        f"""
-        WITH base AS ({returns_sql})
-        SELECT
-            returned_order_id + ({order_step} * copy_index) AS returned_order_id,
-            returned_at,
-            return_reason
-        FROM base
-        CROSS JOIN generate_series(0, {copies} - 1) AS copies(copy_index)
-        """
-    )
+    expanded_orders = demo_data.orders
+    expanded_returns = demo_data.returns
+
+    for index in range(1, copies):
+        order_offset = ducktype.Numeric.literal(order_step * index)
+        orders_copy = (
+            demo_data.orders.select()
+            .star(
+                replace={
+                    "order_id": ducktype.Numeric("order_id") + order_offset,
+                }
+            )
+            .from_()
+        )
+        expanded_orders = expanded_orders.union(orders_copy)
+
+        returns_copy = (
+            demo_data.returns.select()
+            .star(
+                replace={
+                    "returned_order_id": (
+                        ducktype.Numeric("returned_order_id") + order_offset
+                    ),
+                }
+            )
+            .from_()
+        )
+        expanded_returns = expanded_returns.union(returns_copy)
 
     return sales_pipeline.SalesDemoData(
-        orders=Relation.from_relation(duckcon, expanded_orders),
-        returns=Relation.from_relation(duckcon, expanded_returns),
+        orders=expanded_orders,
+        returns=expanded_returns,
     )
 
 

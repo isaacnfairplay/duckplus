@@ -8,7 +8,7 @@ import pytest
 
 from duckplus.duckcon import DuckCon
 from duckplus.examples import traceability_pipeline
-from duckplus.relation import Relation
+from duckplus.typed import ducktype
 
 
 @pytest.fixture()
@@ -91,120 +91,153 @@ def test_repair_unit_costs_replaces_zero_cost_rows(
 def _build_large_traceability_demo(
     demo_data: traceability_pipeline.TraceabilityDemoData, copies: int
 ) -> traceability_pipeline.TraceabilityDemoData:
-    duckcon = demo_data.program_catalog.duckcon
-    connection = duckcon.connection
+    if copies <= 0:
+        msg = "copies must be a positive integer"
+        raise ValueError(msg)
 
-    program_catalog_sql = demo_data.program_catalog.relation.sql_query()
-    activity_log_sql = demo_data.activity_log.relation.sql_query()
-    panel_events_sql = demo_data.panel_events.relation.sql_query()
-    alternate_events_sql = demo_data.alternate_events.relation.sql_query()
-    unit_events_sql = demo_data.unit_events.relation.sql_query()
-    price_snapshots_sql = demo_data.price_snapshots.relation.sql_query()
+    def _timestamp_with_offset(column: str, minutes: int) -> object:
+        base_timestamp = ducktype.Timestamp(column)
+        if minutes == 0:
+            return base_timestamp
+        interval_sql = f"INTERVAL '{minutes}' MINUTE"
+        return ducktype.Timestamp._raw(
+            f"({base_timestamp.render()} + {interval_sql})",
+            dependencies=base_timestamp.dependencies,
+        )
 
-    expanded_program_catalog = connection.sql(
-        f"""
-        WITH base AS ({program_catalog_sql})
-        SELECT
-            CASE WHEN copy_index = 0 THEN program_name
-                 ELSE program_name || '_' || copy_index::VARCHAR END AS program_name,
-            CASE WHEN copy_index = 0 THEN line_label
-                 ELSE line_label || '_' || copy_index::VARCHAR END AS line_label,
-            CASE WHEN copy_index = 0 THEN code_fragment
-                 ELSE 'copy_' || copy_index::VARCHAR END AS code_fragment
-        FROM base
-        CROSS JOIN generate_series(0, {copies} - 1) AS copies(copy_index)
-        """
-    )
+    def _token_with_suffix(column: str, index: int) -> object:
+        expression = ducktype.Varchar(column)
+        if index == 0:
+            return expression
+        return expression + ducktype.Varchar.literal(f"_{index}")
 
-    expanded_activity_log = connection.sql(
-        f"""
-        WITH base AS ({activity_log_sql})
-        SELECT
-            CASE WHEN copy_index = 0 THEN program_name
-                 ELSE program_name || '_' || copy_index::VARCHAR END AS program_name,
-            CASE WHEN copy_index = 0 THEN line_label
-                 ELSE line_label || '_' || copy_index::VARCHAR END AS line_label,
-            CASE WHEN copy_index = 0 THEN recorded_at
-                 ELSE recorded_at + (copy_index * INTERVAL 1 MINUTE) END AS recorded_at
-        FROM base
-        CROSS JOIN generate_series(0, {copies} - 1) AS copies(copy_index)
-        """
-    )
+    expanded_program_catalog = demo_data.program_catalog
+    expanded_activity_log = demo_data.activity_log
+    expanded_panel_events = demo_data.panel_events
+    expanded_alternate_events = demo_data.alternate_events
+    expanded_unit_events = demo_data.unit_events
+    expanded_price_snapshots = demo_data.price_snapshots
 
-    expanded_panel_events = connection.sql(
-        f"""
-        WITH base AS ({panel_events_sql})
-        SELECT
-            CASE WHEN copy_index = 0 THEN source_line
-                 ELSE source_line || '_' || copy_index::VARCHAR END AS source_line,
-            CASE WHEN copy_index = 0 THEN panel_token
-                 ELSE panel_token || '_' || copy_index::VARCHAR END AS panel_token,
-            board_slot + (copy_index * 10) AS board_slot,
-            CASE WHEN copy_index = 0 THEN scan_code
-                 ELSE 'copy_' || copy_index::VARCHAR || '_' || scan_code END AS scan_code
-        FROM base
-        CROSS JOIN generate_series(0, {copies} - 1) AS copies(copy_index)
-        """
-    )
+    for index in range(1, copies):
+        program_catalog_copy = (
+            demo_data.program_catalog.select()
+            .star(
+                replace={
+                    "program_name": _token_with_suffix("program_name", index),
+                    "line_label": _token_with_suffix("line_label", index),
+                    "code_fragment": ducktype.Varchar.literal(f"copy_{index}"),
+                }
+            )
+            .from_()
+        )
+        expanded_program_catalog = expanded_program_catalog.union(program_catalog_copy)
 
-    expanded_alternate_events = connection.sql(
-        f"""
-        WITH base AS ({alternate_events_sql})
-        SELECT
-            CASE WHEN copy_index = 0 THEN source_line
-                 ELSE source_line || '_' || copy_index::VARCHAR END AS source_line,
-            CASE WHEN copy_index = 0 THEN scan_code
-                 ELSE 'copy_' || copy_index::VARCHAR || '_' || scan_code END AS scan_code
-        FROM base
-        CROSS JOIN generate_series(0, {copies} - 1) AS copies(copy_index)
-        """
-    )
+        activity_log_copy = (
+            demo_data.activity_log.select()
+            .star(
+                replace={
+                    "program_name": _token_with_suffix("program_name", index),
+                    "line_label": _token_with_suffix("line_label", index),
+                    "recorded_at": _timestamp_with_offset("recorded_at", index),
+                }
+            )
+            .from_()
+        )
+        expanded_activity_log = expanded_activity_log.union(activity_log_copy)
 
-    expanded_unit_events = connection.sql(
-        f"""
-        WITH base AS ({unit_events_sql})
-        SELECT
-            event_id + (copy_index * 1000) AS event_id,
-            CASE WHEN copy_index = 0 THEN item_token
-                 ELSE item_token || '_' || copy_index::VARCHAR END AS item_token,
-            quantity,
-            CASE WHEN copy_index = 0 THEN raw_cost
-                 ELSE raw_cost + (copy_index * 0.5) END AS raw_cost,
-            CASE WHEN copy_index = 0 THEN route_hint
-                 ELSE COALESCE(route_hint, 'route') || '_' || copy_index::VARCHAR END AS route_hint,
-            CASE WHEN copy_index = 0 THEN station_hint
-                 ELSE COALESCE(station_hint, 'station') || '_' || copy_index::VARCHAR END AS station_hint
-        FROM base
-        CROSS JOIN generate_series(0, {copies} - 1) AS copies(copy_index)
-        """
-    )
+        panel_events_copy = (
+            demo_data.panel_events.select()
+            .star(
+                replace={
+                    "source_line": _token_with_suffix("source_line", index),
+                    "panel_token": _token_with_suffix("panel_token", index),
+                    "board_slot": (
+                        ducktype.Numeric("board_slot")
+                        + ducktype.Numeric.literal(index * 10)
+                    ),
+                    "scan_code": (
+                        ducktype.Varchar.literal(f"copy_{index}_")
+                        + ducktype.Varchar("scan_code")
+                    ),
+                }
+            )
+            .from_()
+        )
+        expanded_panel_events = expanded_panel_events.union(panel_events_copy)
 
-    expanded_price_snapshots = connection.sql(
-        f"""
-        WITH base AS ({price_snapshots_sql})
-        SELECT
-            CASE WHEN copy_index = 0 THEN item_token
-                 ELSE item_token || '_' || copy_index::VARCHAR END AS item_token,
-            CASE WHEN copy_index = 0 THEN route_hint
-                 ELSE COALESCE(route_hint, 'route') || '_' || copy_index::VARCHAR END AS route_hint,
-            CASE WHEN copy_index = 0 THEN station_hint
-                 ELSE COALESCE(station_hint, 'station') || '_' || copy_index::VARCHAR END AS station_hint,
-            CASE WHEN copy_index = 0 THEN unit_cost
-                 ELSE unit_cost + (copy_index * 0.1) END AS unit_cost,
-            CASE WHEN copy_index = 0 THEN captured_at
-                 ELSE captured_at + (copy_index * INTERVAL 1 MINUTE) END AS captured_at
-        FROM base
-        CROSS JOIN generate_series(0, {copies} - 1) AS copies(copy_index)
-        """
-    )
+        alternate_events_copy = (
+            demo_data.alternate_events.select()
+            .star(
+                replace={
+                    "source_line": _token_with_suffix("source_line", index),
+                    "scan_code": (
+                        ducktype.Varchar.literal(f"copy_{index}_")
+                        + ducktype.Varchar("scan_code")
+                    ),
+                }
+            )
+            .from_()
+        )
+        expanded_alternate_events = expanded_alternate_events.union(alternate_events_copy)
+
+        unit_events_copy = (
+            demo_data.unit_events.select()
+            .star(
+                replace={
+                    "event_id": (
+                        ducktype.Numeric("event_id")
+                        + ducktype.Numeric.literal(index * 1000)
+                    ),
+                    "item_token": _token_with_suffix("item_token", index),
+                    "raw_cost": (
+                        ducktype.Numeric("raw_cost")
+                        + ducktype.Numeric.literal(index * 0.5)
+                    ),
+                    "route_hint": (
+                        ducktype.Varchar("route_hint").coalesce("route")
+                        + ducktype.Varchar.literal(f"_{index}")
+                    ),
+                    "station_hint": (
+                        ducktype.Varchar("station_hint").coalesce("station")
+                        + ducktype.Varchar.literal(f"_{index}")
+                    ),
+                }
+            )
+            .from_()
+        )
+        expanded_unit_events = expanded_unit_events.union(unit_events_copy)
+
+        price_snapshots_copy = (
+            demo_data.price_snapshots.select()
+            .star(
+                replace={
+                    "item_token": _token_with_suffix("item_token", index),
+                    "route_hint": (
+                        ducktype.Varchar("route_hint").coalesce("route")
+                        + ducktype.Varchar.literal(f"_{index}")
+                    ),
+                    "station_hint": (
+                        ducktype.Varchar("station_hint").coalesce("station")
+                        + ducktype.Varchar.literal(f"_{index}")
+                    ),
+                    "unit_cost": (
+                        ducktype.Numeric("unit_cost")
+                        + ducktype.Numeric.literal(index * 0.1)
+                    ),
+                    "captured_at": _timestamp_with_offset("captured_at", index),
+                }
+            )
+            .from_()
+        )
+        expanded_price_snapshots = expanded_price_snapshots.union(price_snapshots_copy)
 
     return traceability_pipeline.TraceabilityDemoData(
-        program_catalog=Relation.from_relation(duckcon, expanded_program_catalog),
-        activity_log=Relation.from_relation(duckcon, expanded_activity_log),
-        panel_events=Relation.from_relation(duckcon, expanded_panel_events),
-        alternate_events=Relation.from_relation(duckcon, expanded_alternate_events),
-        unit_events=Relation.from_relation(duckcon, expanded_unit_events),
-        price_snapshots=Relation.from_relation(duckcon, expanded_price_snapshots),
+        program_catalog=expanded_program_catalog,
+        activity_log=expanded_activity_log,
+        panel_events=expanded_panel_events,
+        alternate_events=expanded_alternate_events,
+        unit_events=expanded_unit_events,
+        price_snapshots=expanded_price_snapshots,
     )
 
 
