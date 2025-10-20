@@ -188,13 +188,16 @@ def partition_functions(
 ) -> tuple[
     dict[str, dict[str, list[DuckDBFunctionRecord]]],
     dict[str, dict[str, list[DuckDBFunctionRecord]]],
+    dict[str, dict[str, list[DuckDBFunctionRecord]]],
 ]:
-    """Split function ``records`` into scalar and aggregate namespace buckets.
+    """Split function ``records`` into namespace buckets by function type.
 
     DuckPlus exposes helpers such as ``ducktype.Numeric`` by inspecting the
     first argument of a DuckDB function. ``family_for_first_param`` captures that
     routing, and this helper simply groups records so downstream generators can
     iterate stable, namespace-ordered dictionaries without consulting DuckDB.
+    Window helpers are returned as a third bucket so new coverage can be
+    asserted when DuckDB starts surfacing window definitions.
     """
 
     namespace_by_family = {
@@ -212,12 +215,17 @@ def partition_functions(
     aggregate: dict[str, dict[str, list[DuckDBFunctionRecord]]] = defaultdict(
         lambda: defaultdict(list)
     )
+    window: dict[str, dict[str, list[DuckDBFunctionRecord]]] = defaultdict(
+        lambda: defaultdict(list)
+    )
 
     for record in records:
         if record.function_type == "scalar":
             target = scalar
         elif record.function_type == "aggregate":
             target = aggregate
+        elif record.function_type == "window":
+            target = window
         else:
             continue
 
@@ -235,7 +243,7 @@ def partition_functions(
             }
         return frozen
 
-    return _freeze(scalar), _freeze(aggregate)
+    return _freeze(scalar), _freeze(aggregate), _freeze(window)
 
 
 def get_functions(
