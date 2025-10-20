@@ -1,6 +1,6 @@
 """Typed expression primitives for DuckPlus."""
 
-# pylint: disable=duplicate-code
+# pylint: disable=duplicate-code,wildcard-import,unused-wildcard-import
 
 from .dependencies import ExpressionDependency
 from .expression import (
@@ -18,6 +18,8 @@ from .expression import (
     TypedExpression,
     VarcharExpression,
 )
+from .expressions.decimal import DECIMAL_FACTORY_NAMES as _DECIMAL_FACTORY_NAMES
+from .expressions.decimal import *  # noqa: F401,F403 - re-export decimal factories
 from .ducktype import (
     Blob,
     Boolean,
@@ -49,11 +51,6 @@ from ._generated_function_namespaces import (
     DuckDBFunctionNamespace,
 )
 from ..functions.aggregate import approximation as _aggregate_approximation  # noqa: F401
-
-for _decimal_name in ducktype.decimal_factory_names:
-    globals()[_decimal_name] = getattr(ducktype, _decimal_name)
-
-del _decimal_name
 
 __all__ = [
     "AliasedExpression",
@@ -98,4 +95,4 @@ __all__ = [
     "DuckDBFunctionNamespace",
 ]
 
-__all__.extend(ducktype.decimal_factory_names)
+__all__.extend(_DECIMAL_FACTORY_NAMES)

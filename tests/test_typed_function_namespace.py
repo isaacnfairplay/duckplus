@@ -6,6 +6,7 @@ import inspect
 import pickle
 
 from duckplus.typed.expression import DuckTypeNamespace, GenericExpression
+from duckplus.typed.expressions import decimal as decimal_module
 from duckplus.typed._generated_function_namespaces import (
     AggregateGenericFunctions,
     AggregateNumericFunctions,
@@ -55,15 +56,13 @@ def test_static_namespace_preserves_legacy_mappings() -> None:
     assert namespace._SYMBOLIC_FUNCTIONS["!!"] == "modern_symbol"
 
 
-def test_ducktype_namespace_register_decimal_factories_shim() -> None:
+def test_ducktype_namespace_decimal_factories_register_via_decorator() -> None:
     namespace = DuckTypeNamespace()
-    # Clearing mirrors legacy behaviour where callers could rebuild factories.
-    namespace._decimal_names.clear()
 
-    namespace._register_decimal_factories()
-
-    assert "Decimal_1_0" in namespace.decimal_factory_names
+    assert namespace.decimal_factory_names == decimal_module.DECIMAL_FACTORY_NAMES
     assert hasattr(namespace, "Decimal_1_0")
+    assert getattr(namespace, "Decimal_10_2") is decimal_module.Decimal_10_2
+    assert getattr(type(namespace), "Decimal_10_2") is decimal_module.Decimal_10_2
 
 
 def test_aggregate_namespace_preserves_filter_aliases() -> None:

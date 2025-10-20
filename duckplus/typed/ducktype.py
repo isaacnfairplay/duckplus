@@ -1,10 +1,12 @@
 """Ergonomic aliases for the :mod:`duckplus.typed.expression` namespace."""
 
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name,wildcard-import,unused-wildcard-import
 
 from __future__ import annotations
 
 from .expression import DuckTypeNamespace, SelectStatementBuilder, ducktype as _ducktype
+from .expressions.decimal import DECIMAL_FACTORY_NAMES as _DECIMAL_FACTORY_NAMES
+from .expressions.decimal import *  # noqa: F401,F403 - re-export decimal factories
 
 # Re-export the global namespace instance so importing from this module provides
 # an intuitive entrypoint for ergonomic factory access.
@@ -33,11 +35,6 @@ Timestamp_ms = ducktype.Timestamp_ms
 Timestamp_us = ducktype.Timestamp_us
 Timestamp_ns = ducktype.Timestamp_ns
 Timestamp_tz = ducktype.Timestamp_tz
-
-for _decimal_name in ducktype.decimal_factory_names:
-    globals()[_decimal_name] = getattr(ducktype, _decimal_name)
-
-del _decimal_name
 
 
 def select() -> SelectStatementBuilder:
@@ -71,4 +68,4 @@ __all__ = [
     "select",
 ]
 
-__all__.extend(ducktype.decimal_factory_names)
+__all__.extend(_DECIMAL_FACTORY_NAMES)
