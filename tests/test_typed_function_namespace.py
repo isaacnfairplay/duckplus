@@ -6,7 +6,10 @@ import inspect
 import pickle
 
 from duckplus.typed.expression import DuckTypeNamespace, GenericExpression
-from duckplus.typed._generated_function_namespaces import AggregateNumericFunctions
+from duckplus.typed._generated_function_namespaces import (
+    AggregateGenericFunctions,
+    AggregateNumericFunctions,
+)
 from duckplus.typed.functions import _StaticFunctionNamespace, duckdb_function
 
 
@@ -107,4 +110,47 @@ def test_aggregate_approximation_helpers_are_module_scoped() -> None:
     assert filter_method.__module__ == "duckplus.functions.aggregate.approximation"
     filter_doc = inspect.getdoc(filter_method)
     assert filter_doc and "HyperLogLog" in filter_doc
+
+
+def test_generic_approximation_helpers_are_module_scoped() -> None:
+    namespace = AggregateGenericFunctions()
+
+    approx_quantile = type(namespace).__dict__["approx_quantile"]
+    assert approx_quantile.__module__ == "duckplus.functions.aggregate.approximation"
+    approx_quantile_doc = inspect.getdoc(approx_quantile)
+    assert approx_quantile_doc and "T-Digest" in approx_quantile_doc
+
+    approx_quantile_filter = type(namespace).__dict__["approx_quantile_filter"]
+    assert approx_quantile_filter.__module__ == "duckplus.functions.aggregate.approximation"
+    approx_quantile_filter_doc = inspect.getdoc(approx_quantile_filter)
+    assert approx_quantile_filter_doc and "T-Digest" in approx_quantile_filter_doc
+
+    approx_top_k = type(namespace).__dict__["approx_top_k"]
+    assert approx_top_k.__module__ == "duckplus.functions.aggregate.approximation"
+    approx_top_k_doc = inspect.getdoc(approx_top_k)
+    assert approx_top_k_doc and "approximately most occurring" in approx_top_k_doc
+
+    histogram_method = type(namespace).__dict__["histogram"]
+    assert histogram_method.__module__ == "duckplus.functions.aggregate.approximation"
+    histogram_doc = inspect.getdoc(histogram_method)
+    assert histogram_doc and "bucket and count" in histogram_doc
+
+    histogram_exact_method = type(namespace).__dict__["histogram_exact"]
+    assert histogram_exact_method.__module__ == "duckplus.functions.aggregate.approximation"
+    histogram_exact_doc = inspect.getdoc(histogram_exact_method)
+    assert histogram_exact_doc and "matching the buckets exactly" in histogram_exact_doc
+
+
+def test_numeric_quantile_helpers_are_module_scoped() -> None:
+    namespace = AggregateNumericFunctions()
+
+    approx_quantile = type(namespace).__dict__["approx_quantile"]
+    assert approx_quantile.__module__ == "duckplus.functions.aggregate.approximation"
+    approx_quantile_doc = inspect.getdoc(approx_quantile)
+    assert approx_quantile_doc and "T-Digest" in approx_quantile_doc
+
+    approx_quantile_filter = type(namespace).__dict__["approx_quantile_filter"]
+    assert approx_quantile_filter.__module__ == "duckplus.functions.aggregate.approximation"
+    approx_quantile_filter_doc = inspect.getdoc(approx_quantile_filter)
+    assert approx_quantile_filter_doc and "T-Digest" in approx_quantile_filter_doc
 
