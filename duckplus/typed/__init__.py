@@ -48,6 +48,7 @@ from ._generated_function_namespaces import (
     WINDOW_FUNCTIONS,
     DuckDBFunctionNamespace,
 )
+from ..functions.aggregate import approximation as _aggregate_approximation  # noqa: F401
 
 for _decimal_name in ducktype.decimal_factory_names:
     globals()[_decimal_name] = getattr(ducktype, _decimal_name)

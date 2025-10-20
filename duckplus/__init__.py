@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from . import functions  # pylint: disable=unused-import
 from . import static_typed  # pylint: disable=unused-import
 from . import typed  # pylint: disable=unused-import
 from .typed import (
