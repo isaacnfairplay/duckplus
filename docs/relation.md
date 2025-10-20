@@ -163,6 +163,14 @@ with manager as connection:
 assert projected.columns == ("category", "primary_amount", "fallback_amount")
 ```
 
+Each fluent call returns a new builder, so it is safe to branch a projection by
+capturing the result of ``select().column(...)`` before adding additional
+columns. The original builder remains unchanged, making it easy to experiment
+with alternative projections without rebuilding the shared prefix. Optional
+``if_exists`` columns and ``replace_if_exists`` clauses still validate their
+typed-expression dependencies up front and simply skip rendering when the
+required columns are absent.
+
 Builders also support `*` projections with optional `REPLACE`/`EXCLUDE`
 modifiers. DuckPlus validates dependencies for typed replacements before issuing
 the query so missing or ambiguous columns surface as descriptive errors.
@@ -231,6 +239,12 @@ The helper inspects each component to determine where it belongs:
 If a filter, aggregate, or having clause references an unknown column, DuckPlus
 raises a descriptive error before executing the query, keeping failures easy to
 diagnose.
+
+Like the select helper, every call to ``component`` or ``agg`` produces a new
+builder instance. You can branch an aggregation pipeline by capturing the
+resulting builder before adding more expressions, and the original instance stays
+usable for alternative groupings. DuckPlus continues to validate dependencies
+for optional filters and typed expressions before the query reaches DuckDB.
 
 ## Filtering rows
 

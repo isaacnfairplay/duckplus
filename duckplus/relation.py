@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import copy
 import csv
 import re
 from dataclasses import dataclass, field
@@ -14,7 +15,7 @@ from uuid import uuid4
 import warnings
 from importlib import import_module
 from typing import Any, Iterable, Mapping, TypeVar, cast, overload
-from typing import Literal
+from typing import Literal, Self
 
 import duckdb  # type: ignore[import-not-found]
 
@@ -2391,16 +2392,233 @@ class Relation:
                 raise ValueError(msg)
 
 
-class _AggregateBuilder:
+class DependencyTrackingMixin:  # pylint: disable=too-few-public-methods
+    """Utility helpers for managing typed expression dependencies."""
+
+    _relation: "Relation"
+    _required_dependency_checks: tuple[tuple[frozenset[ExpressionDependency], str], ...]
+    _optional_dependency_checks: tuple[tuple[frozenset[ExpressionDependency], str], ...]
+
+    def _register_dependencies(
+        self,
+        dependencies: frozenset[ExpressionDependency] | None,
+        label: str,
+        *,
+        optional: bool,
+    ) -> Self:
+        if dependencies is None:
+            return self
+        if optional:
+            optional_checks = self._optional_dependency_checks + ((dependencies, label),)
+            return self._copy_with(
+                _optional_dependency_checks=optional_checks,
+            )
+        required_checks = self._required_dependency_checks + ((dependencies, label),)
+        return self._copy_with(_required_dependency_checks=required_checks)
+
+    def _dependencies_available(
+        self,
+        dependencies: frozenset[ExpressionDependency],
+        label: str,
+    ) -> bool:
+        available = True
+        for dependency in dependencies:
+            column = dependency.column_name
+            if column is None:
+                continue
+            try:
+                resolved = self._relation._resolve_column(column)
+            except ValueError as error:
+                msg = f"{label} references ambiguous column '{column}'"
+                raise ValueError(msg) from error
+            if resolved is None:
+                available = False
+                break
+        return available
+
+    def _copy_with(self, **updates: object) -> Self:  # pragma: no cover - overwritten
+        raise NotImplementedError
+
+    @staticmethod
+    def _extract_dependencies(
+        expression: object,
+    ) -> frozenset[ExpressionDependency] | None:
+        if isinstance(expression, TypedExpression):
+            return expression.dependencies
+        if isinstance(expression, AliasedExpression):  # pragma: no cover - defensive
+            return expression.dependencies
+        return None
+
+    @staticmethod
+    def _infer_alias(expression: object) -> str | None:
+        if isinstance(expression, AliasedExpression):
+            alias_name = expression.alias_name
+            if isinstance(alias_name, str) and alias_name.strip():
+                return alias_name
+        return None
+
+    @staticmethod
+    def _format_label(kind: str, alias: str | None, index: int) -> str:
+        if alias:
+            return f"{kind} '{alias}'"
+        return f"{kind} {index}"
+
+
+class ReplaceClauseMixin(DependencyTrackingMixin):  # pylint: disable=abstract-method,too-few-public-methods
+    """Helpers for materialising and tracking REPLACE clause expressions."""
+
+    _replace_counter: int
+
+    def _materialise_replace_entries(
+        self,
+        replace: (
+            Mapping[str, object]
+            | Iterable[tuple[str, object]]
+            | Iterable[AliasedExpression]
+            | None
+        ),
+    ) -> (
+        Mapping[str, object]
+        | tuple[tuple[str, object], ...]
+        | tuple[AliasedExpression, ...]
+        | None
+    ):
+        if replace is None:
+            return None
+        if isinstance(replace, Mapping):
+            return replace
+        if isinstance(replace, tuple):
+            return replace
+        return cast(
+            tuple[tuple[str, object], ...] | tuple[AliasedExpression, ...],
+            tuple(replace),
+        )
+
+    def _record_replace_dependencies(
+        self,
+        replace: (
+            Mapping[str, object]
+            | tuple[tuple[str, object], ...]
+            | tuple[AliasedExpression, ...]
+            | None
+        ),
+        *,
+        optional: bool,
+    ) -> Self:
+        if replace is None:
+            return self
+
+        if isinstance(replace, Mapping):
+            iterable: Iterable[tuple[str | None, object]] = replace.items()
+        else:
+            iterable = replace  # type: ignore[assignment]
+
+        builder: Self = self
+        base_counter = self._replace_counter
+        count = 0
+        for entry in iterable:
+            alias_candidate: str | None
+            expression: object
+            if isinstance(entry, AliasedExpression):
+                alias_candidate = entry.alias_name
+                expression = entry
+            elif isinstance(entry, tuple) and len(entry) == 2:
+                alias_candidate, expression = entry
+            else:  # pragma: no cover - defensive safeguard
+                alias_candidate = None
+                expression = entry
+
+            dependencies = self._extract_dependencies(expression)
+            label_alias = alias_candidate or self._infer_alias(expression)
+            label = self._format_label(
+                "select replace",
+                label_alias,
+                base_counter + count + 1,
+            )
+            builder = builder._register_dependencies(
+                dependencies,
+                label,
+                optional=optional,
+            )
+            count += 1
+
+        if count:
+            builder = builder._copy_with(_replace_counter=base_counter + count)
+
+        return builder
+
+
+class _AggregateBuilder(DependencyTrackingMixin):  # pylint: disable=too-many-instance-attributes
     """Intermediate builder that finalises grouped aggregations."""
 
-    def __init__(self, relation: Relation) -> None:
+    def __init__(
+        self,
+        relation: Relation,
+        *,
+        positional_filters: Iterable[object] | None = None,
+        group_expressions: Iterable[TypedExpression] | None = None,
+        having_conditions: (
+            Iterable[tuple[str, frozenset[ExpressionDependency]]] | None
+        ) = None,
+        aggregate_entries: Iterable[tuple[str, TypedExpression]] | None = None,
+        finalised: bool = False,
+        required_dependency_checks: (
+            Iterable[tuple[frozenset[ExpressionDependency], str]] | None
+        ) = None,
+        optional_dependency_checks: (
+            Iterable[tuple[frozenset[ExpressionDependency], str]] | None
+        ) = None,
+    ) -> None:
         self._relation = relation
-        self._positional_filters: list[object] = []
-        self._group_expressions: list[TypedExpression] = []
-        self._having_conditions: list[tuple[str, frozenset[ExpressionDependency]]] = []
-        self._aggregate_entries: list[tuple[str, TypedExpression]] = []
-        self._finalised = False
+        self._positional_filters = list(positional_filters or ())
+        self._group_expressions = list(group_expressions or ())
+        self._having_conditions = list(having_conditions or ())
+        self._aggregate_entries = list(aggregate_entries or ())
+        self._finalised = finalised
+        self._required_dependency_checks = tuple(required_dependency_checks or ())
+        self._optional_dependency_checks = tuple(optional_dependency_checks or ())
+
+    def _copy_with(self, **updates: object) -> "_AggregateBuilder":
+        finalised = cast(bool | None, updates.get("_finalised"))
+        required_checks = cast(
+            tuple[tuple[frozenset[ExpressionDependency], str], ...] | None,
+            updates.get("_required_dependency_checks"),
+        )
+        optional_checks = cast(
+            tuple[tuple[frozenset[ExpressionDependency], str], ...] | None,
+            updates.get("_optional_dependency_checks"),
+        )
+
+        return _AggregateBuilder(
+            self._relation,
+            positional_filters=self._positional_filters,
+            group_expressions=self._group_expressions,
+            having_conditions=self._having_conditions,
+            aggregate_entries=self._aggregate_entries,
+            finalised=self._finalised if finalised is None else finalised,
+            required_dependency_checks=(
+                self._required_dependency_checks
+                if required_checks is None
+                else required_checks
+            ),
+            optional_dependency_checks=(
+                self._optional_dependency_checks
+                if optional_checks is None
+                else optional_checks
+            ),
+        )
+
+    def _clone(self) -> "_AggregateBuilder":
+        return _AggregateBuilder(
+            self._relation,
+            positional_filters=self._positional_filters,
+            group_expressions=self._group_expressions,
+            having_conditions=self._having_conditions,
+            aggregate_entries=self._aggregate_entries,
+            finalised=self._finalised,
+            required_dependency_checks=self._required_dependency_checks,
+            optional_dependency_checks=self._optional_dependency_checks,
+        )
 
     def start_agg(self) -> "_AggregateBuilder":
         """No-op helper for ergonomic aggregate builder pipelines."""
@@ -2412,9 +2630,10 @@ class _AggregateBuilder:
         """Append grouping components or filters to the aggregate."""
 
         self._ensure_not_finalised("component")
+        builder = self._clone()
         for component in components:
-            self._add_component(component)
-        return self
+            builder._add_component(component)
+        return builder
 
     def agg(
         self,
@@ -2425,6 +2644,7 @@ class _AggregateBuilder:
         """Register an aggregate expression for the builder."""
 
         self._ensure_not_finalised("agg")
+        builder = self._clone()
         if not isinstance(expression, TypedExpression):
             msg = (
                 "aggregate expressions must be typed expressions representing the "
@@ -2432,15 +2652,15 @@ class _AggregateBuilder:
             )
             raise TypeError(msg)
 
-        alias_name = self._resolve_aggregate_alias(expression, alias)
+        alias_name = builder._resolve_aggregate_alias(expression, alias)
 
-        base_expression, _ = self._relation._peel_expression_alias(expression)
-        if not self._relation._contains_aggregate_expression(base_expression):
+        base_expression, _ = builder._relation._peel_expression_alias(expression)
+        if not builder._relation._contains_aggregate_expression(base_expression):
             msg = "Aggregate expressions must include an aggregate function"
             raise ValueError(msg)
 
-        self._aggregate_entries.append((alias_name, expression))
-        return self
+        builder._aggregate_entries.append((alias_name, expression))
+        return builder
 
     def _resolve_aggregate_alias(
         self, expression: TypedExpression, alias: str | None
@@ -2475,10 +2695,11 @@ class _AggregateBuilder:
         """Append HAVING clauses before materialising the aggregate."""
 
         self._ensure_not_finalised("having")
+        builder = self._clone()
         for condition in conditions:
-            clause = self._normalise_having_condition(condition)
-            self._having_conditions.append(clause)
-        return self
+            clause = builder._normalise_having_condition(condition)
+            builder._having_conditions.append(clause)
+        return builder
 
     def all(self) -> Relation:
         """Group by every non-aggregate component passed to ``aggregate``."""
@@ -2762,21 +2983,70 @@ class _AggregateBuilder:
         return type(self._relation).from_relation(self._relation.duckcon, relation)
 
 
-class _SelectBuilder:
+class _SelectBuilder(ReplaceClauseMixin):
     """Intermediate builder that finalises typed SELECT projections."""
 
-    def __init__(self, relation: Relation) -> None:
+    def __init__(
+        self,
+        relation: Relation,
+        *,
+        builder: SelectStatementBuilder | None = None,
+        required_dependency_checks: (
+            Iterable[tuple[frozenset[ExpressionDependency], str]] | None
+        ) = None,
+        optional_dependency_checks: (
+            Iterable[tuple[frozenset[ExpressionDependency], str]] | None
+        ) = None,
+        column_counter: int = 0,
+        replace_counter: int = 0,
+        finalised: bool = False,
+    ) -> None:
         self._relation = relation
-        self._builder = SelectStatementBuilder()
-        self._required_dependency_checks: list[
-            tuple[frozenset[ExpressionDependency], str]
-        ] = []
-        self._optional_dependency_checks: list[
-            tuple[frozenset[ExpressionDependency], str]
-        ] = []
-        self._column_counter = 0
-        self._replace_counter = 0
-        self._finalised = False
+        self._builder = builder or SelectStatementBuilder()
+        self._required_dependency_checks = tuple(required_dependency_checks or ())
+        self._optional_dependency_checks = tuple(optional_dependency_checks or ())
+        self._column_counter = column_counter
+        self._replace_counter = replace_counter
+        self._finalised = finalised
+
+    def _copy_with(self, **updates: object) -> "_SelectBuilder":
+        builder = cast(SelectStatementBuilder | None, updates.get("_builder"))
+        required_checks = cast(
+            tuple[tuple[frozenset[ExpressionDependency], str], ...] | None,
+            updates.get("_required_dependency_checks"),
+        )
+        optional_checks = cast(
+            tuple[tuple[frozenset[ExpressionDependency], str], ...] | None,
+            updates.get("_optional_dependency_checks"),
+        )
+        column_counter = cast(int | None, updates.get("_column_counter"))
+        replace_counter = cast(int | None, updates.get("_replace_counter"))
+        finalised = cast(bool | None, updates.get("_finalised"))
+
+        return _SelectBuilder(
+            self._relation,
+            builder=self._builder if builder is None else builder,
+            required_dependency_checks=(
+                self._required_dependency_checks
+                if required_checks is None
+                else required_checks
+            ),
+            optional_dependency_checks=(
+                self._optional_dependency_checks
+                if optional_checks is None
+                else optional_checks
+            ),
+            column_counter=self._column_counter
+            if column_counter is None
+            else column_counter,
+            replace_counter=self._replace_counter
+            if replace_counter is None
+            else replace_counter,
+            finalised=self._finalised if finalised is None else finalised,
+        )
+
+    def _clone_builder(self) -> SelectStatementBuilder:
+        return copy.deepcopy(self._builder)
 
     def column(
         self,
@@ -2788,15 +3058,27 @@ class _SelectBuilder:
         """Append a column projection to the SELECT list."""
 
         self._ensure_not_finalised("column")
-        self._builder.column(expression, alias=alias, if_exists=if_exists)
+        builder_copy = self._clone_builder()
+        builder_copy.column(expression, alias=alias, if_exists=if_exists)
 
-        self._column_counter += 1
-        dependencies = self._extract_dependencies(expression)
-        label_alias = alias or self._infer_alias(expression)
-        label = self._format_label("select column", label_alias, self._column_counter)
-        self._register_dependencies(dependencies, label, optional=if_exists)
+        updated = self._copy_with(
+            _builder=builder_copy,
+            _column_counter=self._column_counter + 1,
+        )
 
-        return self
+        dependencies = updated._extract_dependencies(expression)
+        label_alias = alias or updated._infer_alias(expression)
+        label = updated._format_label(
+            "select column",
+            label_alias,
+            updated._column_counter,
+        )
+
+        return updated._register_dependencies(
+            dependencies,
+            label,
+            optional=if_exists,
+        )
 
     # pylint: disable=too-many-locals
     def star(
@@ -2826,23 +3108,25 @@ class _SelectBuilder:
             replace_if_exists
         )
 
-        self._builder.star(
+        builder_copy = self._clone_builder()
+        builder_copy.star(
             exclude=exclude,
             replace=materialised_replace,
             exclude_if_exists=exclude_if_exists,
             replace_if_exists=materialised_replace_if_exists,
         )
 
-        self._record_replace_dependencies(
+        updated = self._copy_with(_builder=builder_copy)
+        updated = updated._record_replace_dependencies(
             materialised_replace,
             optional=False,
         )
-        self._record_replace_dependencies(
+        updated = updated._record_replace_dependencies(
             materialised_replace_if_exists,
             optional=True,
         )
 
-        return self
+        return updated
 
     def from_(self, alias: str | None = None) -> Relation:
         """Materialise the builder against the parent relation."""
@@ -2895,133 +3179,6 @@ class _SelectBuilder:
                 "call select() again to build a new projection"
             )
             raise RuntimeError(msg)
-
-    def _register_dependencies(
-        self,
-        dependencies: frozenset[ExpressionDependency] | None,
-        label: str,
-        *,
-        optional: bool,
-    ) -> None:
-        if dependencies is None:
-            return
-        if optional:
-            self._optional_dependency_checks.append((dependencies, label))
-        else:
-            self._required_dependency_checks.append((dependencies, label))
-
-    @staticmethod
-    def _extract_dependencies(
-        expression: object,
-    ) -> frozenset[ExpressionDependency] | None:
-        if isinstance(expression, TypedExpression):
-            return expression.dependencies
-        if isinstance(expression, AliasedExpression):  # pragma: no cover - defensive
-            return expression.dependencies
-        return None
-
-    @staticmethod
-    def _infer_alias(expression: object) -> str | None:
-        if isinstance(expression, AliasedExpression):
-            alias_name = expression.alias_name
-            if isinstance(alias_name, str) and alias_name.strip():
-                return alias_name
-        return None
-
-    @staticmethod
-    def _format_label(kind: str, alias: str | None, index: int) -> str:
-        if alias:
-            return f"{kind} '{alias}'"
-        return f"{kind} {index}"
-
-    def _materialise_replace_entries(
-        self,
-        replace: (
-            Mapping[str, object]
-            | Iterable[tuple[str, object]]
-            | Iterable[AliasedExpression]
-            | None
-        ),
-    ) -> (
-        Mapping[str, object]
-        | tuple[tuple[str, object], ...]
-        | tuple[AliasedExpression, ...]
-        | None
-    ):
-        if replace is None:
-            return None
-        if isinstance(replace, Mapping):
-            return replace
-        if isinstance(replace, tuple):
-            return replace
-        return cast(
-            tuple[tuple[str, object], ...] | tuple[AliasedExpression, ...],
-            tuple(replace),
-        )
-
-    def _record_replace_dependencies(
-        self,
-        replace: (
-            Mapping[str, object]
-            | tuple[tuple[str, object], ...]
-            | tuple[AliasedExpression, ...]
-            | None
-        ),
-        *,
-        optional: bool,
-    ) -> None:
-        if replace is None:
-            return
-
-        if isinstance(replace, Mapping):
-            iterable: Iterable[tuple[str | None, object]] = replace.items()
-        else:
-            iterable = replace  # type: ignore[assignment]
-
-        count = 0
-        for entry in iterable:
-            alias_candidate: str | None
-            expression: object
-            if isinstance(entry, AliasedExpression):
-                alias_candidate = entry.alias_name
-                expression = entry
-            elif isinstance(entry, tuple) and len(entry) == 2:
-                alias_candidate, expression = entry
-            else:  # pragma: no cover - defensive safeguard
-                alias_candidate = None
-                expression = entry
-
-            dependencies = self._extract_dependencies(expression)
-            label_alias = alias_candidate or self._infer_alias(expression)
-            label = self._format_label(
-                "select replace",
-                label_alias,
-                self._replace_counter + count + 1,
-            )
-            self._register_dependencies(dependencies, label, optional=optional)
-            count += 1
-
-        self._replace_counter += count
-
-    def _dependencies_available(
-        self,
-        dependencies: frozenset[ExpressionDependency],
-        label: str,
-    ) -> bool:
-        available = True
-        for dependency in dependencies:
-            column = dependency.column_name
-            if column is None:
-                continue
-            try:
-                resolved = self._relation._resolve_column(column)
-            except ValueError as error:
-                msg = f"{label} references ambiguous column '{column}'"
-                raise ValueError(msg) from error
-            if resolved is None:
-                available = False
-                break
-        return available
 
 
 setattr(_SelectBuilder, "from", _SelectBuilder.from_)
