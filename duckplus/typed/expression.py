@@ -90,6 +90,14 @@ class DuckTypeNamespace:
 
 ducktype = DuckTypeNamespace()
 
+# Populate the module namespace with each decimal factory to match ``__all__``.
+globals().update(
+    {
+        name: getattr(DuckTypeNamespace, name)
+        for name in DECIMAL_FACTORY_NAMES
+    }
+)
+
 __all__ = [
     "AliasedExpression",
     "BlobExpression",
