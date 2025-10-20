@@ -27,22 +27,14 @@ remains in place.
   per-function modules would allow decorator-based registration instead of
   writing dictionary literals.
 
-## Decimal factory shims
-- **Module:** `duckplus/typed/expression.py`
-- **Mechanism:** `_attach_decimal_factories` attaches every decimal helper to the
-  `DuckTypeNamespace` class while `_register_decimal_factories` rebuilds the
-  `_decimal_names` list on each instance for legacy consumers.
-- **Notes:** The shim keeps the existing API surface intact while the fluent
-  namespace migrates away from runtime caches. Once callers switch to the
-  decorator-populated attributes, the instance-level rebinding can be removed.
-
-## Module-level decimal exports
-- **Modules:** `duckplus/typed/__init__.py`, `duckplus/typed/ducktype.py`
-- **Mechanism:** Both modules iterate over `ducktype.decimal_factory_names` and
-  inject each decimal helper into their module namespaces via `globals()`.
-- **Notes:** The loops ensure imports like `from duckplus import Decimal_18_2`
-  continue to work even though the factories now live on `DuckTypeNamespace`.
-  Stabilising a direct import surface would let the loops disappear.
+## Decimal factory module
+- **Module:** `duckplus/typed/expressions/decimal.py`
+- **Mechanism:** `register_decimal_factories` decorates `DuckTypeNamespace` so
+  every decimal helper binds directly to the class during definition while the
+  module itself exports each factory as a normal attribute.
+- **Notes:** Importing the module attaches factories without any runtime
+  rebinding. Consumer modules can now re-export the helpers using standard
+  imports instead of mutating `globals()`.
 
 ## Namespace generator script
 - **Module:** `scripts/generate_function_namespaces.py`

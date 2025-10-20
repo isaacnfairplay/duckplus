@@ -47,7 +47,11 @@ blob_literal = ducktype.Blob.literal(b"\x00\xFF")
 ```
 
 Numeric literals automatically tighten their DuckDB type based on the provided value. For example, `ducktype.Numeric.literal(1)` is typed as `UTINYINT` while larger integers flow through progressively wider integer types before falling back to `NUMERIC`. `Decimal` instances capture precision and scale so downstream consumers retain the full metadata.
-Legacy integrations that manually called `ducktype._register_decimal_factories()` (or inspected `_decimal_names`) continue to work, but new instances automatically expose every decimal combination and publish the available names through `decimal_factory_names`.
+Decimal factories live in :mod:`duckplus.typed.expressions.decimal`, where the
+module exports every combination and decorates :class:`DuckTypeNamespace` so the
+helpers attach during class definition. Instances automatically expose the full
+catalog through ``decimal_factory_names`` for compatibility with legacy
+callers.
 
 Varchar expressions support Pythonic concatenation with literal operands:
 
