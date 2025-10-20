@@ -2,9 +2,9 @@
 
 > **Note**
 > Updated typed expression documentation is hosted at
-> {doc}`versions/1.1/core/typed_expressions <versions/1.1/core/typed_expressions>`.
-> The full DuckDB function catalog for DuckPlus 1.1 is available at
-> {doc}`versions/1.1/api/typed/function_catalog <versions/1.1/api/typed/function_catalog>`.
+> {doc}`versions/1.2/core/typed_expressions <versions/1.2/core/typed_expressions>`.
+> The full DuckDB function catalog for DuckPlus 1.2 is available at
+> {doc}`versions/1.2/api/typed/function_catalog <versions/1.2/api/typed/function_catalog>`.
 
 DuckPlus exposes a typed expression builder that mirrors DuckDB's type system. Expressions record their DuckDB type metadata and column or table dependencies so downstream helpers can validate usage across complex queries.
 

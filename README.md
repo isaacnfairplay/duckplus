@@ -15,6 +15,11 @@ codebase so an AI or human teammate can adopt the same defaults quickly.
   experimental `static_ducktype` namespace exposes the new statically defined
   API while the legacy `duckplus.typed` module continues to ship unchanged
   during the migration.【F:duckplus/typed/ducktype.py†L1-L27】【F:duckplus/typed/expressions/numeric.py†L158-L235】【F:duckplus/static_typed/__init__.py†L28-L58】
+- Reach for the domain-organised helpers in :mod:`duckplus.functions` when you
+  need typed wrappers for DuckDB's approximation aggregates. Modules such as
+  ``duckplus.functions.aggregate.approximation`` register their helpers via
+  decorators at import time so IDEs surface concrete call signatures without
+  relying on generated registries.【F:duckplus/functions/__init__.py†L5-L40】【F:duckplus/functions/aggregate/__init__.py†L1-L40】
 - Prefer the I/O, schema, and table helpers exposed from the package root for
   consistent error handling and identifier quoting. Built-in readers such as
   ``DuckCon.read_csv``, ``DuckCon.read_parquet``, and ``DuckCon.read_excel``
@@ -134,6 +139,8 @@ codebase so an AI or human teammate can adopt the same defaults quickly.
   orchestrates installation safely.【F:duckplus/duckcon.py†L47-L84】【F:duckplus/duckcon.py†L120-L181】
 - Call `duckcon.extensions()` to inspect installation status, including version
   metadata, aliases, and source location for debugging environments.【F:duckplus/duckcon.py†L147-L206】
+- Audit bundled DuckDB extensions with :func:`duckplus.extensions.collect_bundled_extension_audit` to confirm
+  helper coverage and regenerate the published report via ``scripts/audit_extensions.py`` when releases ship.【F:duckplus/extensions.py†L1-L109】【F:scripts/audit_extensions.py†L1-L82】
 - Register connection-aware helpers with `DuckCon.register_helper` then invoke
   them through `apply_helper(name, ...)` so you never pass around raw
   connections.【F:duckplus/duckcon.py†L88-L147】

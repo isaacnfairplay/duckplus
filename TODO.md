@@ -22,6 +22,11 @@ Answer these before starting any TODO item to confirm scope and alignment with t
 4. Success hinges on moving large helper clusters (e.g. ICU collations, quantiles, regression suites) into those modules without breaking signatures or docstrings; the audit enumerates these hotspots so tests can target them explicitly.【F:docs/duckdb_function_module_audit.md†L24-L74】
 5. Validation continues to require `pytest`, `mypy duckplus`, `uvx`, `pylint duckplus`, and rebuilding docs when the module layout or narrative guidance changes.【F:TODO.md†L96-L110】
 
+### Discovery Log – Function module documentation (2024-05-20)
+1. Publishing domain documentation for :mod:`duckplus.functions` gives contributors a concrete reference for how side-effect modules and helper re-exports should behave as more DuckDB functions migrate away from generated registries.【F:docs/versions/1.2/core/function_modules.md†L1-L60】
+2. The README now points directly at the new modules so the quick-start guidance stays aligned with the package exports while reiterating the decorator-based registration strategy.【F:README.md†L10-L23】
+3. Versioned guides promote the 1.2 documentation tree, keeping quick references (I/O, typed API, schema) pointed at the latest release when future work lands.【F:docs/index.md†L9-L14】【F:docs/io.md†L5-L7】
+
 ### Active Notes – Replace data-driven registries
 1. Binding helpers directly onto `DuckCon` keeps the fluent method surface intact while dropping the per-instance registry dictionary.
 2. `duckplus.duckcon` now exposes a `duckcon_helper` decorator so `duckplus.io` can attach helpers at import time without late mutation.
@@ -68,7 +73,7 @@ Adopt a one-function-per-file pattern for DuckDB wrappers where it improves clar
 - [x] Migrate the remaining approximation helpers (e.g. ``approx_quantile``, ``histogram``) into ``duckplus/functions/aggregate`` modules following the new registration pattern.
 - [x] Provide shared base utilities (e.g. in `duckplus/functions/_base.py`) to hold common decorator logic without reintroducing data-driven registries.
 - [x] Update import barrels (such as `duckplus/functions/__init__.py`) to expose the decorated functions while keeping import side effects explicit and testable.
-- [ ] Adjust documentation and examples to reference the new module paths.
+- [x] Adjust documentation and examples to reference the new module paths. *(Documented in `docs/versions/1.2/core/function_modules.md` and the README highlights.)*
 
 Aggregate helpers currently ship from ``duckplus/functions/aggregate/`` so contributors can browse approximation wrappers directly without relying on generated dictionaries.【F:duckplus/functions/aggregate/__init__.py†L1-L46】【F:duckplus/functions/aggregate/approximation.py†L1-L200】
 
@@ -97,7 +102,7 @@ Review relation helpers to ensure no lingering runtime loading remains and that 
 Communicate the direct-Python design principle across contributor and user-facing materials.
 
 ### Tasks
-- [ ] Update contributor docs to describe the decorator-based registration workflow and rationale against runtime loaders.
+- [x] Update contributor docs to describe the decorator-based registration workflow and rationale against runtime loaders. *(Expanded the design principles with a domain-module example in `docs/contributing.md`.)*
 - [ ] Provide migration notes highlighting the benefits (import-time safety, IDE compatibility, easier debugging).
 - [ ] Revise API reference pages to point to the new module layout and ensure Sphinx autodoc picks up the decorated functions.
 
