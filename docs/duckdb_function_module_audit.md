@@ -68,5 +68,6 @@ Aggregate namespaces skew toward statistical helpers:
 ## Next steps for the migration
 
 - Generate stubs for the proposed modules that import and re-export the existing helpers to verify counts before moving definitions.
+- ``duckplus/functions/aggregate/approximation.py`` now hosts ``approx_count_distinct`` and ``approx_count_distinct_filter`` as direct Python implementations registered onto ``AggregateNumericFunctions``.
 - Update tests in `tests/test_typed_function_namespace.py` to assert imports from the new modules while maintaining decorator registration guarantees.
 - Adjust documentation (`docs/typed_api.md`, `docs/function_namespace_generator_retirement.md`) so contributors know where each helper family lives once modules start splitting.

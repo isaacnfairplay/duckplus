@@ -88,3 +88,23 @@ def test_aggregate_namespace_methods_are_introspectable() -> None:
 
     assert pickle.loads(pickle.dumps(method)) is method
 
+
+def test_aggregate_approximation_helpers_are_module_scoped() -> None:
+    namespace = AggregateNumericFunctions()
+    method = type(namespace).__dict__["approx_count_distinct"]
+
+    assert method.__module__ == "duckplus.functions.aggregate.approximation"
+    assert method.__qualname__.startswith("approx_count_distinct")
+
+    doc = inspect.getdoc(method)
+    assert doc and "HyperLogLog" in doc
+
+    signature = inspect.signature(method)
+    assert "operands" in signature.parameters
+    assert "order_by" in signature.parameters
+
+    filter_method = type(namespace).__dict__["approx_count_distinct_filter"]
+    assert filter_method.__module__ == "duckplus.functions.aggregate.approximation"
+    filter_doc = inspect.getdoc(filter_method)
+    assert filter_doc and "HyperLogLog" in filter_doc
+
