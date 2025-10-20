@@ -67,7 +67,7 @@ Adopt a one-function-per-file pattern for DuckDB wrappers where it improves clar
 - [x] Create per-function modules that expose the function implementation and decorate registration with the relevant typed categories.
 - [x] Migrate the remaining approximation helpers (e.g. ``approx_quantile``, ``histogram``) into ``duckplus/functions/aggregate`` modules following the new registration pattern.
 - [x] Provide shared base utilities (e.g. in `duckplus/functions/_base.py`) to hold common decorator logic without reintroducing data-driven registries.
-- [ ] Update import barrels (such as `duckplus/functions/__init__.py`) to expose the decorated functions while keeping import side effects explicit and testable.
+- [x] Update import barrels (such as `duckplus/functions/__init__.py`) to expose the decorated functions while keeping import side effects explicit and testable.
 - [ ] Adjust documentation and examples to reference the new module paths.
 
 ## Typed Expression Alignment
