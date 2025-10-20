@@ -15,6 +15,13 @@ Answer these before starting any TODO item to confirm scope and alignment with t
 4. Success looks like verifying docstrings, signatures, and pickling of helpers/methods without opening connections, proving everything needed for documentation and serialization flows from the Python objects themselves.
 5. Run ``pytest``, ``mypy duckplus``, ``uvx``, and ``pylint duckplus`` to confirm behavioural, typing, policy, and style gates stay green.
 
+### Discovery Log – DuckDB function module audit (2024-05-15)
+1. Grouping helpers into per-domain modules keeps every wrapper defined directly in Python while preserving the fluent chaining ergonomics outlined for typed namespaces.【F:docs/duckdb_function_module_audit.md†L42-L74】
+2. Aggregate families will live in `duckplus/functions/aggregate/` (statistics, quantiles, approximation, arg-extrema), while scalar helpers split across `duckplus/functions/scalar/` subpackages for math, datetime, strings, JSON, and collection tooling so decorators still register behaviour at import time.【F:docs/duckdb_function_module_audit.md†L76-L101】
+3. Existing typed API docs and the generator retirement plan already steer contributors toward decorator-backed modules, providing the reference ergonomics for the split.【F:docs/typed_api.md†L11-L16】【F:docs/function_namespace_generator_retirement.md†L3-L55】
+4. Success hinges on moving large helper clusters (e.g. ICU collations, quantiles, regression suites) into those modules without breaking signatures or docstrings; the audit enumerates these hotspots so tests can target them explicitly.【F:docs/duckdb_function_module_audit.md†L24-L74】
+5. Validation continues to require `pytest`, `mypy duckplus`, `uvx`, `pylint duckplus`, and rebuilding docs when the module layout or narrative guidance changes.【F:TODO.md†L96-L110】
+
 ### Active Notes – Replace data-driven registries
 1. Binding helpers directly onto `DuckCon` keeps the fluent method surface intact while dropping the per-instance registry dictionary.
 2. `duckplus.duckcon` now exposes a `duckcon_helper` decorator so `duckplus.io` can attach helpers at import time without late mutation.
@@ -55,7 +62,8 @@ Reorient the function exposure strategy so every helper is defined directly in P
 Adopt a one-function-per-file pattern for DuckDB wrappers where it improves clarity and reuse, enabling decorators to register each function with compatible types during import.
 
 ### Tasks
-- [ ] Audit existing DuckDB function wrappers to determine sensible module boundaries (e.g. aggregates, math, string, date/time).
+- [x] Audit existing DuckDB function wrappers to determine sensible module boundaries (e.g. aggregates, math, string, date/time). *(Captured in `docs/duckdb_function_module_audit.md`.)*
+- [ ] Track window-function coverage; generated namespaces are currently empty and need verification once DuckDB exposes wrappers downstream.【F:docs/duckdb_function_module_audit.md†L18-L26】
 - [ ] Create per-function modules that expose the function implementation and decorate registration with the relevant typed categories.
 - [ ] Provide shared base utilities (e.g. in `duckplus/functions/_base.py`) to hold common decorator logic without reintroducing data-driven registries.
 - [ ] Update import barrels (such as `duckplus/functions/__init__.py`) to expose the decorated functions while keeping import side effects explicit and testable.
