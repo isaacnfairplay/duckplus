@@ -1,4 +1,4 @@
-"""Helpers for inferring :mod:`duckplus.typed.types` from Python values."""
+"""Helpers for inferring :mod:`duckplus.static_typed.types` from Python values."""
 
 from __future__ import annotations
 

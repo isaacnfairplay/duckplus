@@ -24,7 +24,7 @@ from typing import Iterable
 
 from duckplus.duckcon import DuckCon  # pylint: disable=cyclic-import
 from duckplus.relation import Relation  # pylint: disable=cyclic-import
-from duckplus.typed import ducktype
+from duckplus.static_typed import ducktype
 
 __all__ = [
     "TraceabilityDemoData",

@@ -1,7 +1,7 @@
 # Function namespace generator retirement plan
 
 `scripts/generate_function_namespaces.py` still emits the massive
-`duckplus.typed._generated_function_namespaces` module so that static helper
+`duckplus.static_typed._generated_function_namespaces` module so that static helper
 classes can mirror DuckDB's catalog. Now that helpers are registered through
 import-time decorators, we can retire the generator once the per-function
 modules provide complete coverage.

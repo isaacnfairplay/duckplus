@@ -16,8 +16,8 @@ project = "DuckPlus"
 author = "DuckPlus maintainers"
 current_year = _dt.date.today().year
 copyright = f"{current_year}, {author}"
-release = "1.1.6"
-version = "1.1"
+release = "1.3.0"
+version = "1.3"
 
 extensions = [
     "myst_parser",

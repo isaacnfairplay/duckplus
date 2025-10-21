@@ -2,7 +2,7 @@
 
 The prose that lived in :mod:`docs.pi_demo` now resides here so the code is the
 single source of truth.  The helpers show how to combine
-``duckplus.typed`` primitives to generate deterministic projection and
+``duckplus.static_typed`` primitives to generate deterministic projection and
 aggregation SQL while preserving metadata such as dependencies and type
 annotations.  Everything runs without importing DuckDB at module load so the
 example stays friendly to resource-constrained hosts.
@@ -29,8 +29,8 @@ like ``mypy`` can confirm the expression shapes.  Running::
 
 produces output similar to::
 
-    note: Revealed type is "duckplus.typed.expressions.numeric.NumericExpression"
-    note: Revealed type is "duckplus.typed.expressions.numeric.NumericExpression"
+    note: Revealed type is "duckplus.static_typed.expressions.numeric.NumericExpression"
+    note: Revealed type is "duckplus.static_typed.expressions.numeric.NumericExpression"
 
 This gives immediate assurance that downstream helpers receive strongly typed
 expressions with preserved dependencies.
@@ -43,8 +43,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable, Sequence, TYPE_CHECKING
 
-from duckplus.typed import AliasedExpression, NumericExpression, TypedExpression, ducktype
-from duckplus.typed.types import NumericType
+from duckplus.static_typed import AliasedExpression, NumericExpression, TypedExpression, ducktype
+from duckplus.static_typed.types import NumericType
 
 if TYPE_CHECKING:  # pragma: no cover - executed only during type checking
     from typing import reveal_type

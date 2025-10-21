@@ -5,7 +5,7 @@ from decimal import Decimal
 
 import pytest
 
-from duckplus.typed import (
+from duckplus.static_typed import (
     AGGREGATE_FUNCTIONS,
     BooleanExpression,
     ExpressionDependency,

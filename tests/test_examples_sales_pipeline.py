@@ -6,7 +6,7 @@ import pytest
 
 from duckplus.duckcon import DuckCon
 from duckplus.examples import sales_pipeline
-from duckplus.typed import ducktype
+from duckplus.static_typed import ducktype
 
 
 @pytest.fixture()

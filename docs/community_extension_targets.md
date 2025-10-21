@@ -2,7 +2,7 @@
 
 > **Note**
 > A high-level summary for users now ships with the versioned docs at
-> {doc}`versions/1.2/community_extensions <versions/1.2/community_extensions>`.
+> {doc}`versions/1.3/community_extensions <versions/1.3/community_extensions>`.
 
 This planning note summarises the high-priority DuckDB community extensions
 identified for DuckPlus integration and records which pieces of the public API
@@ -13,7 +13,7 @@ are expected to change when each extension is supported.
 | `zipfs` | Virtual filesystem for navigating and reading files stored inside ZIP archives. | `DuckCon` extension loader, `duckplus.io` readers (CSV/Parquet/JSON helpers), relation ingest conveniences. | Add `_load_zipfs()` on `DuckCon` and extend IO helpers to understand archive URIs (e.g. `zip://path::file.csv`). |
 | `yaml` | Table function to ingest YAML documents with schema inference controls. | `DuckCon` extension loader, `duckplus.io` ingestion helpers, typed schema utilities. | Provide `Relation.from_yaml`/`duckplus.io.read_yaml` wrappers plus typed column mapping helpers for nested YAML structures. |
 | `webbed` | HTML and XML extraction via DOM-aware table functions and XPath helpers. | `DuckCon` loader, `duckplus.io` scraping helpers, typed expression functions for XPath/text extraction. | Plan ergonomic wrappers for `read_html`, HTML table flattening, and typed helpers for XPath/css query functions. |
-| `stochastic` | Probability distributions, random sampling, and statistical utility functions. | Typed expression library (`duckplus.typed`), relation transformation helpers. | Surface typed function wrappers (e.g. `ducktype.Numeric.statistical.cdf`) and ensure relation helpers can register stochastic UDF outputs. |
+| `stochastic` | Probability distributions, random sampling, and statistical utility functions. | Typed expression library (`duckplus.static_typed`), relation transformation helpers. | Surface typed function wrappers (e.g. `ducktype.Numeric.statistical.cdf`) and ensure relation helpers can register stochastic UDF outputs. |
 | `msolap` | Connectivity to Microsoft Analysis Services (MSOLAP) cubes through the ADBC bridge. | `DuckCon` loader, IO/connectivity helpers, relation factory for remote datasets. | Offer `_load_msolap()` plus connection helpers that return relations bound to remote cube queries. |
 | `markdown` | Markdown document parser that extracts structured content such as headings and tables. | `DuckCon` loader, `duckplus.io` ingestion helpers, relation transformation utilities. | Add readers for Markdown sections/tables and convenience filters for heading hierarchies. |
 | `miniplot` | ASCII/Unicode plotting utilities driven from DuckDB relations. | Typed expression formatting helpers, relation export utilities. | Provide helpers that render plots from `Relation` selections and wrap miniplot plotting functions within typed expression DSL for configuration. |

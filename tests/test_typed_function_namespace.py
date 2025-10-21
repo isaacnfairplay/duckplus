@@ -9,14 +9,20 @@ import pickle
 
 import pytest
 
-from duckplus.typed import ExpressionDependency
-from duckplus.typed.expression import DuckTypeNamespace, GenericExpression
-from duckplus.typed.expressions import decimal as decimal_module
-from duckplus.typed._generated_function_namespaces import (
+from duckplus.static_typed import ExpressionDependency
+from duckplus.static_typed.expression import DuckTypeNamespace, GenericExpression
+from duckplus.static_typed.expressions import decimal as decimal_module
+from duckplus.static_typed._generated_function_namespaces import (
+    AggregateBlobFunctions,
+    AggregateBooleanFunctions,
     AggregateGenericFunctions,
     AggregateNumericFunctions,
+    AggregateVarcharFunctions,
 )
-from duckplus.typed.functions import _StaticFunctionNamespace, duckdb_function
+from duckplus.static_typed.functions import (
+    _StaticFunctionNamespace,
+    duckdb_function,
+)
 
 
 class _LegacyNamespace(_StaticFunctionNamespace[GenericExpression]):
@@ -123,8 +129,8 @@ def test_aggregate_namespace_methods_are_introspectable() -> None:
     namespace = AggregateNumericFunctions()
     method = type(namespace).__dict__["arg_max"]
 
-    assert method.__module__.startswith("duckplus.typed._generated_function_namespaces")
-    assert method.__qualname__.startswith("AggregateNumericFunctions.")
+    assert method.__module__ == "duckplus.functions.aggregate.arg_extrema"
+    assert method.__qualname__ == "arg_max"
 
     doc = inspect.getdoc(method)
     assert doc and "Call DuckDB function ``arg_max``." in doc
@@ -156,6 +162,292 @@ def test_aggregate_approximation_helpers_are_module_scoped() -> None:
     assert filter_doc and "HyperLogLog" in filter_doc
 
 
+def test_boolean_aggregate_helpers_are_module_scoped() -> None:
+    namespace = AggregateBooleanFunctions()
+
+    bool_and_method = type(namespace).__dict__["bool_and"]
+    assert bool_and_method.__module__ == "duckplus.functions.aggregate.boolean"
+    bool_and_doc = inspect.getdoc(bool_and_method)
+    assert bool_and_doc and "every input value is TRUE" in bool_and_doc
+
+    bool_or_filter = type(namespace).__dict__["bool_or_filter"]
+    assert bool_or_filter.__module__ == "duckplus.functions.aggregate.boolean"
+    bool_or_filter_doc = inspect.getdoc(bool_or_filter)
+    assert bool_or_filter_doc and "any input value is TRUE" in bool_or_filter_doc
+
+    max_method = type(namespace).__dict__["max"]
+    assert max_method.__module__ == "duckplus.functions.aggregate.extrema"
+    max_doc = inspect.getdoc(max_method)
+    assert max_doc and "maximum value present" in max_doc
+
+    min_filter_method = type(namespace).__dict__["min_filter"]
+    assert min_filter_method.__module__ == (
+        "duckplus.functions.aggregate.extrema"
+    )
+    min_filter_doc = inspect.getdoc(min_filter_method)
+    assert min_filter_doc and "minimum value present" in min_filter_doc
+
+
+def test_counting_aggregate_helpers_are_module_scoped() -> None:
+    namespace = AggregateNumericFunctions()
+
+    count_method = type(namespace).__dict__["count"]
+    assert count_method.__module__ == "duckplus.functions.aggregate.counting"
+    count_doc = inspect.getdoc(count_method)
+    assert count_doc and "non-NULL values" in count_doc
+
+    count_if_filter = type(namespace).__dict__["count_if_filter"]
+    assert count_if_filter.__module__ == "duckplus.functions.aggregate.counting"
+    count_if_doc = inspect.getdoc(count_if_filter)
+    assert count_if_doc and "TRUE values" in count_if_doc
+
+    count_star = type(namespace).__dict__["count_star"]
+    assert count_star.__module__ == "duckplus.functions.aggregate.counting"
+    count_star_doc = inspect.getdoc(count_star)
+    assert count_star_doc and "count_star" in count_star_doc
+
+
+def test_bitwise_aggregate_helpers_are_module_scoped() -> None:
+    namespace = AggregateNumericFunctions()
+
+    bit_and_method = type(namespace).__dict__["bit_and"]
+    assert bit_and_method.__module__ == "duckplus.functions.aggregate.bitwise"
+    bit_and_doc = inspect.getdoc(bit_and_method)
+    assert bit_and_doc and "bitwise AND" in bit_and_doc
+
+    bit_xor_filter = type(namespace).__dict__["bit_xor_filter"]
+    assert bit_xor_filter.__module__ == "duckplus.functions.aggregate.bitwise"
+    bit_xor_doc = inspect.getdoc(bit_xor_filter)
+    assert bit_xor_doc and "bitwise XOR" in bit_xor_doc
+
+
+def test_statistical_aggregate_helpers_are_module_scoped() -> None:
+    namespace = AggregateNumericFunctions()
+
+    skewness_method = type(namespace).__dict__["skewness"]
+    assert skewness_method.__module__ == "duckplus.functions.aggregate.statistics"
+    skewness_doc = inspect.getdoc(skewness_method)
+    assert skewness_doc and "skewness of all input values" in skewness_doc
+
+    skewness_filter = type(namespace).__dict__["skewness_filter"]
+    assert skewness_filter.__module__ == "duckplus.functions.aggregate.statistics"
+    skewness_filter_doc = inspect.getdoc(skewness_filter)
+    assert skewness_filter_doc and "skewness of all input values" in skewness_filter_doc
+
+
+def test_regression_aggregate_helpers_are_module_scoped() -> None:
+    namespace = AggregateNumericFunctions()
+
+    covar_pop_method = type(namespace).__dict__["covar_pop"]
+    assert covar_pop_method.__module__ == "duckplus.functions.aggregate.regression"
+    covar_pop_doc = inspect.getdoc(covar_pop_method)
+    assert covar_pop_doc and "population covariance" in covar_pop_doc
+
+    regr_avgx_method = type(namespace).__dict__["regr_avgx"]
+    assert regr_avgx_method.__module__ == "duckplus.functions.aggregate.regression"
+    regr_avgx_doc = inspect.getdoc(regr_avgx_method)
+    assert regr_avgx_doc and "independent variable" in regr_avgx_doc
+
+    regr_count_filter_method = type(namespace).__dict__["regr_count_filter"]
+    assert regr_count_filter_method.__module__ == (
+        "duckplus.functions.aggregate.regression"
+    )
+    regr_count_doc = inspect.getdoc(regr_count_filter_method)
+    assert regr_count_doc and "non-NULL number pairs" in regr_count_doc
+
+    regr_sxy_method = type(namespace).__dict__["regr_sxy"]
+    assert regr_sxy_method.__module__ == "duckplus.functions.aggregate.regression"
+    regr_sxy_doc = inspect.getdoc(regr_sxy_method)
+    assert regr_sxy_doc and "population covariance" in regr_sxy_doc
+
+
+def test_generic_aggregate_helpers_are_module_scoped() -> None:
+    namespace = AggregateGenericFunctions()
+
+    any_value_method = type(namespace).__dict__["any_value"]
+    assert any_value_method.__module__ == "duckplus.functions.aggregate.generic"
+    any_value_doc = inspect.getdoc(any_value_method)
+    assert any_value_doc and "first non-NULL value" in any_value_doc
+
+    any_value_filter = type(namespace).__dict__["any_value_filter"]
+    assert any_value_filter.__module__ == "duckplus.functions.aggregate.generic"
+    any_value_filter_doc = inspect.getdoc(any_value_filter)
+    assert any_value_filter_doc and "first non-NULL value" in any_value_filter_doc
+
+    list_method = type(namespace).__dict__["list"]
+    assert list_method.__module__ == "duckplus.functions.aggregate.list"
+    list_doc = inspect.getdoc(list_method)
+    assert list_doc and "LIST containing all the values" in list_doc
+
+    list_filter_method = type(namespace).__dict__["list_filter"]
+    assert list_filter_method.__module__ == "duckplus.functions.aggregate.list"
+    list_filter_doc = inspect.getdoc(list_filter_method)
+    assert list_filter_doc and "LIST containing all the values" in list_filter_doc
+
+    map_method = type(namespace).__dict__["map"]
+    assert map_method.__module__ == "duckplus.functions.aggregate.map"
+    map_doc = inspect.getdoc(map_method)
+    assert map_doc and "Creates a map from a set of keys and values" in map_doc
+
+    median_method = type(namespace).__dict__["median"]
+    assert median_method.__module__ == "duckplus.functions.aggregate.median"
+    median_doc = inspect.getdoc(median_method)
+    assert median_doc and "middle value of the set" in median_doc
+
+    median_filter_method = type(namespace).__dict__["median_filter"]
+    assert median_filter_method.__module__ == "duckplus.functions.aggregate.median"
+    median_filter_doc = inspect.getdoc(median_filter_method)
+    assert median_filter_doc and "middle value of the set" in median_filter_doc
+
+    mode_method = type(namespace).__dict__["mode"]
+    assert mode_method.__module__ == "duckplus.functions.aggregate.mode"
+    mode_doc = inspect.getdoc(mode_method)
+    assert mode_doc and "most frequent value" in mode_doc
+
+    mode_filter_method = type(namespace).__dict__["mode_filter"]
+    assert mode_filter_method.__module__ == "duckplus.functions.aggregate.mode"
+    mode_filter_doc = inspect.getdoc(mode_filter_method)
+    assert mode_filter_doc and "most frequent value" in mode_filter_doc
+
+    bitstring_method = type(namespace).__dict__["bitstring_agg"]
+    assert bitstring_method.__module__ == "duckplus.functions.aggregate.bitstring"
+    bitstring_doc = inspect.getdoc(bitstring_method)
+    assert bitstring_doc and "bitstring with bits set" in bitstring_doc
+
+    bitstring_filter_method = type(namespace).__dict__["bitstring_agg_filter"]
+    assert (
+        bitstring_filter_method.__module__
+        == "duckplus.functions.aggregate.bitstring"
+    )
+    bitstring_filter_doc = inspect.getdoc(bitstring_filter_method)
+    assert bitstring_filter_doc and "bitstring with bits set" in bitstring_filter_doc
+
+    first_method = type(namespace).__dict__["first"]
+    assert first_method.__module__ == "duckplus.functions.aggregate.ordering"
+    first_doc = inspect.getdoc(first_method)
+    assert first_doc and "first value (NULL or non-NULL)" in first_doc
+
+    first_filter_method = type(namespace).__dict__["first_filter"]
+    assert first_filter_method.__module__ == "duckplus.functions.aggregate.ordering"
+    first_filter_doc = inspect.getdoc(first_filter_method)
+    assert first_filter_doc and "first value (NULL or non-NULL)" in first_filter_doc
+
+    avg_method = type(namespace).__dict__["avg"]
+    assert avg_method.__module__ == "duckplus.functions.aggregate.averages"
+    avg_doc = inspect.getdoc(avg_method)
+    assert avg_doc and "average value" in avg_doc
+
+    avg_filter_method = type(namespace).__dict__["avg_filter"]
+    assert avg_filter_method.__module__ == "duckplus.functions.aggregate.averages"
+    avg_filter_doc = inspect.getdoc(avg_filter_method)
+    assert avg_filter_doc and "average value" in avg_filter_doc
+
+    mean_method = type(namespace).__dict__["mean"]
+    assert mean_method.__module__ == "duckplus.functions.aggregate.averages"
+    mean_doc = inspect.getdoc(mean_method)
+    assert mean_doc and "average value" in mean_doc
+
+    mean_filter_method = type(namespace).__dict__["mean_filter"]
+    assert mean_filter_method.__module__ == "duckplus.functions.aggregate.averages"
+    mean_filter_doc = inspect.getdoc(mean_filter_method)
+    assert mean_filter_doc and "average value" in mean_filter_doc
+
+    sum_method = type(namespace).__dict__["sum"]
+    assert sum_method.__module__ == "duckplus.functions.aggregate.summation"
+    sum_doc = inspect.getdoc(sum_method)
+    assert sum_doc and "Calculates the sum value" in sum_doc
+
+    sum_filter_method = type(namespace).__dict__["sum_filter"]
+    assert sum_filter_method.__module__ == "duckplus.functions.aggregate.summation"
+    sum_filter_doc = inspect.getdoc(sum_filter_method)
+    assert sum_filter_doc and "Calculates the sum value" in sum_filter_doc
+
+    max_method = type(namespace).__dict__["max"]
+    assert max_method.__module__ == "duckplus.functions.aggregate.extrema"
+    max_doc = inspect.getdoc(max_method)
+    assert max_doc and "maximum value present" in max_doc
+
+    min_filter_method = type(namespace).__dict__["min_filter"]
+    assert min_filter_method.__module__ == (
+        "duckplus.functions.aggregate.extrema"
+    )
+    min_filter_doc = inspect.getdoc(min_filter_method)
+    assert min_filter_doc and "minimum value present" in min_filter_doc
+
+
+def test_varchar_string_aggregate_helpers_are_module_scoped() -> None:
+    namespace = AggregateVarcharFunctions()
+
+    string_agg_method = type(namespace).__dict__["string_agg"]
+    assert string_agg_method.__module__ == "duckplus.functions.aggregate.string"
+    string_agg_doc = inspect.getdoc(string_agg_method)
+    assert string_agg_doc and "optional separator" in string_agg_doc
+
+    string_agg_filter_method = type(namespace).__dict__["string_agg_filter"]
+    assert (
+        string_agg_filter_method.__module__
+        == "duckplus.functions.aggregate.string"
+    )
+    string_agg_filter_doc = inspect.getdoc(string_agg_filter_method)
+    assert string_agg_filter_doc and "optional separator" in string_agg_filter_doc
+
+    max_method = type(namespace).__dict__["max"]
+    assert max_method.__module__ == "duckplus.functions.aggregate.extrema"
+    max_doc = inspect.getdoc(max_method)
+    assert max_doc and "maximum value present" in max_doc
+
+    min_filter_method = type(namespace).__dict__["min_filter"]
+    assert min_filter_method.__module__ == (
+        "duckplus.functions.aggregate.extrema"
+    )
+    min_filter_doc = inspect.getdoc(min_filter_method)
+    assert min_filter_doc and "minimum value present" in min_filter_doc
+
+
+def test_numeric_summation_helpers_are_module_scoped() -> None:
+    namespace = AggregateNumericFunctions()
+
+    avg_method = type(namespace).__dict__["avg"]
+    assert avg_method.__module__ == "duckplus.functions.aggregate.averages"
+    avg_doc = inspect.getdoc(avg_method)
+    assert avg_doc and "average value" in avg_doc
+
+    avg_filter_method = type(namespace).__dict__["avg_filter"]
+    assert avg_filter_method.__module__ == "duckplus.functions.aggregate.averages"
+    avg_filter_doc = inspect.getdoc(avg_filter_method)
+    assert avg_filter_doc and "average value" in avg_filter_doc
+
+    mean_method = type(namespace).__dict__["mean"]
+    assert mean_method.__module__ == "duckplus.functions.aggregate.averages"
+    mean_doc = inspect.getdoc(mean_method)
+    assert mean_doc and "average value" in mean_doc
+
+    mean_filter_method = type(namespace).__dict__["mean_filter"]
+    assert mean_filter_method.__module__ == "duckplus.functions.aggregate.averages"
+    mean_filter_doc = inspect.getdoc(mean_filter_method)
+    assert mean_filter_doc and "average value" in mean_filter_doc
+
+    sum_method = type(namespace).__dict__["sum"]
+    assert sum_method.__module__ == "duckplus.functions.aggregate.summation"
+    sum_doc = inspect.getdoc(sum_method)
+    assert sum_doc and "Calculates the sum value" in sum_doc
+
+    sum_filter_method = type(namespace).__dict__["sum_filter"]
+    assert sum_filter_method.__module__ == "duckplus.functions.aggregate.summation"
+    sum_filter_doc = inspect.getdoc(sum_filter_method)
+    assert sum_filter_doc and "Calculates the sum value" in sum_filter_doc
+
+    product_method = type(namespace).__dict__["product"]
+    assert product_method.__module__ == "duckplus.functions.aggregate.summation"
+    product_doc = inspect.getdoc(product_method)
+    assert product_doc and "Calculates the product" in product_doc
+
+    product_filter_method = type(namespace).__dict__["product_filter"]
+    assert product_filter_method.__module__ == "duckplus.functions.aggregate.summation"
+    product_filter_doc = inspect.getdoc(product_filter_method)
+    assert product_filter_doc and "Calculates the product" in product_filter_doc
+
+
 def test_generic_approximation_helpers_are_module_scoped() -> None:
     namespace = AggregateGenericFunctions()
 
@@ -183,6 +475,202 @@ def test_generic_approximation_helpers_are_module_scoped() -> None:
     assert histogram_exact_method.__module__ == "duckplus.functions.aggregate.approximation"
     histogram_exact_doc = inspect.getdoc(histogram_exact_method)
     assert histogram_exact_doc and "matching the buckets exactly" in histogram_exact_doc
+
+
+def test_generic_quantile_helpers_are_module_scoped() -> None:
+    namespace = AggregateGenericFunctions()
+
+    quantile_method = type(namespace).__dict__["quantile"]
+    assert quantile_method.__module__ == "duckplus.functions.aggregate.quantiles"
+    quantile_doc = inspect.getdoc(quantile_method)
+    assert quantile_doc and "exact quantile number between 0 and 1" in quantile_doc
+
+    quantile_filter_method = type(namespace).__dict__["quantile_filter"]
+    assert quantile_filter_method.__module__ == "duckplus.functions.aggregate.quantiles"
+    quantile_filter_doc = inspect.getdoc(quantile_filter_method)
+    assert quantile_filter_doc and "exact quantile number between 0 and 1" in quantile_filter_doc
+
+    quantile_cont_method = type(namespace).__dict__["quantile_cont"]
+    assert quantile_cont_method.__module__ == "duckplus.functions.aggregate.quantiles"
+    quantile_cont_doc = inspect.getdoc(quantile_cont_method)
+    assert quantile_cont_doc and "interpolated quantile number between 0 and 1" in quantile_cont_doc
+
+    quantile_cont_filter_method = type(namespace).__dict__["quantile_cont_filter"]
+    assert quantile_cont_filter_method.__module__ == "duckplus.functions.aggregate.quantiles"
+    quantile_cont_filter_doc = inspect.getdoc(quantile_cont_filter_method)
+    assert (
+        quantile_cont_filter_doc
+        and "interpolated quantile number between 0 and 1"
+        in quantile_cont_filter_doc
+    )
+
+    quantile_disc_method = type(namespace).__dict__["quantile_disc"]
+    assert quantile_disc_method.__module__ == "duckplus.functions.aggregate.quantiles"
+    quantile_disc_doc = inspect.getdoc(quantile_disc_method)
+    assert quantile_disc_doc and "exact quantile number between 0 and 1" in quantile_disc_doc
+
+    quantile_disc_filter_method = type(namespace).__dict__["quantile_disc_filter"]
+    assert quantile_disc_filter_method.__module__ == "duckplus.functions.aggregate.quantiles"
+    quantile_disc_filter_doc = inspect.getdoc(quantile_disc_filter_method)
+    assert (
+        quantile_disc_filter_doc
+        and "exact quantile number between 0 and 1"
+        in quantile_disc_filter_doc
+    )
+
+
+def test_blob_arg_extrema_helpers_are_module_scoped() -> None:
+    namespace = AggregateBlobFunctions()
+
+    arg_max_method = type(namespace).__dict__["arg_max"]
+    assert arg_max_method.__module__ == "duckplus.functions.aggregate.arg_extrema"
+    arg_max_doc = inspect.getdoc(arg_max_method)
+    assert arg_max_doc and "maximum val" in arg_max_doc
+
+    arg_min_null_filter = type(namespace).__dict__["arg_min_null_filter"]
+    assert arg_min_null_filter.__module__ == "duckplus.functions.aggregate.arg_extrema"
+    arg_min_null_filter_doc = inspect.getdoc(arg_min_null_filter)
+    assert arg_min_null_filter_doc and "minimum val" in arg_min_null_filter_doc
+
+
+def test_blob_extremum_by_value_helpers_are_module_scoped() -> None:
+    namespace = AggregateBlobFunctions()
+
+    max_by_method = type(namespace).__dict__["max_by"]
+    assert max_by_method.__module__ == (
+        "duckplus.functions.aggregate.extremum_by_value"
+    )
+    max_by_doc = inspect.getdoc(max_by_method)
+    assert max_by_doc and "maximum val" in max_by_doc
+
+    min_by_filter_method = type(namespace).__dict__["min_by_filter"]
+    assert min_by_filter_method.__module__ == (
+        "duckplus.functions.aggregate.extremum_by_value"
+    )
+    min_by_filter_doc = inspect.getdoc(min_by_filter_method)
+    assert min_by_filter_doc and "minimum val" in min_by_filter_doc
+
+    max_method = type(namespace).__dict__["max"]
+    assert max_method.__module__ == "duckplus.functions.aggregate.extrema"
+    max_doc = inspect.getdoc(max_method)
+    assert max_doc and "maximum value present" in max_doc
+
+    min_filter_method = type(namespace).__dict__["min_filter"]
+    assert min_filter_method.__module__ == (
+        "duckplus.functions.aggregate.extrema"
+    )
+    min_filter_doc = inspect.getdoc(min_filter_method)
+    assert min_filter_doc and "minimum value present" in min_filter_doc
+
+
+def test_varchar_arg_extrema_helpers_are_module_scoped() -> None:
+    namespace = AggregateVarcharFunctions()
+
+    arg_max_method = type(namespace).__dict__["arg_max"]
+    assert arg_max_method.__module__ == "duckplus.functions.aggregate.arg_extrema"
+    arg_max_doc = inspect.getdoc(arg_max_method)
+    assert arg_max_doc and "maximum val" in arg_max_doc
+
+    arg_min_null_filter = type(namespace).__dict__["arg_min_null_filter"]
+    assert arg_min_null_filter.__module__ == "duckplus.functions.aggregate.arg_extrema"
+    arg_min_null_filter_doc = inspect.getdoc(arg_min_null_filter)
+    assert arg_min_null_filter_doc and "minimum val" in arg_min_null_filter_doc
+
+
+def test_varchar_extremum_by_value_helpers_are_module_scoped() -> None:
+    namespace = AggregateVarcharFunctions()
+
+    max_by_method = type(namespace).__dict__["max_by"]
+    assert max_by_method.__module__ == (
+        "duckplus.functions.aggregate.extremum_by_value"
+    )
+    max_by_doc = inspect.getdoc(max_by_method)
+    assert max_by_doc and "maximum val" in max_by_doc
+
+    min_by_filter_method = type(namespace).__dict__["min_by_filter"]
+    assert min_by_filter_method.__module__ == (
+        "duckplus.functions.aggregate.extremum_by_value"
+    )
+    min_by_filter_doc = inspect.getdoc(min_by_filter_method)
+    assert min_by_filter_doc and "minimum val" in min_by_filter_doc
+
+    max_method = type(namespace).__dict__["max"]
+    assert max_method.__module__ == "duckplus.functions.aggregate.extrema"
+    max_doc = inspect.getdoc(max_method)
+    assert max_doc and "maximum value present" in max_doc
+
+    min_filter_method = type(namespace).__dict__["min_filter"]
+    assert min_filter_method.__module__ == (
+        "duckplus.functions.aggregate.extrema"
+    )
+    min_filter_doc = inspect.getdoc(min_filter_method)
+    assert min_filter_doc and "minimum value present" in min_filter_doc
+
+
+def test_numeric_arg_extrema_helpers_are_module_scoped() -> None:
+    namespace = AggregateNumericFunctions()
+
+    arg_max_method = type(namespace).__dict__["arg_max"]
+    assert arg_max_method.__module__ == "duckplus.functions.aggregate.arg_extrema"
+    arg_max_doc = inspect.getdoc(arg_max_method)
+    assert arg_max_doc and "maximum val" in arg_max_doc
+
+    arg_min_null_filter = type(namespace).__dict__["arg_min_null_filter"]
+    assert arg_min_null_filter.__module__ == "duckplus.functions.aggregate.arg_extrema"
+    arg_min_null_filter_doc = inspect.getdoc(arg_min_null_filter)
+    assert arg_min_null_filter_doc and "minimum val" in arg_min_null_filter_doc
+
+
+def test_numeric_extremum_by_value_helpers_are_module_scoped() -> None:
+    namespace = AggregateNumericFunctions()
+
+    max_by_method = type(namespace).__dict__["max_by"]
+    assert max_by_method.__module__ == (
+        "duckplus.functions.aggregate.extremum_by_value"
+    )
+    max_by_doc = inspect.getdoc(max_by_method)
+    assert max_by_doc and "maximum val" in max_by_doc
+
+    min_by_filter_method = type(namespace).__dict__["min_by_filter"]
+    assert min_by_filter_method.__module__ == (
+        "duckplus.functions.aggregate.extremum_by_value"
+    )
+    min_by_filter_doc = inspect.getdoc(min_by_filter_method)
+    assert min_by_filter_doc and "minimum val" in min_by_filter_doc
+
+
+def test_generic_arg_extrema_helpers_are_module_scoped() -> None:
+    namespace = AggregateGenericFunctions()
+
+    arg_max_method = type(namespace).__dict__["arg_max"]
+    assert arg_max_method.__module__ == "duckplus.functions.aggregate.arg_extrema"
+    arg_max_doc = inspect.getdoc(arg_max_method)
+    assert arg_max_doc and "maximum val" in arg_max_doc
+    assert "ANY[]" in arg_max_doc
+
+    arg_min_null_filter = type(namespace).__dict__["arg_min_null_filter"]
+    assert arg_min_null_filter.__module__ == "duckplus.functions.aggregate.arg_extrema"
+    arg_min_null_filter_doc = inspect.getdoc(arg_min_null_filter)
+    assert arg_min_null_filter_doc and "minimum val" in arg_min_null_filter_doc
+
+
+def test_generic_extremum_by_value_helpers_are_module_scoped() -> None:
+    namespace = AggregateGenericFunctions()
+
+    max_by_method = type(namespace).__dict__["max_by"]
+    assert max_by_method.__module__ == (
+        "duckplus.functions.aggregate.extremum_by_value"
+    )
+    max_by_doc = inspect.getdoc(max_by_method)
+    assert max_by_doc and "maximum val" in max_by_doc
+    assert "ANY[]" in max_by_doc
+
+    min_by_filter_method = type(namespace).__dict__["min_by_filter"]
+    assert min_by_filter_method.__module__ == (
+        "duckplus.functions.aggregate.extremum_by_value"
+    )
+    min_by_filter_doc = inspect.getdoc(min_by_filter_method)
+    assert min_by_filter_doc and "minimum val" in min_by_filter_doc
 
 
 def test_numeric_quantile_helpers_are_module_scoped() -> None:

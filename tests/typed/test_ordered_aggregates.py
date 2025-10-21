@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from duckplus.typed import AGGREGATE_FUNCTIONS
-from duckplus.typed.dependencies import ExpressionDependency
+from duckplus.static_typed import AGGREGATE_FUNCTIONS
+from duckplus.static_typed.dependencies import ExpressionDependency
 
 
 def col_dep(name: str, *, table: str | None = None) -> ExpressionDependency:

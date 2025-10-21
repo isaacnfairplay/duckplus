@@ -12,9 +12,9 @@ codebase so an AI or human teammate can adopt the same defaults quickly.
   types, and dependencies stay validated as you compose pipelines.【F:duckplus/relation.py†L36-L142】【F:duckplus/relation.py†L466-L520】
 - Use `ducktype` factories for any SQL expression; they encode dependencies,
   support aggregates, and drive the `select()` builder without raw strings. The
-  experimental `static_ducktype` namespace exposes the new statically defined
-  API while the legacy `duckplus.typed` module continues to ship unchanged
-  during the migration.【F:duckplus/typed/ducktype.py†L1-L27】【F:duckplus/typed/expressions/numeric.py†L158-L235】【F:duckplus/static_typed/__init__.py†L28-L58】
+  namespace now resolves to the static implementation by default; importing
+  ``duckplus.typed`` still works but emits a deprecation warning that points to
+  :mod:`duckplus.static_typed`.【F:duckplus/static_typed/__init__.py†L1-L111】【F:duckplus/typed/__init__.py†L1-L60】
 - Reach for the domain-organised helpers in :mod:`duckplus.functions` when you
   need typed wrappers for DuckDB's approximation aggregates. Modules such as
   ``duckplus.functions.aggregate.approximation`` register their helpers via
@@ -31,9 +31,9 @@ codebase so an AI or human teammate can adopt the same defaults quickly.
 | --- | --- | --- |
 | `duckplus/duckcon.py` | Connection lifecycle | Extension discovery, decorator-driven helper binding, strict context usage.【F:duckplus/duckcon.py†L35-L214】 |
 | `duckplus/relation.py` | Immutable relational DSL | Column/type caching, dependency validation, pandas/arrow/polars sampling.【F:duckplus/relation.py†L36-L231】 |
-| `duckplus/typed/` | Legacy expression factories | Namespace-driven expression builders, aggregate factories, dependency graphs, decorator-managed decimal helpers.【F:duckplus/typed/ducktype.py†L1-L27】【F:duckplus/typed/expressions/generic.py†L17-L135】【F:duckplus/typed/expressions/decimal.py†L1-L94】 |
+| `duckplus/static_typed/` | Primary typed expressions | Statically defined typed expressions backed by the production factories, aggregate helpers, and SELECT builder.【F:duckplus/static_typed/__init__.py†L1-L111】【F:duckplus/static_typed/expression.py†L1-L275】 |
+| `duckplus/typed/` | Deprecated alias | Thin wrapper that re-exports :mod:`duckplus.static_typed` while emitting a deprecation warning for downstream callers.【F:duckplus/typed/__init__.py†L1-L60】 |
 | `duckplus/functions/aggregate/` | DuckDB aggregate helpers | Decorator-registered wrappers with side-effect imports that expose approximation suites directly from Python modules.【F:duckplus/functions/aggregate/__init__.py†L1-L46】【F:duckplus/functions/aggregate/approximation.py†L1-L200】 |
-| `duckplus/static_typed/` | Experimental static expressions | Statically defined typed expressions, explicit casts, and window helpers for migration adopters.【F:duckplus/static_typed/expressions.py†L1-L292】【F:duckplus/static_typed/casting.py†L1-L63】 |
 | `duckplus/io/` | File readers | Normalised options, identifier quoting, connection guards for CSV/Parquet/JSON.【F:duckplus/io/__init__.py†L1-L194】 |
 | `duckplus/schema.py` | Schema diff tooling | Drift detection with warnings plus file-based comparisons.【F:duckplus/schema.py†L1-L140】 |
 | `duckplus/table.py` | Managed inserts | Cross-relation guardrails, automatic create/overwrite handling.【F:duckplus/table.py†L1-L64】 |
@@ -49,9 +49,9 @@ codebase so an AI or human teammate can adopt the same defaults quickly.
 3. **Typed Expressions over Strings** – Build SQL fragments through `ducktype`
    factories. They know their upstream column dependencies, which lets helpers
    detect missing columns and surface precise errors at composition time instead
-   of deferring to DuckDB runtime failures. Adopt the experimental
-   `static_ducktype` namespace to opt into the statically defined API while the
-   legacy module remains available.【F:duckplus/relation.py†L466-L520】【F:duckplus/typed/ducktype.py†L1-L27】【F:duckplus/static_typed/__init__.py†L28-L58】
+   of deferring to DuckDB runtime failures. Importing :mod:`duckplus.static_typed`
+   yields the canonical namespace, and `duckplus.typed` redirects there with a
+   deprecation warning.【F:duckplus/relation.py†L466-L520】【F:duckplus/typed/__init__.py†L1-L60】
 4. **Helper Registration Beats Raw SQL** – Use `DuckCon.register_helper` for I/O
    or custom routines so callers can invoke them through `apply_helper` without
    re-plumbing connections. Core helpers like `read_csv`, `read_parquet`, and

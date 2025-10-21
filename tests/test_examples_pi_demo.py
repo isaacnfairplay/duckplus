@@ -5,7 +5,7 @@ import builtins
 import pytest
 
 from duckplus.examples import pi_demo
-from duckplus.typed import ExpressionDependency
+from duckplus.static_typed import ExpressionDependency
 
 
 def test_build_circle_expressions_uses_numeric_dependencies() -> None:

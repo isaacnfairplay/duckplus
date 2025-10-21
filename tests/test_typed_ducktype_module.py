@@ -1,4 +1,4 @@
-"""Regression tests for the ``duckplus.typed.ducktype`` convenience module."""
+"""Regression tests for the ``duckplus.static_typed.ducktype`` convenience module."""
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ from duckplus import (
     ducktype as top_level_ducktype,
     select as top_level_select,
 )
-from duckplus.typed.ducktype import (
+from duckplus.static_typed.ducktype import (
     Blob,
     Boolean,
     Date,
@@ -55,9 +55,14 @@ from duckplus.typed.ducktype import (
     ducktype,
     select,
 )
-from duckplus.typed.expression import DuckTypeNamespace
-from duckplus.typed.expression import ducktype as expression_ducktype
-from duckplus.typed.types import IntegerType, NumericType, TemporalType, VarcharType
+from duckplus.static_typed.expression import DuckTypeNamespace
+from duckplus.static_typed.expression import ducktype as expression_ducktype
+from duckplus.static_typed.types import (
+    IntegerType,
+    NumericType,
+    TemporalType,
+    VarcharType,
+)
 
 
 def test_ducktype_module_re_exports_namespace() -> None:

@@ -2,15 +2,15 @@
 
 > **Note**
 > Updated typed expression documentation is hosted at
-> {doc}`versions/1.2/core/typed_expressions <versions/1.2/core/typed_expressions>`.
-> The full DuckDB function catalog for DuckPlus 1.2 is available at
-> {doc}`versions/1.2/api/typed/function_catalog <versions/1.2/api/typed/function_catalog>`.
+> {doc}`versions/1.3/core/typed_expressions <versions/1.3/core/typed_expressions>`.
+> The full DuckDB function catalog for DuckPlus 1.3 is available at
+> {doc}`versions/1.3/api/typed/function_catalog <versions/1.3/api/typed/function_catalog>`.
 
 DuckPlus exposes a typed expression builder that mirrors DuckDB's type system. Expressions record their DuckDB type metadata and column or table dependencies so downstream helpers can validate usage across complex queries.
 
 ```{tip}
 Typed helpers register through normal Python imports. Decorators such as
-:func:`duckplus.typed.functions.duckdb_function` attach each helper to its
+:func:`duckplus.static_typed.functions.duckdb_function` attach each helper to its
 namespace class during module import, keeping IDEs and documentation aligned
 with the runtime objects. Avoid adding new registry dictionaries—prefer explicit
 methods or mixins instead.
@@ -47,9 +47,9 @@ blob_literal = ducktype.Blob.literal(b"\x00\xFF")
 ```
 
 Numeric literals automatically tighten their DuckDB type based on the provided value. For example, `ducktype.Numeric.literal(1)` is typed as `UTINYINT` while larger integers flow through progressively wider integer types before falling back to `NUMERIC`. `Decimal` instances capture precision and scale so downstream consumers retain the full metadata.
-Decimal factories live in :mod:`duckplus.typed.expressions.decimal`. The module
+Decimal factories live in :mod:`duckplus.static_typed.expressions.decimal`. The module
 exports every combination and applies the
-:func:`duckplus.typed.expressions.decimal.register_decimal_factories`
+:func:`duckplus.static_typed.expressions.decimal.register_decimal_factories`
 decorator to :class:`DuckTypeNamespace` so helpers bind during class
 definition. Instances automatically expose the full catalog through
 ``decimal_factory_names`` for compatibility with legacy callers.
@@ -226,16 +226,16 @@ expr = ducktype.Numeric("total")
 assert expr.duck_type.render() == "NUMERIC"
 ```
 
-The type objects can be extended for nested types by composing the helpers exposed in `duckplus.typed.types`.
+The type objects can be extended for nested types by composing the helpers exposed in `duckplus.static_typed.types`.
 
 Typed functions validate argument compatibility against the DuckDB type hierarchy. Narrow integer expressions (for example, a `UTINYINT` literal) can satisfy broader parameter slots such as `UINTEGER` or `UBIGINT` thanks to the ordered integer families baked into the type metadata, while incompatible widths raise clear errors during helper invocation.
 
-The full DuckDB function catalog is statically generated into Python source and exposed via the `SCALAR_FUNCTIONS`, `AGGREGATE_FUNCTIONS`, and `WINDOW_FUNCTIONS` namespaces re-exported from `duckplus.typed`. Every helper is a concrete method decorated with `duckdb_function`, which registers the DuckDB identifier (and any symbolic operators) when the module imports. This keeps the API introspectable without relying on runtime-populated registries, and the same data feeds the shipped type stub so completions remain available even without a DuckDB connection.
+The full DuckDB function catalog is statically generated into Python source and exposed via the `SCALAR_FUNCTIONS`, `AGGREGATE_FUNCTIONS`, and `WINDOW_FUNCTIONS` namespaces re-exported from `duckplus.static_typed`. Every helper is a concrete method decorated with `duckdb_function`, which registers the DuckDB identifier (and any symbolic operators) when the module imports. This keeps the API introspectable without relying on runtime-populated registries, and the same data feeds the shipped type stub so completions remain available even without a DuckDB connection.
 
 For callers that previously inspected `_IDENTIFIER_FUNCTIONS` or `_SYMBOLIC_FUNCTIONS` directly, those dictionaries remain populated so legacy discovery code keeps functioning during the decorator transition.
 
 ```python
-from duckplus.typed import SCALAR_FUNCTIONS
+from duckplus.static_typed import SCALAR_FUNCTIONS
 
 lowered = SCALAR_FUNCTIONS.Varchar.lower("customer_name")
 assert lowered.render() == 'lower("customer_name")'

@@ -1,4 +1,4 @@
-"""Ergonomic aliases for the :mod:`duckplus.typed.expression` namespace."""
+"""Ergonomic aliases for the :mod:`duckplus.static_typed.expression` namespace."""
 
 # pylint: disable=invalid-name,wildcard-import,unused-wildcard-import
 

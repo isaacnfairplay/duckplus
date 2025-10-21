@@ -5,8 +5,8 @@ from __future__ import annotations
 from collections.abc import Iterable, Sequence
 from typing import Callable, TypeVar
 
-from duckplus.typed.expression import TypedExpression
-from duckplus.typed.functions import (
+from duckplus.static_typed.expression import TypedExpression
+from duckplus.static_typed.functions import (
     DuckDBFunctionDefinition,
     call_duckdb_filter_function,
     call_duckdb_function,

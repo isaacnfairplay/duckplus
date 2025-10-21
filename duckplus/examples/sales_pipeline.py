@@ -131,9 +131,9 @@ from typing import Iterable
 
 from duckplus.duckcon import DuckCon
 from duckplus.relation import Relation
-from duckplus.typed import ducktype
-from duckplus.typed.expression import TypedExpression
-from duckplus.typed.expressions.numeric import NumericExpression
+from duckplus.static_typed import ducktype
+from duckplus.static_typed.expression import TypedExpression
+from duckplus.static_typed.expressions.numeric import NumericExpression
 
 __all__ = [
     "SalesDemoData",
