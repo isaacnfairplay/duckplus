@@ -12,6 +12,8 @@ from duckplus.static_typed.functions import (
 )
 from duckplus.static_typed.types import parse_type
 
+from ._expression_methods import attach_expression_method
+
 if TYPE_CHECKING:  # pragma: no cover - import cycle guard for type checkers
     from duckplus.static_typed._generated_function_namespaces import (
         ScalarGenericFunctions,
@@ -286,10 +288,12 @@ def _register() -> None:
     """Attach scalar list macro helpers onto the generic namespace."""
 
     from duckplus.static_typed._generated_function_namespaces import (
+        SCALAR_FUNCTIONS,
         ScalarGenericFunctions,
     )
 
     namespace: Any = ScalarGenericFunctions
+    generic_namespace = SCALAR_FUNCTIONS.Generic
 
     namespace._ARRAY_APPEND_SIGNATURES = _ARRAY_APPEND_SIGNATURES
     namespace.array_append = cast(Any, array_append)
@@ -354,6 +358,20 @@ def _register() -> None:
         names=getattr(array_reverse, "__duckdb_identifiers__", ()),
         symbols=getattr(array_reverse, "__duckdb_symbols__", ()),
     )
+
+    attach_expression_method(GenericExpression, generic_namespace, array_append)
+    attach_expression_method(GenericExpression, generic_namespace, array_intersect)
+    attach_expression_method(GenericExpression, generic_namespace, array_pop_back)
+    attach_expression_method(GenericExpression, generic_namespace, array_pop_front)
+    attach_expression_method(
+        GenericExpression,
+        generic_namespace,
+        array_prepend,
+        insert_self_at=1,
+    )
+    attach_expression_method(GenericExpression, generic_namespace, array_push_back)
+    attach_expression_method(GenericExpression, generic_namespace, array_push_front)
+    attach_expression_method(GenericExpression, generic_namespace, array_reverse)
 
 
 # Preserve the original provenance for introspection tests that assert the

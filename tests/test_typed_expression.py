@@ -189,6 +189,13 @@ def test_scalar_varchar_functions_include_macro_split_part() -> None:
     assert expression.dependencies == frozenset()
 
 
+def test_varchar_expression_method_split_part() -> None:
+    expression = ducktype.Varchar("label").split_part(" ", 1)
+    assert isinstance(expression, VarcharExpression)
+    assert expression.render() == "split_part(\"label\", ' ', 1)"
+    assert expression.dependencies == {col_dep("label")}
+
+
 def test_scalar_generic_functions_include_array_append() -> None:
     expression = SCALAR_FUNCTIONS.Generic.array_append(
         ducktype.Generic("items"),
@@ -197,6 +204,54 @@ def test_scalar_generic_functions_include_array_append() -> None:
     assert isinstance(expression, GenericExpression)
     assert expression.render() == "array_append(\"items\", 'new')"
     assert expression.dependencies == {col_dep('items')}
+
+
+def test_generic_expression_method_array_helpers() -> None:
+    array_column = ducktype.Generic("items")
+    second_array = ducktype.Generic("more_items")
+
+    appended = array_column.array_append(ducktype.Varchar.literal("fresh"))
+    assert appended.render() == "array_append(\"items\", 'fresh')"
+
+    intersected = array_column.array_intersect(second_array)
+    assert intersected.render() == 'array_intersect("items", "more_items")'
+
+    popped_back = array_column.array_pop_back()
+    assert popped_back.render() == 'array_pop_back("items")'
+
+    popped_front = array_column.array_pop_front()
+    assert popped_front.render() == 'array_pop_front("items")'
+
+    prepended = array_column.array_prepend(ducktype.Varchar.literal("fresh"))
+    assert prepended.render() == "array_prepend('fresh', \"items\")"
+
+    pushed_back = array_column.array_push_back(ducktype.Varchar.literal("fresh"))
+    assert pushed_back.render() == "array_push_back(\"items\", 'fresh')"
+
+    pushed_front = array_column.array_push_front(ducktype.Varchar.literal("fresh"))
+    assert pushed_front.render() == "array_push_front(\"items\", 'fresh')"
+
+    reversed_array = array_column.array_reverse()
+    assert reversed_array.render() == 'array_reverse("items")'
+
+    assert appended.dependencies == {col_dep("items")}
+    assert popped_back.dependencies == {col_dep("items")}
+    assert popped_front.dependencies == {col_dep("items")}
+    assert prepended.dependencies == {col_dep("items")}
+    assert pushed_back.dependencies == {col_dep("items")}
+    assert pushed_front.dependencies == {col_dep("items")}
+    assert reversed_array.dependencies == {col_dep("items")}
+    assert intersected.dependencies == {col_dep("items"), col_dep("more_items")}
+
+
+def test_generic_expression_method_array_to_string_macros() -> None:
+    array_column = ducktype.Generic("items")
+    joined = array_column.array_to_string(", ")
+    assert joined.render() == "array_to_string(\"items\", ', ')"
+    comma_default = array_column.array_to_string_comma_default(", ")
+    assert comma_default.render() == "array_to_string_comma_default(\"items\", ', ')"
+    assert joined.dependencies == {col_dep("items")}
+    assert comma_default.dependencies == {col_dep("items")}
 
 
 def test_try_cast_returns_numeric_expression() -> None:
