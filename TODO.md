@@ -43,6 +43,15 @@ Answer these before starting any TODO item to confirm scope and alignment with t
 2. The README now points directly at the new modules so the quick-start guidance stays aligned with the package exports while reiterating the decorator-based registration strategy.【F:README.md†L10-L23】
 3. Versioned guides promote the 1.3 documentation tree, keeping quick references (I/O, typed API, schema) pointed at the latest release when future work lands.【F:docs/index.md†L9-L14】【F:docs/io.md†L5-L7】
 
+### Discovery Log – Scalar macro migration (2024-05-26)
+1. Introduced :mod:`duckplus.functions.scalar.string` so ``split_part``, ``array_to_string``, and ``array_to_string_comma_default`` live in decorator-backed helpers that register onto the varchar namespace at import time.【F:duckplus/functions/scalar/string.py†L1-L136】
+2. The scalar barrel mirrors the aggregate package, publishing ``SIDE_EFFECT_MODULES`` so tests can assert the registration surface while top-level imports re-export the helpers.【F:duckplus/functions/scalar/__init__.py†L1-L34】【F:duckplus/functions/__init__.py†L1-L118】
+3. Importing :mod:`duckplus.functions.scalar.string` from :mod:`duckplus.static_typed` guarantees the scalar string macros attach to the typed namespace without relying on prior ``duckplus.functions`` imports, covering the first static-definition bucket.【F:duckplus/static_typed/__init__.py†L5-L54】
+4. Regression tests pin the new module provenance for both the typed namespace and the import barrels, keeping introspection aligned with the Python implementations.【F:tests/test_typed_function_namespace.py†L1-L420】【F:tests/test_function_import_barrels.py†L1-L208】
+5. PostgreSQL privilege macros now live in :mod:`duckplus.functions.scalar.postgres_privilege`, and the boolean overrides expose them through the runtime barrel and typed namespace without relying on generated registries.【F:duckplus/functions/scalar/postgres_privilege.py†L1-L726】【F:duckplus/static_typed/function_overrides/scalar_postgres_privilege.py†L1-L322】【F:tests/test_function_import_barrels.py†L1-L340】【F:tests/test_typed_function_namespace.py†L360-L468】
+6. PostgreSQL visibility macros now ship from :mod:`duckplus.functions.scalar.postgres_visibility`, replacing the generated boolean namespace entries for ``pg_*_is_visible`` and ``pg_has_role`` across both runtime and typed barrels.【F:duckplus/functions/scalar/postgres_visibility.py†L1-L276】【F:duckplus/static_typed/function_overrides/scalar_postgres_visibility.py†L1-L276】【F:tests/test_function_import_barrels.py†L1-L420】【F:tests/test_typed_function_namespace.py†L360-L540】
+- **Progress:** Scalar macro buckets now cover 47 of 130 helpers (~36%) with decorator-backed modules.
+
 ### Discovery Log – Static typed graduation (2024-05-24)
 1. `duckplus.static_typed` now houses the production factories, aggregates, and decimal helpers directly—no proxy modules—so the static namespace is the single source of truth.【F:duckplus/static_typed/__init__.py†L1-L111】【F:duckplus/static_typed/expression.py†L1-L275】
 2. The package root exposes that namespace by default, while the deprecated :mod:`duckplus.typed` wrapper simply redirects to it with a deprecation warning for callers that have not migrated yet.【F:duckplus/__init__.py†L7-L68】【F:duckplus/typed/__init__.py†L1-L60】
@@ -107,9 +116,18 @@ Reorient the function exposure strategy so every helper is defined directly in P
 
 - **Progress:** 20 of 20 aggregate helper families migrated (~100%).
 
+#### Scalar macro migration tracker
+- [x] Ensure scalar string macros load with :mod:`duckplus.static_typed` so they override the generated namespace automatically.【F:duckplus/static_typed/__init__.py†L5-L54】【F:duckplus/functions/scalar/string.py†L1-L136】
+- [x] Migrate scalar list macros (``array_append``, ``array_prepend``, ``array_push_back``, ``array_push_front``, ``array_pop_back``, ``array_pop_front``, ``array_intersect``, ``array_reverse``) onto decorator-backed helpers that register with the generic namespace at import time.【F:duckplus/functions/scalar/list.py†L1-L249】【F:duckplus/static_typed/function_overrides/scalar_generic.py†L1-L249】
+- [x] Migrate catalog/session macros (``current_*``, ``session_user``, ``pg_get_*``, ``pg_size_pretty``, ``pg_typeof``) onto decorator-backed helpers that register with the varchar namespace and preserve DuckDB provenance for typed overrides.【F:duckplus/functions/scalar/system.py†L1-L366】【F:duckplus/static_typed/function_overrides/scalar_system.py†L1-L366】【F:tests/test_function_import_barrels.py†L1-L210】【F:tests/test_typed_function_namespace.py†L360-L440】
+- [x] Migrate PostgreSQL privilege macros (``has_*_privilege``) onto decorator-backed helpers that register with the boolean namespace and mirror typed overrides.【F:duckplus/functions/scalar/postgres_privilege.py†L1-L726】【F:duckplus/static_typed/function_overrides/scalar_postgres_privilege.py†L1-L322】【F:duckplus/functions/scalar/__init__.py†L1-L220】【F:duckplus/functions/__init__.py†L1-L220】【F:tests/test_function_import_barrels.py†L1-L420】【F:tests/test_typed_function_namespace.py†L360-L520】
+- [x] Migrate PostgreSQL visibility macros (``pg_*_is_visible``, ``pg_has_role``) onto decorator-backed helpers that register with the boolean namespace and mirror typed overrides.【F:duckplus/functions/scalar/postgres_visibility.py†L1-L276】【F:duckplus/static_typed/function_overrides/scalar_postgres_visibility.py†L1-L276】【F:duckplus/functions/scalar/__init__.py†L1-L220】【F:duckplus/functions/__init__.py†L1-L220】【F:tests/test_function_import_barrels.py†L1-L420】【F:tests/test_typed_function_namespace.py†L360-L540】
+
+- **Progress:** 5 of 5 scalar macro buckets migrated (~100%).
+
 ### Discovery Log – Release version alignment (2025-10-21)
-1. Update the Sphinx configuration to advertise DuckPlus 1.3.0 so doc builds label the upcoming release correctly.【F:docs/conf.py†L19-L20】
-2. Refresh the version switcher JSON so published sites offer the 1.3.0 guides alongside prior releases and the rolling ``latest`` channel.【F:docs/_static/version_switcher.json†L1-L23】
+1. Update the Sphinx configuration to advertise DuckPlus 1.4.0 so doc builds label the upcoming release correctly.【F:docs/conf.py†L19-L20】
+2. Refresh the version switcher JSON so published sites offer the 1.4.0 guides alongside prior releases and the rolling ``latest`` channel.【F:docs/_static/version_switcher.json†L1-L27】
 3. These adjustments keep the documentation navigation ready for the release without changing the existing quick-start toctrees.【F:docs/index.md†L1-L20】
 
 ## DuckDB Function Module Layout

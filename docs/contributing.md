@@ -17,7 +17,7 @@ signatures straight from the objects we ship.
   :mod:`duckplus.functions` pattern so each helper lives in a regular Python
   module, imports its registration side effects explicitly, and exposes the
   helper through the ``SIDE_EFFECT_MODULES`` tuple for discoverability. The
-  {doc}`versions/1.3/core/function_modules` guide describes the pattern using the
+  {doc}`versions/1.4/core/function_modules` guide describes the pattern using the
   approximation aggregates as a reference implementation.
 - **Prefer module-level definitions.** Helpers, mixins, and expression
   factories should live in standard Python modules so import order alone

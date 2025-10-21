@@ -18,6 +18,9 @@ from duckplus.static_typed._generated_function_namespaces import (
     AggregateGenericFunctions,
     AggregateNumericFunctions,
     AggregateVarcharFunctions,
+    ScalarBooleanFunctions,
+    ScalarGenericFunctions,
+    ScalarVarcharFunctions,
 )
 from duckplus.static_typed.functions import (
     _StaticFunctionNamespace,
@@ -402,6 +405,128 @@ def test_varchar_string_aggregate_helpers_are_module_scoped() -> None:
     )
     min_filter_doc = inspect.getdoc(min_filter_method)
     assert min_filter_doc and "minimum value present" in min_filter_doc
+
+
+def test_varchar_string_macros_are_module_scoped() -> None:
+    namespace = ScalarVarcharFunctions()
+
+    split_part_method = type(namespace).__dict__["split_part"]
+    assert split_part_method.__module__ == "duckplus.functions.scalar.string"
+    split_part_doc = inspect.getdoc(split_part_method)
+    assert split_part_doc and "Split a string" in split_part_doc
+
+    array_to_string_method = type(namespace).__dict__["array_to_string"]
+    assert array_to_string_method.__module__ == "duckplus.functions.scalar.string"
+    array_to_string_doc = inspect.getdoc(array_to_string_method)
+    assert array_to_string_doc and "Join array elements" in array_to_string_doc
+
+    array_to_string_comma_default_method = type(namespace).__dict__[
+        "array_to_string_comma_default"
+    ]
+    assert array_to_string_comma_default_method.__module__ == (
+        "duckplus.functions.scalar.string"
+    )
+    array_to_string_comma_default_doc = inspect.getdoc(
+        array_to_string_comma_default_method
+    )
+    assert (
+        array_to_string_comma_default_doc
+        and "comma separator" in array_to_string_comma_default_doc
+    )
+
+
+def test_varchar_system_macros_are_module_scoped() -> None:
+    namespace = ScalarVarcharFunctions()
+
+    current_catalog_method = type(namespace).__dict__["current_catalog"]
+    assert current_catalog_method.__module__ == (
+        "duckplus.functions.scalar.system"
+    )
+    current_catalog_doc = inspect.getdoc(current_catalog_method)
+    assert current_catalog_doc and "catalog for the active connection" in current_catalog_doc
+
+    current_user_method = type(namespace).__dict__["current_user"]
+    assert current_user_method.__module__ == (
+        "duckplus.functions.scalar.system"
+    )
+    current_user_doc = inspect.getdoc(current_user_method)
+    assert current_user_doc and "authenticated user" in current_user_doc
+
+    pg_get_viewdef_method = type(namespace).__dict__["pg_get_viewdef"]
+    assert pg_get_viewdef_method.__module__ == (
+        "duckplus.functions.scalar.system"
+    )
+    pg_get_viewdef_doc = inspect.getdoc(pg_get_viewdef_method)
+    assert pg_get_viewdef_doc and "SQL definition" in pg_get_viewdef_doc
+
+
+def test_boolean_postgres_privilege_macros_are_module_scoped() -> None:
+    namespace = ScalarBooleanFunctions()
+
+    has_any_column_privilege_method = type(namespace).__dict__["has_any_column_privilege"]
+    assert has_any_column_privilege_method.__module__ == (
+        "duckplus.functions.scalar.postgres_privilege"
+    )
+    has_any_column_privilege_doc = inspect.getdoc(has_any_column_privilege_method)
+    assert (
+        has_any_column_privilege_doc
+        and "column privilege checks" in has_any_column_privilege_doc
+    )
+
+    has_tablespace_privilege_method = type(namespace).__dict__["has_tablespace_privilege"]
+    assert has_tablespace_privilege_method.__module__ == (
+        "duckplus.functions.scalar.postgres_privilege"
+    )
+    has_tablespace_privilege_doc = inspect.getdoc(has_tablespace_privilege_method)
+    assert (
+        has_tablespace_privilege_doc
+        and "tablespace privilege" in has_tablespace_privilege_doc
+    )
+
+
+def test_boolean_postgres_visibility_macros_are_module_scoped() -> None:
+    namespace = ScalarBooleanFunctions()
+
+    pg_collation_is_visible_method = type(namespace).__dict__["pg_collation_is_visible"]
+    assert pg_collation_is_visible_method.__module__ == (
+        "duckplus.functions.scalar.postgres_visibility"
+    )
+    pg_collation_is_visible_doc = inspect.getdoc(pg_collation_is_visible_method)
+    assert (
+        pg_collation_is_visible_doc
+        and "collation identifier is visible" in pg_collation_is_visible_doc
+    )
+
+    pg_has_role_method = type(namespace).__dict__["pg_has_role"]
+    assert pg_has_role_method.__module__ == (
+        "duckplus.functions.scalar.postgres_visibility"
+    )
+    pg_has_role_doc = inspect.getdoc(pg_has_role_method)
+    assert pg_has_role_doc and "role privilege" in pg_has_role_doc
+
+    pg_ts_parser_is_visible_method = type(namespace).__dict__["pg_ts_parser_is_visible"]
+    assert pg_ts_parser_is_visible_method.__module__ == (
+        "duckplus.functions.scalar.postgres_visibility"
+    )
+    pg_ts_parser_is_visible_doc = inspect.getdoc(pg_ts_parser_is_visible_method)
+    assert (
+        pg_ts_parser_is_visible_doc
+        and "parser identifier is visible" in pg_ts_parser_is_visible_doc
+    )
+
+
+def test_generic_array_macros_are_module_scoped() -> None:
+    namespace = ScalarGenericFunctions()
+
+    array_append_method = type(namespace).__dict__["array_append"]
+    assert array_append_method.__module__ == "duckplus.functions.scalar.list"
+    array_append_doc = inspect.getdoc(array_append_method)
+    assert array_append_doc and "Append an element" in array_append_doc
+
+    array_pop_front_method = type(namespace).__dict__["array_pop_front"]
+    assert array_pop_front_method.__module__ == "duckplus.functions.scalar.list"
+    array_pop_front_doc = inspect.getdoc(array_pop_front_method)
+    assert array_pop_front_doc and "Drop the first element" in array_pop_front_doc
 
 
 def test_numeric_summation_helpers_are_module_scoped() -> None:

@@ -2,7 +2,7 @@
 
 > **Note**
 > A high-level summary for users now ships with the versioned docs at
-> {doc}`versions/1.3/community_extensions <versions/1.3/community_extensions>`.
+> {doc}`versions/1.4/community_extensions <versions/1.4/community_extensions>`.
 
 This planning note summarises the high-priority DuckDB community extensions
 identified for DuckPlus integration and records which pieces of the public API

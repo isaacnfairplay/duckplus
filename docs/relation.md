@@ -1,8 +1,8 @@
 # Relation helpers
 
 > **Note**
-> The up-to-date 1.3 documentation lives under
-> {doc}`versions/1.3/core/relations <versions/1.3/core/relations>` in the Sphinx
+> The up-to-date 1.4 documentation lives under
+> {doc}`versions/1.4/core/relations <versions/1.4/core/relations>` in the Sphinx
 > site. This legacy Markdown file is retained for historical reference.
 
 The `duckplus.relation.Relation` wrapper keeps the lightweight DuckDB relation
