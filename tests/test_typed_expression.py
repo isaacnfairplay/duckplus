@@ -178,6 +178,27 @@ def test_varchar_trim_with_literal_characters() -> None:
     assert expression.dependencies == {col_dep('name')}
 
 
+def test_scalar_varchar_functions_include_macro_split_part() -> None:
+    expression = SCALAR_FUNCTIONS.Varchar.split_part(
+        ducktype.Varchar.literal("a-b"),
+        ducktype.Varchar.literal("-"),
+        1,
+    )
+    assert isinstance(expression, VarcharExpression)
+    assert expression.render() == "split_part('a-b', '-', 1)"
+    assert expression.dependencies == frozenset()
+
+
+def test_scalar_generic_functions_include_array_append() -> None:
+    expression = SCALAR_FUNCTIONS.Generic.array_append(
+        ducktype.Generic("items"),
+        ducktype.Varchar.literal("new"),
+    )
+    assert isinstance(expression, GenericExpression)
+    assert expression.render() == "array_append(\"items\", 'new')"
+    assert expression.dependencies == {col_dep('items')}
+
+
 def test_try_cast_returns_numeric_expression() -> None:
     expression = ducktype.Varchar("value").try_cast("INTEGER")
     assert isinstance(expression, NumericExpression)

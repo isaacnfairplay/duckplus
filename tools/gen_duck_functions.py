@@ -47,6 +47,10 @@ _TEMPORAL_BASES: frozenset[str] = frozenset(
 _SEQUENCE_TYPES = (list, tuple)
 
 
+def _quote_identifier(identifier: str) -> str:
+    return f'"{identifier.replace("\"", "\"\"")}"'
+
+
 @dataclass(frozen=True)
 class DuckDBFunctionRecord:
     """Normalised representation of a DuckDB function definition."""
@@ -157,16 +161,19 @@ def family_for_first_param(parameter_types: Sequence[str | None] | None) -> str:
         return "generic"
 
     first = parameter_types[0]
+    if isinstance(first, str):
+        return _family_from_type_spec(first)
     if first is None:
         return "generic"
-    if isinstance(first, str):
-        normalised_first = normalize_type(first)
-    else:
-        normalised_first = normalize_type(str(first))
-    if not normalised_first:
+    return _family_from_type_spec(str(first))
+
+
+def _family_from_type_spec(type_spec: str | None) -> str:
+    normalised = normalize_type(type_spec)
+    if not normalised:
         return "generic"
 
-    base = _root_type(normalised_first)
+    base = _root_type(normalised)
     compact_base = base.replace(" ", "")
 
     if _NUMERIC_BASE_RE.match(compact_base):
@@ -181,6 +188,27 @@ def family_for_first_param(parameter_types: Sequence[str | None] | None) -> str:
         return "boolean"
 
     return "generic"
+
+
+def _infer_macro_return_type(
+    connection: "duckdb.DuckDBPyConnection",
+    schema_name: str,
+    function_name: str,
+    parameter_count: int,
+) -> str | None:
+    qualified_name = f"{_quote_identifier(schema_name)}.{_quote_identifier(function_name)}"
+    arguments = ", ".join("NULL" for _ in range(parameter_count))
+    call = f"{qualified_name}({arguments})" if parameter_count else f"{qualified_name}()"
+    try:
+        result = connection.execute(f"SELECT typeof({call})").fetchone()
+    except Exception:  # pragma: no cover - defensive guard for unexpected macro evaluation errors
+        return None
+    if not result:
+        return None
+    inferred = result[0]
+    if isinstance(inferred, str) and inferred:
+        return inferred.upper()
+    return None
 
 
 def partition_functions(
@@ -269,7 +297,7 @@ def get_functions(
                comment,
                macro_definition
           FROM duckdb_functions()
-         WHERE function_type IN ('scalar', 'aggregate', 'window')
+         WHERE function_type IN ('scalar', 'aggregate', 'window', 'macro')
     """
 
     try:
@@ -320,12 +348,30 @@ def get_functions(
         else:
             normalised_parameters = ()
 
+        schema_name = str(record.get("schema_name"))
+        function_name = str(record.get("function_name"))
+        raw_function_type = str(record.get("function_type"))
+        function_type = "scalar" if raw_function_type == "macro" else raw_function_type
+        raw_return_type = record.get("return_type")
+        if raw_function_type == "macro" and raw_return_type is None:
+            inferred = _infer_macro_return_type(
+                connection,
+                schema_name,
+                function_name,
+                len(normalised_parameters),
+            )
+            raw_return_type = inferred if inferred is not None else None
+        normalised_return_type = normalize_type(raw_return_type)
+        family = family_for_first_param(normalised_parameter_types)
+        if family == "generic":
+            family = _family_from_type_spec(normalised_return_type)
+
         normalised_records.append(
             DuckDBFunctionRecord(
-                schema_name=str(record.get("schema_name")),
-                function_name=str(record.get("function_name")),
-                function_type=str(record.get("function_type")),
-                return_type=normalize_type(record.get("return_type")),
+                schema_name=schema_name,
+                function_name=function_name,
+                function_type=function_type,
+                return_type=normalised_return_type,
                 parameter_types=normalised_parameter_types,
                 parameters=normalised_parameters,
                 varargs=normalize_type(record.get("varargs")),
@@ -334,7 +380,7 @@ def get_functions(
                 macro_definition=(
                     record.get("macro_definition") if isinstance(record.get("macro_definition"), str) else None
                 ),
-                family=family_for_first_param(normalised_parameter_types),
+                family=family,
             )
         )
 

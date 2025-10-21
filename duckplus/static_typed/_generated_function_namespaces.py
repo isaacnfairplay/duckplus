@@ -16,6 +16,7 @@ from .functions import (
     DuckDBFunctionDefinition,
     DuckDBFunctionSignature,
     _StaticFunctionNamespace,
+    duckdb_function,
     call_duckdb_filter_function,
     call_duckdb_function,
 )
@@ -137,6 +138,7 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('arg_max')
     def arg_max(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``arg_max``.
 
@@ -163,6 +165,7 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('arg_max_filter')
     def arg_max_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``arg_max`` with ``FILTER``.
 
@@ -300,6 +303,7 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('arg_max_null')
     def arg_max_null(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``arg_max_null``.
 
@@ -326,6 +330,7 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('arg_max_null_filter')
     def arg_max_null_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``arg_max_null`` with ``FILTER``.
 
@@ -463,6 +468,7 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('arg_min')
     def arg_min(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``arg_min``.
 
@@ -489,6 +495,7 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('arg_min_filter')
     def arg_min_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``arg_min`` with ``FILTER``.
 
@@ -626,6 +633,7 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('arg_min_null')
     def arg_min_null(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``arg_min_null``.
 
@@ -652,6 +660,7 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('arg_min_null_filter')
     def arg_min_null_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``arg_min_null`` with ``FILTER``.
 
@@ -789,6 +798,7 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('argmax')
     def argmax(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``argmax``.
 
@@ -815,6 +825,7 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('argmax_filter')
     def argmax_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``argmax`` with ``FILTER``.
 
@@ -952,6 +963,7 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('argmin')
     def argmin(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``argmin``.
 
@@ -978,6 +990,7 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('argmin_filter')
     def argmin_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``argmin`` with ``FILTER``.
 
@@ -1115,6 +1128,7 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('max_by')
     def max_by(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``max_by``.
 
@@ -1141,6 +1155,7 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('max_by_filter')
     def max_by_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``max_by`` with ``FILTER``.
 
@@ -1278,6 +1293,7 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('min_by')
     def min_by(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``min_by``.
 
@@ -1304,6 +1320,7 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('min_by_filter')
     def min_by_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BlobExpression:
         """Call DuckDB function ``min_by`` with ``FILTER``.
 
@@ -1331,6 +1348,7 @@ class AggregateBlobFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+
     _IDENTIFIER_FUNCTIONS: ClassVar[dict[str, str]] = {
         'arg_max': 'arg_max',
         'arg_max_filter': 'arg_max_filter',
@@ -1370,6 +1388,7 @@ class AggregateBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('bool_and')
     def bool_and(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BooleanExpression:
         """Call DuckDB function ``bool_and``.
 
@@ -1388,6 +1407,7 @@ class AggregateBooleanFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('bool_and_filter')
     def bool_and_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BooleanExpression:
         """Call DuckDB function ``bool_and`` with ``FILTER``.
 
@@ -1421,6 +1441,7 @@ class AggregateBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('bool_or')
     def bool_or(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BooleanExpression:
         """Call DuckDB function ``bool_or``.
 
@@ -1439,6 +1460,7 @@ class AggregateBooleanFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('bool_or_filter')
     def bool_or_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> BooleanExpression:
         """Call DuckDB function ``bool_or`` with ``FILTER``.
 
@@ -1458,6 +1480,7 @@ class AggregateBooleanFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+
     _IDENTIFIER_FUNCTIONS: ClassVar[dict[str, str]] = {
         'bool_and': 'bool_and',
         'bool_and_filter': 'bool_and_filter',
@@ -1485,6 +1508,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('any_value')
     def any_value(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``any_value``.
 
@@ -1503,6 +1527,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('any_value_filter')
     def any_value_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``any_value`` with ``FILTER``.
 
@@ -1644,6 +1669,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('approx_quantile')
     def approx_quantile(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``approx_quantile``.
 
@@ -1671,6 +1697,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('approx_quantile_filter')
     def approx_quantile_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``approx_quantile`` with ``FILTER``.
 
@@ -1713,6 +1740,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('approx_top_k')
     def approx_top_k(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``approx_top_k``.
 
@@ -1731,6 +1759,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('approx_top_k_filter')
     def approx_top_k_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``approx_top_k`` with ``FILTER``.
 
@@ -1764,6 +1793,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('arbitrary')
     def arbitrary(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``arbitrary``.
 
@@ -1782,6 +1812,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('arbitrary_filter')
     def arbitrary_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``arbitrary`` with ``FILTER``.
 
@@ -2259,6 +2290,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('arg_max')
     def arg_max(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``arg_max``.
 
@@ -2314,6 +2346,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('arg_max_filter')
     def arg_max_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``arg_max`` with ``FILTER``.
 
@@ -2816,6 +2849,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('arg_max_null')
     def arg_max_null(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``arg_max_null``.
 
@@ -2870,6 +2904,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('arg_max_null_filter')
     def arg_max_null_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``arg_max_null`` with ``FILTER``.
 
@@ -3383,6 +3418,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('arg_min')
     def arg_min(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``arg_min``.
 
@@ -3438,6 +3474,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('arg_min_filter')
     def arg_min_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``arg_min`` with ``FILTER``.
 
@@ -3940,6 +3977,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('arg_min_null')
     def arg_min_null(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``arg_min_null``.
 
@@ -3994,6 +4032,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('arg_min_null_filter')
     def arg_min_null_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``arg_min_null`` with ``FILTER``.
 
@@ -4507,6 +4546,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('argmax')
     def argmax(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``argmax``.
 
@@ -4562,6 +4602,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('argmax_filter')
     def argmax_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``argmax`` with ``FILTER``.
 
@@ -5076,6 +5117,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('argmin')
     def argmin(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``argmin``.
 
@@ -5131,6 +5173,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('argmin_filter')
     def argmin_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``argmin`` with ``FILTER``.
 
@@ -5201,6 +5244,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_agg')
     def array_agg(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``array_agg``.
 
@@ -5219,6 +5263,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('array_agg_filter')
     def array_agg_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``array_agg`` with ``FILTER``.
 
@@ -5288,6 +5333,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('avg')
     def avg(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``avg``.
 
@@ -5309,6 +5355,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('avg_filter')
     def avg_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``avg`` with ``FILTER``.
 
@@ -5357,6 +5404,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('bit_and')
     def bit_and(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``bit_and``.
 
@@ -5376,6 +5424,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('bit_and_filter')
     def bit_and_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``bit_and`` with ``FILTER``.
 
@@ -5422,6 +5471,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('bit_or')
     def bit_or(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``bit_or``.
 
@@ -5441,6 +5491,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('bit_or_filter')
     def bit_or_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``bit_or`` with ``FILTER``.
 
@@ -5487,6 +5538,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('bit_xor')
     def bit_xor(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``bit_xor``.
 
@@ -5506,6 +5558,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('bit_xor_filter')
     def bit_xor_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``bit_xor`` with ``FILTER``.
 
@@ -5768,6 +5821,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('bitstring_agg')
     def bitstring_agg(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``bitstring_agg``.
 
@@ -5805,6 +5859,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('bitstring_agg_filter')
     def bitstring_agg_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``bitstring_agg`` with ``FILTER``.
 
@@ -5857,6 +5912,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('first')
     def first(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``first``.
 
@@ -5875,6 +5931,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('first_filter')
     def first_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``first`` with ``FILTER``.
 
@@ -5920,6 +5977,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('histogram')
     def histogram(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``histogram``.
 
@@ -5939,6 +5997,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('histogram_filter')
     def histogram_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``histogram`` with ``FILTER``.
 
@@ -5973,6 +6032,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('histogram_exact')
     def histogram_exact(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``histogram_exact``.
 
@@ -5991,6 +6051,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('histogram_exact_filter')
     def histogram_exact_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``histogram_exact`` with ``FILTER``.
 
@@ -6024,6 +6085,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('last')
     def last(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``last``.
 
@@ -6042,6 +6104,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('last_filter')
     def last_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``last`` with ``FILTER``.
 
@@ -6075,6 +6138,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list')
     def list(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``list``.
 
@@ -6093,6 +6157,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('list_filter')
     def list_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``list`` with ``FILTER``.
 
@@ -6138,6 +6203,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('max')
     def max(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``max``.
 
@@ -6157,6 +6223,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('max_filter')
     def max_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``max`` with ``FILTER``.
 
@@ -6635,6 +6702,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('max_by')
     def max_by(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``max_by``.
 
@@ -6690,6 +6758,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('max_by_filter')
     def max_by_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``max_by`` with ``FILTER``.
 
@@ -6796,6 +6865,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('mean')
     def mean(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``mean``.
 
@@ -6817,6 +6887,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('mean_filter')
     def mean_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``mean`` with ``FILTER``.
 
@@ -6853,6 +6924,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('median')
     def median(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``median``.
 
@@ -6871,6 +6943,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('median_filter')
     def median_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``median`` with ``FILTER``.
 
@@ -6916,6 +6989,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('min')
     def min(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``min``.
 
@@ -6935,6 +7009,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('min_filter')
     def min_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``min`` with ``FILTER``.
 
@@ -7413,6 +7488,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('min_by')
     def min_by(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``min_by``.
 
@@ -7468,6 +7544,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('min_by_filter')
     def min_by_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``min_by`` with ``FILTER``.
 
@@ -7538,6 +7615,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('mode')
     def mode(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``mode``.
 
@@ -7556,6 +7634,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('mode_filter')
     def mode_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``mode`` with ``FILTER``.
 
@@ -7613,6 +7692,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('quantile')
     def quantile(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``quantile``.
 
@@ -7633,6 +7713,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('quantile_filter')
     def quantile_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``quantile`` with ``FILTER``.
 
@@ -7776,6 +7857,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('quantile_cont')
     def quantile_cont(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``quantile_cont``.
 
@@ -7803,6 +7885,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('quantile_cont_filter')
     def quantile_cont_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``quantile_cont`` with ``FILTER``.
 
@@ -7869,6 +7952,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('quantile_disc')
     def quantile_disc(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``quantile_disc``.
 
@@ -7889,6 +7973,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('quantile_disc_filter')
     def quantile_disc_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``quantile_disc`` with ``FILTER``.
 
@@ -7924,6 +8009,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('sum')
     def sum(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``sum``.
 
@@ -7942,6 +8028,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('sum_filter')
     def sum_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> TypedExpression:
         """Call DuckDB function ``sum`` with ``FILTER``.
 
@@ -7961,6 +8048,7 @@ class AggregateGenericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+
     _IDENTIFIER_FUNCTIONS: ClassVar[dict[str, str]] = {
         'any_value': 'any_value',
         'any_value_filter': 'any_value_filter',
@@ -8048,6 +8136,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('any_value')
     def any_value(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``any_value``.
 
@@ -8066,6 +8155,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('any_value_filter')
     def any_value_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``any_value`` with ``FILTER``.
 
@@ -8099,6 +8189,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('approx_count_distinct')
     def approx_count_distinct(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``approx_count_distinct``.
 
@@ -8117,6 +8208,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('approx_count_distinct_filter')
     def approx_count_distinct_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``approx_count_distinct`` with ``FILTER``.
 
@@ -8306,6 +8398,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('approx_quantile')
     def approx_quantile(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``approx_quantile``.
 
@@ -8337,6 +8430,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('approx_quantile_filter')
     def approx_quantile_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``approx_quantile`` with ``FILTER``.
 
@@ -8383,6 +8477,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('arbitrary')
     def arbitrary(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``arbitrary``.
 
@@ -8401,6 +8496,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('arbitrary_filter')
     def arbitrary_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``arbitrary`` with ``FILTER``.
 
@@ -8854,6 +8950,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('arg_max')
     def arg_max(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``arg_max``.
 
@@ -8907,6 +9004,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('arg_max_filter')
     def arg_max_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``arg_max`` with ``FILTER``.
 
@@ -9395,6 +9493,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('arg_max_null')
     def arg_max_null(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``arg_max_null``.
 
@@ -9448,6 +9547,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('arg_max_null_filter')
     def arg_max_null_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``arg_max_null`` with ``FILTER``.
 
@@ -9936,6 +10036,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('arg_min')
     def arg_min(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``arg_min``.
 
@@ -9989,6 +10090,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('arg_min_filter')
     def arg_min_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``arg_min`` with ``FILTER``.
 
@@ -10477,6 +10579,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('arg_min_null')
     def arg_min_null(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``arg_min_null``.
 
@@ -10530,6 +10633,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('arg_min_null_filter')
     def arg_min_null_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``arg_min_null`` with ``FILTER``.
 
@@ -11018,6 +11122,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('argmax')
     def argmax(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``argmax``.
 
@@ -11071,6 +11176,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('argmax_filter')
     def argmax_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``argmax`` with ``FILTER``.
 
@@ -11559,6 +11665,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('argmin')
     def argmin(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``argmin``.
 
@@ -11612,6 +11719,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('argmin_filter')
     def argmin_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``argmin`` with ``FILTER``.
 
@@ -11752,6 +11860,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('avg')
     def avg(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``avg``.
 
@@ -11776,6 +11885,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('avg_filter')
     def avg_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``avg`` with ``FILTER``.
 
@@ -11911,6 +12021,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('bit_and')
     def bit_and(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``bit_and``.
 
@@ -11937,6 +12048,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('bit_and_filter')
     def bit_and_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``bit_and`` with ``FILTER``.
 
@@ -12074,6 +12186,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('bit_or')
     def bit_or(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``bit_or``.
 
@@ -12100,6 +12213,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('bit_or_filter')
     def bit_or_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``bit_or`` with ``FILTER``.
 
@@ -12237,6 +12351,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('bit_xor')
     def bit_xor(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``bit_xor``.
 
@@ -12263,6 +12378,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('bit_xor_filter')
     def bit_xor_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``bit_xor`` with ``FILTER``.
 
@@ -12304,6 +12420,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('corr')
     def corr(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``corr``.
 
@@ -12322,6 +12439,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('corr_filter')
     def corr_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``corr`` with ``FILTER``.
 
@@ -12367,6 +12485,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('count')
     def count(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``count``.
 
@@ -12386,6 +12505,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('count_filter')
     def count_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``count`` with ``FILTER``.
 
@@ -12420,6 +12540,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('count_if')
     def count_if(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``count_if``.
 
@@ -12438,6 +12559,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('count_if_filter')
     def count_if_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``count_if`` with ``FILTER``.
 
@@ -12471,6 +12593,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('count_star')
     def count_star(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``count_star``.
 
@@ -12487,6 +12610,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('count_star_filter')
     def count_star_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``count_star`` with ``FILTER``.
 
@@ -12518,6 +12642,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('countif')
     def countif(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``countif``.
 
@@ -12536,6 +12661,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('countif_filter')
     def countif_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``countif`` with ``FILTER``.
 
@@ -12569,6 +12695,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('covar_pop')
     def covar_pop(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``covar_pop``.
 
@@ -12587,6 +12714,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('covar_pop_filter')
     def covar_pop_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``covar_pop`` with ``FILTER``.
 
@@ -12620,6 +12748,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('covar_samp')
     def covar_samp(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``covar_samp``.
 
@@ -12638,6 +12767,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('covar_samp_filter')
     def covar_samp_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``covar_samp`` with ``FILTER``.
 
@@ -12671,6 +12801,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('entropy')
     def entropy(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``entropy``.
 
@@ -12689,6 +12820,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('entropy_filter')
     def entropy_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``entropy`` with ``FILTER``.
 
@@ -12722,6 +12854,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('favg')
     def favg(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``favg``.
 
@@ -12740,6 +12873,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('favg_filter')
     def favg_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``favg`` with ``FILTER``.
 
@@ -12773,6 +12907,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('first')
     def first(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``first``.
 
@@ -12791,6 +12926,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('first_filter')
     def first_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``first`` with ``FILTER``.
 
@@ -12824,6 +12960,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('fsum')
     def fsum(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``fsum``.
 
@@ -12842,6 +12979,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('fsum_filter')
     def fsum_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``fsum`` with ``FILTER``.
 
@@ -12875,6 +13013,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('kahan_sum')
     def kahan_sum(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``kahan_sum``.
 
@@ -12893,6 +13032,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('kahan_sum_filter')
     def kahan_sum_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``kahan_sum`` with ``FILTER``.
 
@@ -12926,6 +13066,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('kurtosis')
     def kurtosis(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``kurtosis``.
 
@@ -12944,6 +13085,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('kurtosis_filter')
     def kurtosis_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``kurtosis`` with ``FILTER``.
 
@@ -12977,6 +13119,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('kurtosis_pop')
     def kurtosis_pop(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``kurtosis_pop``.
 
@@ -12995,6 +13138,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('kurtosis_pop_filter')
     def kurtosis_pop_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``kurtosis_pop`` with ``FILTER``.
 
@@ -13028,6 +13172,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('last')
     def last(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``last``.
 
@@ -13046,6 +13191,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('last_filter')
     def last_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``last`` with ``FILTER``.
 
@@ -13163,6 +13309,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('mad')
     def mad(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``mad``.
 
@@ -13188,6 +13335,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('mad_filter')
     def mad_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``mad`` with ``FILTER``.
 
@@ -13648,6 +13796,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('max_by')
     def max_by(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``max_by``.
 
@@ -13701,6 +13850,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('max_by_filter')
     def max_by_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``max_by`` with ``FILTER``.
 
@@ -13841,6 +13991,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('mean')
     def mean(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``mean``.
 
@@ -13865,6 +14016,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('mean_filter')
     def mean_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``mean`` with ``FILTER``.
 
@@ -14324,6 +14476,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('min_by')
     def min_by(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``min_by``.
 
@@ -14377,6 +14530,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('min_by_filter')
     def min_by_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``min_by`` with ``FILTER``.
 
@@ -14445,6 +14599,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('product')
     def product(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``product``.
 
@@ -14463,6 +14618,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('product_filter')
     def product_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``product`` with ``FILTER``.
 
@@ -14676,6 +14832,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('quantile_cont')
     def quantile_cont(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``quantile_cont``.
 
@@ -14709,6 +14866,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('quantile_cont_filter')
     def quantile_cont_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``quantile_cont`` with ``FILTER``.
 
@@ -14757,6 +14915,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('regr_avgx')
     def regr_avgx(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_avgx``.
 
@@ -14775,6 +14934,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('regr_avgx_filter')
     def regr_avgx_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_avgx`` with ``FILTER``.
 
@@ -14808,6 +14968,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('regr_avgy')
     def regr_avgy(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_avgy``.
 
@@ -14826,6 +14987,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('regr_avgy_filter')
     def regr_avgy_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_avgy`` with ``FILTER``.
 
@@ -14859,6 +15021,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('regr_count')
     def regr_count(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_count``.
 
@@ -14877,6 +15040,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('regr_count_filter')
     def regr_count_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_count`` with ``FILTER``.
 
@@ -14910,6 +15074,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('regr_intercept')
     def regr_intercept(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_intercept``.
 
@@ -14928,6 +15093,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('regr_intercept_filter')
     def regr_intercept_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_intercept`` with ``FILTER``.
 
@@ -14961,6 +15127,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('regr_r2')
     def regr_r2(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_r2``.
 
@@ -14979,6 +15146,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('regr_r2_filter')
     def regr_r2_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_r2`` with ``FILTER``.
 
@@ -15012,6 +15180,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('regr_slope')
     def regr_slope(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_slope``.
 
@@ -15030,6 +15199,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('regr_slope_filter')
     def regr_slope_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_slope`` with ``FILTER``.
 
@@ -15063,6 +15233,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('regr_sxx')
     def regr_sxx(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_sxx``.
 
@@ -15079,6 +15250,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('regr_sxx_filter')
     def regr_sxx_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_sxx`` with ``FILTER``.
 
@@ -15110,6 +15282,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('regr_sxy')
     def regr_sxy(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_sxy``.
 
@@ -15128,6 +15301,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('regr_sxy_filter')
     def regr_sxy_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_sxy`` with ``FILTER``.
 
@@ -15161,6 +15335,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('regr_syy')
     def regr_syy(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_syy``.
 
@@ -15177,6 +15352,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('regr_syy_filter')
     def regr_syy_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``regr_syy`` with ``FILTER``.
 
@@ -15580,6 +15756,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('reservoir_quantile')
     def reservoir_quantile(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``reservoir_quantile``.
 
@@ -15629,6 +15806,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('reservoir_quantile_filter')
     def reservoir_quantile_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``reservoir_quantile`` with ``FILTER``.
 
@@ -15693,6 +15871,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('sem')
     def sem(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``sem``.
 
@@ -15711,6 +15890,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('sem_filter')
     def sem_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``sem`` with ``FILTER``.
 
@@ -15744,6 +15924,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('skewness')
     def skewness(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``skewness``.
 
@@ -15762,6 +15943,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('skewness_filter')
     def skewness_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``skewness`` with ``FILTER``.
 
@@ -15795,6 +15977,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('stddev')
     def stddev(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``stddev``.
 
@@ -15813,6 +15996,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('stddev_filter')
     def stddev_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``stddev`` with ``FILTER``.
 
@@ -15846,6 +16030,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('stddev_pop')
     def stddev_pop(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``stddev_pop``.
 
@@ -15864,6 +16049,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('stddev_pop_filter')
     def stddev_pop_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``stddev_pop`` with ``FILTER``.
 
@@ -15897,6 +16083,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('stddev_samp')
     def stddev_samp(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``stddev_samp``.
 
@@ -15915,6 +16102,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('stddev_samp_filter')
     def stddev_samp_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``stddev_samp`` with ``FILTER``.
 
@@ -16020,6 +16208,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('sum')
     def sum(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``sum``.
 
@@ -16044,6 +16233,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('sum_filter')
     def sum_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``sum`` with ``FILTER``.
 
@@ -16107,6 +16297,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('sum_no_overflow')
     def sum_no_overflow(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``sum_no_overflow``.
 
@@ -16127,6 +16318,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('sum_no_overflow_filter')
     def sum_no_overflow_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``sum_no_overflow`` with ``FILTER``.
 
@@ -16162,6 +16354,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('sumkahan')
     def sumkahan(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``sumkahan``.
 
@@ -16180,6 +16373,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('sumkahan_filter')
     def sumkahan_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``sumkahan`` with ``FILTER``.
 
@@ -16213,6 +16407,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('var_pop')
     def var_pop(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``var_pop``.
 
@@ -16231,6 +16426,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('var_pop_filter')
     def var_pop_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``var_pop`` with ``FILTER``.
 
@@ -16264,6 +16460,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('var_samp')
     def var_samp(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``var_samp``.
 
@@ -16282,6 +16479,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('var_samp_filter')
     def var_samp_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``var_samp`` with ``FILTER``.
 
@@ -16315,6 +16513,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('variance')
     def variance(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``variance``.
 
@@ -16333,6 +16532,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('variance_filter')
     def variance_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> NumericExpression:
         """Call DuckDB function ``variance`` with ``FILTER``.
 
@@ -16352,6 +16552,7 @@ class AggregateNumericFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+
     _IDENTIFIER_FUNCTIONS: ClassVar[dict[str, str]] = {
         'any_value': 'any_value',
         'any_value_filter': 'any_value_filter',
@@ -16583,6 +16784,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('arg_max')
     def arg_max(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``arg_max``.
 
@@ -16609,6 +16811,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('arg_max_filter')
     def arg_max_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``arg_max`` with ``FILTER``.
 
@@ -16746,6 +16949,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('arg_max_null')
     def arg_max_null(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``arg_max_null``.
 
@@ -16772,6 +16976,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('arg_max_null_filter')
     def arg_max_null_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``arg_max_null`` with ``FILTER``.
 
@@ -16909,6 +17114,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('arg_min')
     def arg_min(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``arg_min``.
 
@@ -16935,6 +17141,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('arg_min_filter')
     def arg_min_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``arg_min`` with ``FILTER``.
 
@@ -17072,6 +17279,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('arg_min_null')
     def arg_min_null(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``arg_min_null``.
 
@@ -17098,6 +17306,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('arg_min_null_filter')
     def arg_min_null_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``arg_min_null`` with ``FILTER``.
 
@@ -17235,6 +17444,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('argmax')
     def argmax(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``argmax``.
 
@@ -17261,6 +17471,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('argmax_filter')
     def argmax_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``argmax`` with ``FILTER``.
 
@@ -17398,6 +17609,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('argmin')
     def argmin(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``argmin``.
 
@@ -17424,6 +17636,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('argmin_filter')
     def argmin_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``argmin`` with ``FILTER``.
 
@@ -17477,6 +17690,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('group_concat')
     def group_concat(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``group_concat``.
 
@@ -17496,6 +17710,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('group_concat_filter')
     def group_concat_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``group_concat`` with ``FILTER``.
 
@@ -17542,6 +17757,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('listagg')
     def listagg(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``listagg``.
 
@@ -17561,6 +17777,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('listagg_filter')
     def listagg_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``listagg`` with ``FILTER``.
 
@@ -17691,6 +17908,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('max_by')
     def max_by(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``max_by``.
 
@@ -17717,6 +17935,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('max_by_filter')
     def max_by_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``max_by`` with ``FILTER``.
 
@@ -17854,6 +18073,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('min_by')
     def min_by(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``min_by``.
 
@@ -17880,6 +18100,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('min_by_filter')
     def min_by_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``min_by`` with ``FILTER``.
 
@@ -17933,6 +18154,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('string_agg')
     def string_agg(self, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``string_agg``.
 
@@ -17952,6 +18174,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+    @duckdb_function('string_agg_filter')
     def string_agg_filter(self, predicate: object, *operands: object, order_by: Iterable[object] | object | None = None, within_group: Iterable[object] | object | None = None, partition_by: Iterable[object] | object | None = None, over_order_by: Iterable[object] | object | None = None, frame: str | None = None) -> VarcharExpression:
         """Call DuckDB function ``string_agg`` with ``FILTER``.
 
@@ -17972,6 +18195,7 @@ class AggregateVarcharFunctions(_StaticFunctionNamespace):
             over_order_by=over_order_by,
             frame=frame,
         )
+
     _IDENTIFIER_FUNCTIONS: ClassVar[dict[str, str]] = {
         'arg_max': 'arg_max',
         'arg_max_filter': 'arg_max_filter',
@@ -18028,6 +18252,7 @@ class ScalarBlobFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('create_sort_key')
     def create_sort_key(self, *operands: object) -> BlobExpression:
         """Call DuckDB function ``create_sort_key``.
 
@@ -18055,6 +18280,7 @@ class ScalarBlobFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('encode')
     def encode(self, *operands: object) -> BlobExpression:
         """Call DuckDB function ``encode``.
 
@@ -18082,6 +18308,7 @@ class ScalarBlobFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('from_base64')
     def from_base64(self, *operands: object) -> BlobExpression:
         """Call DuckDB function ``from_base64``.
 
@@ -18109,6 +18336,7 @@ class ScalarBlobFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('from_binary')
     def from_binary(self, *operands: object) -> BlobExpression:
         """Call DuckDB function ``from_binary``.
 
@@ -18136,6 +18364,7 @@ class ScalarBlobFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('from_hex')
     def from_hex(self, *operands: object) -> BlobExpression:
         """Call DuckDB function ``from_hex``.
 
@@ -18163,6 +18392,7 @@ class ScalarBlobFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('repeat')
     def repeat(self, *operands: object) -> BlobExpression:
         """Call DuckDB function ``repeat``.
 
@@ -18190,6 +18420,7 @@ class ScalarBlobFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('unbin')
     def unbin(self, *operands: object) -> BlobExpression:
         """Call DuckDB function ``unbin``.
 
@@ -18217,6 +18448,7 @@ class ScalarBlobFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('unhex')
     def unhex(self, *operands: object) -> BlobExpression:
         """Call DuckDB function ``unhex``.
 
@@ -18230,6 +18462,7 @@ class ScalarBlobFunctions(_StaticFunctionNamespace):
             return_category=self.return_category,
             operands=operands,
         )
+
     _IDENTIFIER_FUNCTIONS: ClassVar[dict[str, str]] = {
         'create_sort_key': 'create_sort_key',
         'encode': 'encode',
@@ -18261,6 +18494,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_contains')
     def array_contains(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``array_contains``.
 
@@ -18288,6 +18522,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_has')
     def array_has(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``array_has``.
 
@@ -18315,6 +18550,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_has_all')
     def array_has_all(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``array_has_all``.
 
@@ -18342,6 +18578,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_has_any')
     def array_has_any(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``array_has_any``.
 
@@ -18369,6 +18606,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('can_cast_implicitly')
     def can_cast_implicitly(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``can_cast_implicitly``.
 
@@ -18432,6 +18670,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('contains')
     def contains(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``contains``.
 
@@ -18462,6 +18701,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('ends_with')
     def ends_with(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``ends_with``.
 
@@ -18472,6 +18712,435 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._ENDS_WITH_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _HAS_ANY_COLUMN_PRIVILEGE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='has_any_column_privilege',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None, None),
+                        parameters=('table', 'privilege'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='has_any_column_privilege',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None, None, None),
+                        parameters=('user', 'table', 'privilege'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+    )
+    @duckdb_function('has_any_column_privilege')
+    def has_any_column_privilege(self, *operands: object) -> BooleanExpression:
+        """Call DuckDB function ``has_any_column_privilege``.
+
+        Overloads:
+        - pg_catalog.has_any_column_privilege(ANY table, ANY privilege) -> BOOLEAN
+        - pg_catalog.has_any_column_privilege(ANY user, ANY table, ANY privilege) -> BOOLEAN
+        """
+        return call_duckdb_function(
+            self._HAS_ANY_COLUMN_PRIVILEGE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _HAS_COLUMN_PRIVILEGE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='has_column_privilege',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None, None, None),
+                        parameters=('table', 'column', 'privilege'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='has_column_privilege',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None, None, None, None),
+                        parameters=('user', 'table', 'column', 'privilege'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+    )
+    @duckdb_function('has_column_privilege')
+    def has_column_privilege(self, *operands: object) -> BooleanExpression:
+        """Call DuckDB function ``has_column_privilege``.
+
+        Overloads:
+        - pg_catalog.has_column_privilege(ANY table, ANY column, ANY privilege) -> BOOLEAN
+        - pg_catalog.has_column_privilege(ANY user, ANY table, ANY column, ANY privilege) -> BOOLEAN
+        """
+        return call_duckdb_function(
+            self._HAS_COLUMN_PRIVILEGE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _HAS_DATABASE_PRIVILEGE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='has_database_privilege',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None, None),
+                        parameters=('database', 'privilege'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='has_database_privilege',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None, None, None),
+                        parameters=('user', 'database', 'privilege'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+    )
+    @duckdb_function('has_database_privilege')
+    def has_database_privilege(self, *operands: object) -> BooleanExpression:
+        """Call DuckDB function ``has_database_privilege``.
+
+        Overloads:
+        - pg_catalog.has_database_privilege(ANY database, ANY privilege) -> BOOLEAN
+        - pg_catalog.has_database_privilege(ANY user, ANY database, ANY privilege) -> BOOLEAN
+        """
+        return call_duckdb_function(
+            self._HAS_DATABASE_PRIVILEGE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _HAS_FOREIGN_DATA_WRAPPER_PRIVILEGE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='has_foreign_data_wrapper_privilege',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None, None),
+                        parameters=('fdw', 'privilege'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='has_foreign_data_wrapper_privilege',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None, None, None),
+                        parameters=('user', 'fdw', 'privilege'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+    )
+    @duckdb_function('has_foreign_data_wrapper_privilege')
+    def has_foreign_data_wrapper_privilege(self, *operands: object) -> BooleanExpression:
+        """Call DuckDB function ``has_foreign_data_wrapper_privilege``.
+
+        Overloads:
+        - pg_catalog.has_foreign_data_wrapper_privilege(ANY fdw, ANY privilege) -> BOOLEAN
+        - pg_catalog.has_foreign_data_wrapper_privilege(ANY user, ANY fdw, ANY privilege) -> BOOLEAN
+        """
+        return call_duckdb_function(
+            self._HAS_FOREIGN_DATA_WRAPPER_PRIVILEGE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _HAS_FUNCTION_PRIVILEGE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='has_function_privilege',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None, None),
+                        parameters=('function', 'privilege'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='has_function_privilege',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None, None, None),
+                        parameters=('user', 'function', 'privilege'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+    )
+    @duckdb_function('has_function_privilege')
+    def has_function_privilege(self, *operands: object) -> BooleanExpression:
+        """Call DuckDB function ``has_function_privilege``.
+
+        Overloads:
+        - pg_catalog.has_function_privilege(ANY function, ANY privilege) -> BOOLEAN
+        - pg_catalog.has_function_privilege(ANY user, ANY function, ANY privilege) -> BOOLEAN
+        """
+        return call_duckdb_function(
+            self._HAS_FUNCTION_PRIVILEGE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _HAS_LANGUAGE_PRIVILEGE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='has_language_privilege',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None, None),
+                        parameters=('language', 'privilege'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='has_language_privilege',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None, None, None),
+                        parameters=('user', 'language', 'privilege'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+    )
+    @duckdb_function('has_language_privilege')
+    def has_language_privilege(self, *operands: object) -> BooleanExpression:
+        """Call DuckDB function ``has_language_privilege``.
+
+        Overloads:
+        - pg_catalog.has_language_privilege(ANY language, ANY privilege) -> BOOLEAN
+        - pg_catalog.has_language_privilege(ANY user, ANY language, ANY privilege) -> BOOLEAN
+        """
+        return call_duckdb_function(
+            self._HAS_LANGUAGE_PRIVILEGE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _HAS_SCHEMA_PRIVILEGE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='has_schema_privilege',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None, None),
+                        parameters=('schema', 'privilege'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='has_schema_privilege',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None, None, None),
+                        parameters=('user', 'schema', 'privilege'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+    )
+    @duckdb_function('has_schema_privilege')
+    def has_schema_privilege(self, *operands: object) -> BooleanExpression:
+        """Call DuckDB function ``has_schema_privilege``.
+
+        Overloads:
+        - pg_catalog.has_schema_privilege(ANY schema, ANY privilege) -> BOOLEAN
+        - pg_catalog.has_schema_privilege(ANY user, ANY schema, ANY privilege) -> BOOLEAN
+        """
+        return call_duckdb_function(
+            self._HAS_SCHEMA_PRIVILEGE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _HAS_SEQUENCE_PRIVILEGE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='has_sequence_privilege',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None, None),
+                        parameters=('sequence', 'privilege'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='has_sequence_privilege',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None, None, None),
+                        parameters=('user', 'sequence', 'privilege'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+    )
+    @duckdb_function('has_sequence_privilege')
+    def has_sequence_privilege(self, *operands: object) -> BooleanExpression:
+        """Call DuckDB function ``has_sequence_privilege``.
+
+        Overloads:
+        - pg_catalog.has_sequence_privilege(ANY sequence, ANY privilege) -> BOOLEAN
+        - pg_catalog.has_sequence_privilege(ANY user, ANY sequence, ANY privilege) -> BOOLEAN
+        """
+        return call_duckdb_function(
+            self._HAS_SEQUENCE_PRIVILEGE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _HAS_SERVER_PRIVILEGE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='has_server_privilege',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None, None),
+                        parameters=('server', 'privilege'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='has_server_privilege',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None, None, None),
+                        parameters=('user', 'server', 'privilege'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+    )
+    @duckdb_function('has_server_privilege')
+    def has_server_privilege(self, *operands: object) -> BooleanExpression:
+        """Call DuckDB function ``has_server_privilege``.
+
+        Overloads:
+        - pg_catalog.has_server_privilege(ANY server, ANY privilege) -> BOOLEAN
+        - pg_catalog.has_server_privilege(ANY user, ANY server, ANY privilege) -> BOOLEAN
+        """
+        return call_duckdb_function(
+            self._HAS_SERVER_PRIVILEGE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _HAS_TABLE_PRIVILEGE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='has_table_privilege',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None, None),
+                        parameters=('table', 'privilege'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='has_table_privilege',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None, None, None),
+                        parameters=('user', 'table', 'privilege'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+    )
+    @duckdb_function('has_table_privilege')
+    def has_table_privilege(self, *operands: object) -> BooleanExpression:
+        """Call DuckDB function ``has_table_privilege``.
+
+        Overloads:
+        - pg_catalog.has_table_privilege(ANY table, ANY privilege) -> BOOLEAN
+        - pg_catalog.has_table_privilege(ANY user, ANY table, ANY privilege) -> BOOLEAN
+        """
+        return call_duckdb_function(
+            self._HAS_TABLE_PRIVILEGE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _HAS_TABLESPACE_PRIVILEGE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='has_tablespace_privilege',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None, None),
+                        parameters=('tablespace', 'privilege'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='has_tablespace_privilege',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None, None, None),
+                        parameters=('user', 'tablespace', 'privilege'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+    )
+    @duckdb_function('has_tablespace_privilege')
+    def has_tablespace_privilege(self, *operands: object) -> BooleanExpression:
+        """Call DuckDB function ``has_tablespace_privilege``.
+
+        Overloads:
+        - pg_catalog.has_tablespace_privilege(ANY tablespace, ANY privilege) -> BOOLEAN
+        - pg_catalog.has_tablespace_privilege(ANY user, ANY tablespace, ANY privilege) -> BOOLEAN
+        """
+        return call_duckdb_function(
+            self._HAS_TABLESPACE_PRIVILEGE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -18489,6 +19158,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('ilike_escape')
     def ilike_escape(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``ilike_escape``.
 
@@ -18516,6 +19186,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('in_search_path')
     def in_search_path(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``in_search_path``.
 
@@ -18543,6 +19214,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('is_histogram_other_bin')
     def is_histogram_other_bin(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``is_histogram_other_bin``.
 
@@ -18618,6 +19290,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('isfinite')
     def isfinite(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``isfinite``.
 
@@ -18697,6 +19370,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('isinf')
     def isinf(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``isinf``.
 
@@ -18740,6 +19414,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('isnan')
     def isnan(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``isnan``.
 
@@ -18804,6 +19479,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('json_contains')
     def json_contains(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``json_contains``.
 
@@ -18868,6 +19544,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('json_exists')
     def json_exists(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``json_exists``.
 
@@ -18908,6 +19585,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('json_valid')
     def json_valid(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``json_valid``.
 
@@ -18934,6 +19612,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('like_escape')
     def like_escape(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``like_escape``.
 
@@ -18961,6 +19640,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_contains')
     def list_contains(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``list_contains``.
 
@@ -18988,6 +19668,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_has')
     def list_has(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``list_has``.
 
@@ -19015,6 +19696,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_has_all')
     def list_has_all(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``list_has_all``.
 
@@ -19042,6 +19724,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_has_any')
     def list_has_any(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``list_has_any``.
 
@@ -19069,6 +19752,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('map_contains')
     def map_contains(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``map_contains``.
 
@@ -19079,6 +19763,58 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._MAP_CONTAINS_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _MAP_CONTAINS_ENTRY_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='map_contains_entry',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None, None, None),
+                        parameters=('map', 'key', 'value'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='contains(map_entries("map"), main.struct_pack("key" := "key", "value" := "value"))',
+                    ),
+    )
+    @duckdb_function('map_contains_entry')
+    def map_contains_entry(self, *operands: object) -> BooleanExpression:
+        """Call DuckDB function ``map_contains_entry``.
+
+        Overloads:
+        - main.map_contains_entry(ANY map, ANY key, ANY value) -> BOOLEAN
+        """
+        return call_duckdb_function(
+            self._MAP_CONTAINS_ENTRY_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _MAP_CONTAINS_VALUE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='map_contains_value',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None, None),
+                        parameters=('map', 'value'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='contains(map_values("map"), "value")',
+                    ),
+    )
+    @duckdb_function('map_contains_value')
+    def map_contains_value(self, *operands: object) -> BooleanExpression:
+        """Call DuckDB function ``map_contains_value``.
+
+        Overloads:
+        - main.map_contains_value(ANY map, ANY value) -> BOOLEAN
+        """
+        return call_duckdb_function(
+            self._MAP_CONTAINS_VALUE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -19096,6 +19832,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('not_ilike_escape')
     def not_ilike_escape(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``not_ilike_escape``.
 
@@ -19123,6 +19860,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('not_like_escape')
     def not_like_escape(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``not_like_escape``.
 
@@ -19133,6 +19871,383 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._NOT_LIKE_ESCAPE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _PG_COLLATION_IS_VISIBLE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='pg_collation_is_visible',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None,),
+                        parameters=('collation_oid',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+    )
+    @duckdb_function('pg_collation_is_visible')
+    def pg_collation_is_visible(self, *operands: object) -> BooleanExpression:
+        """Call DuckDB function ``pg_collation_is_visible``.
+
+        Overloads:
+        - pg_catalog.pg_collation_is_visible(ANY collation_oid) -> BOOLEAN
+        """
+        return call_duckdb_function(
+            self._PG_COLLATION_IS_VISIBLE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _PG_CONVERSION_IS_VISIBLE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='pg_conversion_is_visible',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None,),
+                        parameters=('conversion_oid',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+    )
+    @duckdb_function('pg_conversion_is_visible')
+    def pg_conversion_is_visible(self, *operands: object) -> BooleanExpression:
+        """Call DuckDB function ``pg_conversion_is_visible``.
+
+        Overloads:
+        - pg_catalog.pg_conversion_is_visible(ANY conversion_oid) -> BOOLEAN
+        """
+        return call_duckdb_function(
+            self._PG_CONVERSION_IS_VISIBLE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _PG_FUNCTION_IS_VISIBLE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='pg_function_is_visible',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None,),
+                        parameters=('function_oid',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+    )
+    @duckdb_function('pg_function_is_visible')
+    def pg_function_is_visible(self, *operands: object) -> BooleanExpression:
+        """Call DuckDB function ``pg_function_is_visible``.
+
+        Overloads:
+        - pg_catalog.pg_function_is_visible(ANY function_oid) -> BOOLEAN
+        """
+        return call_duckdb_function(
+            self._PG_FUNCTION_IS_VISIBLE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _PG_HAS_ROLE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='pg_has_role',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None, None),
+                        parameters=('role', 'privilege'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='pg_has_role',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None, None, None),
+                        parameters=('user', 'role', 'privilege'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+    )
+    @duckdb_function('pg_has_role')
+    def pg_has_role(self, *operands: object) -> BooleanExpression:
+        """Call DuckDB function ``pg_has_role``.
+
+        Overloads:
+        - pg_catalog.pg_has_role(ANY role, ANY privilege) -> BOOLEAN
+        - pg_catalog.pg_has_role(ANY user, ANY role, ANY privilege) -> BOOLEAN
+        """
+        return call_duckdb_function(
+            self._PG_HAS_ROLE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _PG_IS_OTHER_TEMP_SCHEMA_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='pg_is_other_temp_schema',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None,),
+                        parameters=('schema_id',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('f' AS BOOLEAN)",
+                    ),
+    )
+    @duckdb_function('pg_is_other_temp_schema')
+    def pg_is_other_temp_schema(self, *operands: object) -> BooleanExpression:
+        """Call DuckDB function ``pg_is_other_temp_schema``.
+
+        Overloads:
+        - pg_catalog.pg_is_other_temp_schema(ANY schema_id) -> BOOLEAN
+        """
+        return call_duckdb_function(
+            self._PG_IS_OTHER_TEMP_SCHEMA_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _PG_OPCLASS_IS_VISIBLE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='pg_opclass_is_visible',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None,),
+                        parameters=('opclass_oid',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+    )
+    @duckdb_function('pg_opclass_is_visible')
+    def pg_opclass_is_visible(self, *operands: object) -> BooleanExpression:
+        """Call DuckDB function ``pg_opclass_is_visible``.
+
+        Overloads:
+        - pg_catalog.pg_opclass_is_visible(ANY opclass_oid) -> BOOLEAN
+        """
+        return call_duckdb_function(
+            self._PG_OPCLASS_IS_VISIBLE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _PG_OPERATOR_IS_VISIBLE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='pg_operator_is_visible',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None,),
+                        parameters=('operator_oid',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+    )
+    @duckdb_function('pg_operator_is_visible')
+    def pg_operator_is_visible(self, *operands: object) -> BooleanExpression:
+        """Call DuckDB function ``pg_operator_is_visible``.
+
+        Overloads:
+        - pg_catalog.pg_operator_is_visible(ANY operator_oid) -> BOOLEAN
+        """
+        return call_duckdb_function(
+            self._PG_OPERATOR_IS_VISIBLE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _PG_OPFAMILY_IS_VISIBLE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='pg_opfamily_is_visible',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None,),
+                        parameters=('opclass_oid',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+    )
+    @duckdb_function('pg_opfamily_is_visible')
+    def pg_opfamily_is_visible(self, *operands: object) -> BooleanExpression:
+        """Call DuckDB function ``pg_opfamily_is_visible``.
+
+        Overloads:
+        - pg_catalog.pg_opfamily_is_visible(ANY opclass_oid) -> BOOLEAN
+        """
+        return call_duckdb_function(
+            self._PG_OPFAMILY_IS_VISIBLE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _PG_TABLE_IS_VISIBLE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='pg_table_is_visible',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None,),
+                        parameters=('table_oid',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+    )
+    @duckdb_function('pg_table_is_visible')
+    def pg_table_is_visible(self, *operands: object) -> BooleanExpression:
+        """Call DuckDB function ``pg_table_is_visible``.
+
+        Overloads:
+        - pg_catalog.pg_table_is_visible(ANY table_oid) -> BOOLEAN
+        """
+        return call_duckdb_function(
+            self._PG_TABLE_IS_VISIBLE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _PG_TS_CONFIG_IS_VISIBLE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='pg_ts_config_is_visible',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None,),
+                        parameters=('config_oid',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+    )
+    @duckdb_function('pg_ts_config_is_visible')
+    def pg_ts_config_is_visible(self, *operands: object) -> BooleanExpression:
+        """Call DuckDB function ``pg_ts_config_is_visible``.
+
+        Overloads:
+        - pg_catalog.pg_ts_config_is_visible(ANY config_oid) -> BOOLEAN
+        """
+        return call_duckdb_function(
+            self._PG_TS_CONFIG_IS_VISIBLE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _PG_TS_DICT_IS_VISIBLE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='pg_ts_dict_is_visible',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None,),
+                        parameters=('dict_oid',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+    )
+    @duckdb_function('pg_ts_dict_is_visible')
+    def pg_ts_dict_is_visible(self, *operands: object) -> BooleanExpression:
+        """Call DuckDB function ``pg_ts_dict_is_visible``.
+
+        Overloads:
+        - pg_catalog.pg_ts_dict_is_visible(ANY dict_oid) -> BOOLEAN
+        """
+        return call_duckdb_function(
+            self._PG_TS_DICT_IS_VISIBLE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _PG_TS_PARSER_IS_VISIBLE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='pg_ts_parser_is_visible',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None,),
+                        parameters=('parser_oid',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+    )
+    @duckdb_function('pg_ts_parser_is_visible')
+    def pg_ts_parser_is_visible(self, *operands: object) -> BooleanExpression:
+        """Call DuckDB function ``pg_ts_parser_is_visible``.
+
+        Overloads:
+        - pg_catalog.pg_ts_parser_is_visible(ANY parser_oid) -> BOOLEAN
+        """
+        return call_duckdb_function(
+            self._PG_TS_PARSER_IS_VISIBLE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _PG_TS_TEMPLATE_IS_VISIBLE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='pg_ts_template_is_visible',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None,),
+                        parameters=('template_oid',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+    )
+    @duckdb_function('pg_ts_template_is_visible')
+    def pg_ts_template_is_visible(self, *operands: object) -> BooleanExpression:
+        """Call DuckDB function ``pg_ts_template_is_visible``.
+
+        Overloads:
+        - pg_catalog.pg_ts_template_is_visible(ANY template_oid) -> BOOLEAN
+        """
+        return call_duckdb_function(
+            self._PG_TS_TEMPLATE_IS_VISIBLE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _PG_TYPE_IS_VISIBLE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='pg_type_is_visible',
+                        function_type=function_type,
+                        return_type=parse_type('BOOLEAN'),
+                        parameter_types=(None,),
+                        parameters=('type_oid',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CAST('t' AS BOOLEAN)",
+                    ),
+    )
+    @duckdb_function('pg_type_is_visible')
+    def pg_type_is_visible(self, *operands: object) -> BooleanExpression:
+        """Call DuckDB function ``pg_type_is_visible``.
+
+        Overloads:
+        - pg_catalog.pg_type_is_visible(ANY type_oid) -> BOOLEAN
+        """
+        return call_duckdb_function(
+            self._PG_TYPE_IS_VISIBLE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -19150,6 +20265,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('prefix')
     def prefix(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``prefix``.
 
@@ -19189,6 +20305,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('regexp_full_match')
     def regexp_full_match(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``regexp_full_match``.
 
@@ -19229,6 +20346,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('regexp_matches')
     def regexp_matches(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``regexp_matches``.
 
@@ -19269,6 +20387,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('signbit')
     def signbit(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``signbit``.
 
@@ -19297,6 +20416,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('starts_with')
     def starts_with(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``starts_with``.
 
@@ -19324,6 +20444,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('struct_contains')
     def struct_contains(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``struct_contains``.
 
@@ -19351,6 +20472,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('struct_has')
     def struct_has(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``struct_has``.
 
@@ -19378,6 +20500,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('suffix')
     def suffix(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``suffix``.
 
@@ -19405,6 +20528,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('!~~',))
     def symbol_0021_007e_007e(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``!~~``.
 
@@ -19430,6 +20554,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('!~~*',))
     def symbol_0021_007e_007e_002a(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``!~~*``.
 
@@ -19455,6 +20580,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('&&',))
     def symbol_0026_0026(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``&&``.
 
@@ -19482,6 +20608,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('<@',))
     def symbol_003c_0040(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``<@``.
 
@@ -19509,6 +20636,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('@>',))
     def symbol_0040_003e(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``@>``.
 
@@ -19536,6 +20664,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('^@',))
     def symbol_005e_0040(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``^@``.
 
@@ -19563,6 +20692,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('~~',))
     def symbol_007e_007e(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``~~``.
 
@@ -19588,6 +20718,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('~~*',))
     def symbol_007e_007e_002a(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``~~*``.
 
@@ -19613,6 +20744,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('~~~',))
     def symbol_007e_007e_007e(self, *operands: object) -> BooleanExpression:
         """Call DuckDB function ``~~~``.
 
@@ -19624,6 +20756,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
             return_category=self.return_category,
             operands=operands,
         )
+
     _IDENTIFIER_FUNCTIONS: ClassVar[dict[str, str]] = {
         'array_contains': 'array_contains',
         'array_has': 'array_has',
@@ -19632,6 +20765,17 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
         'can_cast_implicitly': 'can_cast_implicitly',
         'contains': 'contains',
         'ends_with': 'ends_with',
+        'has_any_column_privilege': 'has_any_column_privilege',
+        'has_column_privilege': 'has_column_privilege',
+        'has_database_privilege': 'has_database_privilege',
+        'has_foreign_data_wrapper_privilege': 'has_foreign_data_wrapper_privilege',
+        'has_function_privilege': 'has_function_privilege',
+        'has_language_privilege': 'has_language_privilege',
+        'has_schema_privilege': 'has_schema_privilege',
+        'has_sequence_privilege': 'has_sequence_privilege',
+        'has_server_privilege': 'has_server_privilege',
+        'has_table_privilege': 'has_table_privilege',
+        'has_tablespace_privilege': 'has_tablespace_privilege',
         'ilike_escape': 'ilike_escape',
         'in_search_path': 'in_search_path',
         'is_histogram_other_bin': 'is_histogram_other_bin',
@@ -19647,8 +20791,24 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
         'list_has_all': 'list_has_all',
         'list_has_any': 'list_has_any',
         'map_contains': 'map_contains',
+        'map_contains_entry': 'map_contains_entry',
+        'map_contains_value': 'map_contains_value',
         'not_ilike_escape': 'not_ilike_escape',
         'not_like_escape': 'not_like_escape',
+        'pg_collation_is_visible': 'pg_collation_is_visible',
+        'pg_conversion_is_visible': 'pg_conversion_is_visible',
+        'pg_function_is_visible': 'pg_function_is_visible',
+        'pg_has_role': 'pg_has_role',
+        'pg_is_other_temp_schema': 'pg_is_other_temp_schema',
+        'pg_opclass_is_visible': 'pg_opclass_is_visible',
+        'pg_operator_is_visible': 'pg_operator_is_visible',
+        'pg_opfamily_is_visible': 'pg_opfamily_is_visible',
+        'pg_table_is_visible': 'pg_table_is_visible',
+        'pg_ts_config_is_visible': 'pg_ts_config_is_visible',
+        'pg_ts_dict_is_visible': 'pg_ts_dict_is_visible',
+        'pg_ts_parser_is_visible': 'pg_ts_parser_is_visible',
+        'pg_ts_template_is_visible': 'pg_ts_template_is_visible',
+        'pg_type_is_visible': 'pg_type_is_visible',
         'prefix': 'prefix',
         'regexp_full_match': 'regexp_full_match',
         'regexp_matches': 'regexp_matches',
@@ -19658,6 +20818,7 @@ class ScalarBooleanFunctions(_StaticFunctionNamespace):
         'struct_has': 'struct_has',
         'suffix': 'suffix',
     }
+
     _SYMBOLIC_FUNCTIONS: ClassVar[dict[str, str]] = {
         '!~~': 'symbol_0021_007e_007e',
         '!~~*': 'symbol_0021_007e_007e_002a',
@@ -19689,6 +20850,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('__internal_compress_string_uhugeint')
     def __internal_compress_string_uhugeint(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``__internal_compress_string_uhugeint``.
 
@@ -19750,6 +20912,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('__internal_decompress_integral_uhugeint')
     def __internal_decompress_integral_uhugeint(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``__internal_decompress_integral_uhugeint``.
 
@@ -19778,6 +20941,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('abs')
     def abs(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``abs``.
 
@@ -20009,6 +21173,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('add')
     def add(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``add``.
 
@@ -20051,6 +21216,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('aggregate')
     def aggregate(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``aggregate``.
 
@@ -20078,6 +21244,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('apply')
     def apply(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``apply``.
 
@@ -20105,6 +21272,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_aggr')
     def array_aggr(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``array_aggr``.
 
@@ -20132,6 +21300,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_aggregate')
     def array_aggregate(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``array_aggregate``.
 
@@ -20142,6 +21311,32 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._ARRAY_AGGREGATE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _ARRAY_APPEND_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='array_append',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"[]'),
+                        parameter_types=(None, None),
+                        parameters=('arr', 'el'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='list_append(arr, el)',
+                    ),
+    )
+    @duckdb_function('array_append')
+    def array_append(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``array_append``.
+
+        Overloads:
+        - main.array_append(ANY arr, ANY el) -> "NULL"[]
+        """
+        return call_duckdb_function(
+            self._ARRAY_APPEND_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -20159,6 +21354,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_apply')
     def array_apply(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``array_apply``.
 
@@ -20186,6 +21382,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_cat')
     def array_cat(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``array_cat``.
 
@@ -20213,6 +21410,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_concat')
     def array_concat(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``array_concat``.
 
@@ -20240,6 +21438,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_distinct')
     def array_distinct(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``array_distinct``.
 
@@ -20291,6 +21490,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_extract')
     def array_extract(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``array_extract``.
 
@@ -20320,6 +21520,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_filter')
     def array_filter(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``array_filter``.
 
@@ -20371,6 +21572,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_grade_up')
     def array_grade_up(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``array_grade_up``.
 
@@ -20383,6 +21585,162 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._ARRAY_GRADE_UP_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _ARRAY_INTERSECT_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='array_intersect',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None, None),
+                        parameters=('l1', 'l2'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='list_intersect(l1, l2)',
+                    ),
+    )
+    @duckdb_function('array_intersect')
+    def array_intersect(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``array_intersect``.
+
+        Overloads:
+        - main.array_intersect(ANY l1, ANY l2) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._ARRAY_INTERSECT_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _ARRAY_POP_BACK_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='array_pop_back',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('arr',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='arr[:(len(arr) - 1)]',
+                    ),
+    )
+    @duckdb_function('array_pop_back')
+    def array_pop_back(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``array_pop_back``.
+
+        Overloads:
+        - main.array_pop_back(ANY arr) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._ARRAY_POP_BACK_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _ARRAY_POP_FRONT_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='array_pop_front',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('arr',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='arr[2:]',
+                    ),
+    )
+    @duckdb_function('array_pop_front')
+    def array_pop_front(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``array_pop_front``.
+
+        Overloads:
+        - main.array_pop_front(ANY arr) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._ARRAY_POP_FRONT_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _ARRAY_PREPEND_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='array_prepend',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"[]'),
+                        parameter_types=(None, None),
+                        parameters=('el', 'arr'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='list_prepend(el, arr)',
+                    ),
+    )
+    @duckdb_function('array_prepend')
+    def array_prepend(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``array_prepend``.
+
+        Overloads:
+        - main.array_prepend(ANY el, ANY arr) -> "NULL"[]
+        """
+        return call_duckdb_function(
+            self._ARRAY_PREPEND_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _ARRAY_PUSH_BACK_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='array_push_back',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"[]'),
+                        parameter_types=(None, None),
+                        parameters=('arr', 'e'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='list_concat(arr, list_value(e))',
+                    ),
+    )
+    @duckdb_function('array_push_back')
+    def array_push_back(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``array_push_back``.
+
+        Overloads:
+        - main.array_push_back(ANY arr, ANY e) -> "NULL"[]
+        """
+        return call_duckdb_function(
+            self._ARRAY_PUSH_BACK_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _ARRAY_PUSH_FRONT_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='array_push_front',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"[]'),
+                        parameter_types=(None, None),
+                        parameters=('arr', 'e'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='list_concat(list_value(e), arr)',
+                    ),
+    )
+    @duckdb_function('array_push_front')
+    def array_push_front(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``array_push_front``.
+
+        Overloads:
+        - main.array_push_front(ANY arr, ANY e) -> "NULL"[]
+        """
+        return call_duckdb_function(
+            self._ARRAY_PUSH_FRONT_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -20412,6 +21770,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_reduce')
     def array_reduce(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``array_reduce``.
 
@@ -20452,6 +21811,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_resize')
     def array_resize(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``array_resize``.
 
@@ -20463,6 +21823,32 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._ARRAY_RESIZE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _ARRAY_REVERSE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='array_reverse',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='list_reverse(l)',
+                    ),
+    )
+    @duckdb_function('array_reverse')
+    def array_reverse(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``array_reverse``.
+
+        Overloads:
+        - main.array_reverse(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._ARRAY_REVERSE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -20492,6 +21878,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_reverse_sort')
     def array_reverse_sort(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``array_reverse_sort``.
 
@@ -20520,6 +21907,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_select')
     def array_select(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``array_select``.
 
@@ -20559,6 +21947,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_slice')
     def array_slice(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``array_slice``.
 
@@ -20611,6 +22000,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_sort')
     def array_sort(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``array_sort``.
 
@@ -20640,6 +22030,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_transform')
     def array_transform(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``array_transform``.
 
@@ -20667,6 +22058,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_value')
     def array_value(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``array_value``.
 
@@ -20694,6 +22086,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_where')
     def array_where(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``array_where``.
 
@@ -20721,6 +22114,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_zip')
     def array_zip(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``array_zip``.
 
@@ -20760,6 +22154,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('bitstring')
     def bitstring(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``bitstring``.
 
@@ -20788,6 +22183,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('cast_to_type')
     def cast_to_type(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``cast_to_type``.
 
@@ -20798,6 +22194,32 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._CAST_TO_TYPE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _COL_DESCRIPTION_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='col_description',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None, None),
+                        parameters=('table_oid', 'column_number'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='NULL',
+                    ),
+    )
+    @duckdb_function('col_description')
+    def col_description(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``col_description``.
+
+        Overloads:
+        - pg_catalog.col_description(ANY table_oid, ANY column_number) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._COL_DESCRIPTION_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -20815,6 +22237,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('combine')
     def combine(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``combine``.
 
@@ -20840,6 +22263,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('concat')
     def concat(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``concat``.
 
@@ -20867,6 +22291,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('constant_or_null')
     def constant_or_null(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``constant_or_null``.
 
@@ -20894,6 +22319,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('current_date')
     def current_date(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``current_date``.
 
@@ -20919,6 +22345,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('current_localtime')
     def current_localtime(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``current_localtime``.
 
@@ -20944,6 +22371,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('current_localtimestamp')
     def current_localtimestamp(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``current_localtimestamp``.
 
@@ -20969,6 +22397,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('current_setting')
     def current_setting(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``current_setting``.
 
@@ -21068,6 +22497,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('date_part')
     def date_part(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``date_part``.
 
@@ -21125,6 +22555,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('date_trunc')
     def date_trunc(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``date_trunc``.
 
@@ -21226,6 +22657,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('datepart')
     def datepart(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``datepart``.
 
@@ -21283,6 +22715,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('datetrunc')
     def datetrunc(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``datetrunc``.
 
@@ -21312,6 +22745,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('divide')
     def divide(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``divide``.
 
@@ -21337,6 +22771,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('element_at')
     def element_at(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``element_at``.
 
@@ -21364,6 +22799,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('enum_code')
     def enum_code(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``enum_code``.
 
@@ -21391,6 +22827,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('epoch_ms')
     def epoch_ms(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``epoch_ms``.
 
@@ -21454,6 +22891,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('equi_width_bins')
     def equi_width_bins(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``equi_width_bins``.
 
@@ -21484,6 +22922,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('error')
     def error(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``error``.
 
@@ -21511,6 +22950,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('filter')
     def filter(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``filter``.
 
@@ -21538,6 +22978,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('finalize')
     def finalize(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``finalize``.
 
@@ -21563,6 +23004,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('flatten')
     def flatten(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``flatten``.
 
@@ -21602,6 +23044,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('from_json')
     def from_json(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``from_json``.
 
@@ -21640,6 +23083,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('from_json_strict')
     def from_json_strict(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``from_json_strict``.
 
@@ -21678,6 +23122,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('generate_series')
     def generate_series(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``generate_series``.
 
@@ -21689,6 +23134,32 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._GENERATE_SERIES_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _GENERATE_SUBSCRIPTS_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='generate_subscripts',
+                        function_type=function_type,
+                        return_type=None,
+                        parameter_types=(None, None),
+                        parameters=('arr', 'dim'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='unnest(generate_series(1, array_length(arr, dim)))',
+                    ),
+    )
+    @duckdb_function('generate_subscripts')
+    def generate_subscripts(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``generate_subscripts``.
+
+        Overloads:
+        - main.generate_subscripts(ANY arr, ANY dim) -> ANY
+        """
+        return call_duckdb_function(
+            self._GENERATE_SUBSCRIPTS_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -21706,6 +23177,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('get_current_time')
     def get_current_time(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``get_current_time``.
 
@@ -21731,6 +23203,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('get_current_timestamp')
     def get_current_timestamp(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``get_current_timestamp``.
 
@@ -21758,6 +23231,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('getvariable')
     def getvariable(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``getvariable``.
 
@@ -21807,6 +23281,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('grade_up')
     def grade_up(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``grade_up``.
 
@@ -21836,6 +23311,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('greatest')
     def greatest(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``greatest``.
 
@@ -21846,6 +23322,110 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._GREATEST_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _INET_CLIENT_ADDR_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='inet_client_addr',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(),
+                        parameters=(),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='NULL',
+                    ),
+    )
+    @duckdb_function('inet_client_addr')
+    def inet_client_addr(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``inet_client_addr``.
+
+        Overloads:
+        - pg_catalog.inet_client_addr() -> "NULL"
+        """
+        return call_duckdb_function(
+            self._INET_CLIENT_ADDR_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _INET_CLIENT_PORT_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='inet_client_port',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(),
+                        parameters=(),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='NULL',
+                    ),
+    )
+    @duckdb_function('inet_client_port')
+    def inet_client_port(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``inet_client_port``.
+
+        Overloads:
+        - pg_catalog.inet_client_port() -> "NULL"
+        """
+        return call_duckdb_function(
+            self._INET_CLIENT_PORT_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _INET_SERVER_ADDR_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='inet_server_addr',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(),
+                        parameters=(),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='NULL',
+                    ),
+    )
+    @duckdb_function('inet_server_addr')
+    def inet_server_addr(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``inet_server_addr``.
+
+        Overloads:
+        - pg_catalog.inet_server_addr() -> "NULL"
+        """
+        return call_duckdb_function(
+            self._INET_SERVER_ADDR_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _INET_SERVER_PORT_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='inet_server_port',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(),
+                        parameters=(),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='NULL',
+                    ),
+    )
+    @duckdb_function('inet_server_port')
+    def inet_server_port(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``inet_server_port``.
+
+        Overloads:
+        - pg_catalog.inet_server_port() -> "NULL"
+        """
+        return call_duckdb_function(
+            self._INET_SERVER_PORT_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -21875,6 +23455,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('json_transform')
     def json_transform(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``json_transform``.
 
@@ -21913,6 +23494,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('json_transform_strict')
     def json_transform_strict(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``json_transform_strict``.
 
@@ -21963,6 +23545,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('last_day')
     def last_day(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``last_day``.
 
@@ -21992,6 +23575,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('least')
     def least(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``least``.
 
@@ -22019,6 +23603,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_aggr')
     def list_aggr(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``list_aggr``.
 
@@ -22046,6 +23631,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_aggregate')
     def list_aggregate(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``list_aggregate``.
 
@@ -22056,6 +23642,58 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._LIST_AGGREGATE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_ANY_VALUE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_any_value',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'any_value')",
+                    ),
+    )
+    @duckdb_function('list_any_value')
+    def list_any_value(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_any_value``.
+
+        Overloads:
+        - main.list_any_value(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_ANY_VALUE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_APPEND_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_append',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"[]'),
+                        parameter_types=(None, None),
+                        parameters=('l', 'e'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='list_concat(l, list_value(e))',
+                    ),
+    )
+    @duckdb_function('list_append')
+    def list_append(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_append``.
+
+        Overloads:
+        - main.list_append(ANY l, ANY e) -> "NULL"[]
+        """
+        return call_duckdb_function(
+            self._LIST_APPEND_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -22073,6 +23711,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_apply')
     def list_apply(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``list_apply``.
 
@@ -22083,6 +23722,188 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._LIST_APPLY_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_APPROX_COUNT_DISTINCT_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_approx_count_distinct',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'approx_count_distinct')",
+                    ),
+    )
+    @duckdb_function('list_approx_count_distinct')
+    def list_approx_count_distinct(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_approx_count_distinct``.
+
+        Overloads:
+        - main.list_approx_count_distinct(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_APPROX_COUNT_DISTINCT_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_AVG_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_avg',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'avg')",
+                    ),
+    )
+    @duckdb_function('list_avg')
+    def list_avg(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_avg``.
+
+        Overloads:
+        - main.list_avg(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_AVG_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_BIT_AND_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_bit_and',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'bit_and')",
+                    ),
+    )
+    @duckdb_function('list_bit_and')
+    def list_bit_and(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_bit_and``.
+
+        Overloads:
+        - main.list_bit_and(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_BIT_AND_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_BIT_OR_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_bit_or',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'bit_or')",
+                    ),
+    )
+    @duckdb_function('list_bit_or')
+    def list_bit_or(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_bit_or``.
+
+        Overloads:
+        - main.list_bit_or(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_BIT_OR_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_BIT_XOR_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_bit_xor',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'bit_xor')",
+                    ),
+    )
+    @duckdb_function('list_bit_xor')
+    def list_bit_xor(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_bit_xor``.
+
+        Overloads:
+        - main.list_bit_xor(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_BIT_XOR_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_BOOL_AND_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_bool_and',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'bool_and')",
+                    ),
+    )
+    @duckdb_function('list_bool_and')
+    def list_bool_and(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_bool_and``.
+
+        Overloads:
+        - main.list_bool_and(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_BOOL_AND_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_BOOL_OR_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_bool_or',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'bool_or')",
+                    ),
+    )
+    @duckdb_function('list_bool_or')
+    def list_bool_or(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_bool_or``.
+
+        Overloads:
+        - main.list_bool_or(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_BOOL_OR_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -22100,6 +23921,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_cat')
     def list_cat(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``list_cat``.
 
@@ -22127,6 +23949,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_concat')
     def list_concat(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``list_concat``.
 
@@ -22137,6 +23960,32 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._LIST_CONCAT_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_COUNT_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_count',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'count')",
+                    ),
+    )
+    @duckdb_function('list_count')
+    def list_count(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_count``.
+
+        Overloads:
+        - main.list_count(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_COUNT_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -22154,6 +24003,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_distinct')
     def list_distinct(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``list_distinct``.
 
@@ -22181,6 +24031,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_element')
     def list_element(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``list_element``.
 
@@ -22191,6 +24042,32 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._LIST_ELEMENT_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_ENTROPY_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_entropy',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'entropy')",
+                    ),
+    )
+    @duckdb_function('list_entropy')
+    def list_entropy(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_entropy``.
+
+        Overloads:
+        - main.list_entropy(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_ENTROPY_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -22208,6 +24085,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_extract')
     def list_extract(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``list_extract``.
 
@@ -22235,6 +24113,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_filter')
     def list_filter(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``list_filter``.
 
@@ -22245,6 +24124,32 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._LIST_FILTER_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_FIRST_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_first',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'first')",
+                    ),
+    )
+    @duckdb_function('list_first')
+    def list_first(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_first``.
+
+        Overloads:
+        - main.list_first(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_FIRST_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -22286,6 +24191,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_grade_up')
     def list_grade_up(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``list_grade_up``.
 
@@ -22298,6 +24204,266 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._LIST_GRADE_UP_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_HISTOGRAM_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_histogram',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'histogram')",
+                    ),
+    )
+    @duckdb_function('list_histogram')
+    def list_histogram(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_histogram``.
+
+        Overloads:
+        - main.list_histogram(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_HISTOGRAM_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_INTERSECT_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_intersect',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None, None),
+                        parameters=('l1', 'l2'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='list_filter(list_distinct(l1), (lambda variable_intersect: list_contains(l2, variable_intersect)))',
+                    ),
+    )
+    @duckdb_function('list_intersect')
+    def list_intersect(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_intersect``.
+
+        Overloads:
+        - main.list_intersect(ANY l1, ANY l2) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_INTERSECT_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_KURTOSIS_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_kurtosis',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'kurtosis')",
+                    ),
+    )
+    @duckdb_function('list_kurtosis')
+    def list_kurtosis(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_kurtosis``.
+
+        Overloads:
+        - main.list_kurtosis(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_KURTOSIS_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_KURTOSIS_POP_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_kurtosis_pop',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'kurtosis_pop')",
+                    ),
+    )
+    @duckdb_function('list_kurtosis_pop')
+    def list_kurtosis_pop(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_kurtosis_pop``.
+
+        Overloads:
+        - main.list_kurtosis_pop(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_KURTOSIS_POP_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_LAST_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_last',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'last')",
+                    ),
+    )
+    @duckdb_function('list_last')
+    def list_last(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_last``.
+
+        Overloads:
+        - main.list_last(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_LAST_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_MAD_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_mad',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'mad')",
+                    ),
+    )
+    @duckdb_function('list_mad')
+    def list_mad(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_mad``.
+
+        Overloads:
+        - main.list_mad(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_MAD_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_MAX_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_max',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'max')",
+                    ),
+    )
+    @duckdb_function('list_max')
+    def list_max(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_max``.
+
+        Overloads:
+        - main.list_max(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_MAX_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_MEDIAN_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_median',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'median')",
+                    ),
+    )
+    @duckdb_function('list_median')
+    def list_median(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_median``.
+
+        Overloads:
+        - main.list_median(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_MEDIAN_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_MIN_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_min',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'min')",
+                    ),
+    )
+    @duckdb_function('list_min')
+    def list_min(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_min``.
+
+        Overloads:
+        - main.list_min(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_MIN_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_MODE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_mode',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'mode')",
+                    ),
+    )
+    @duckdb_function('list_mode')
+    def list_mode(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_mode``.
+
+        Overloads:
+        - main.list_mode(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_MODE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -22327,6 +24493,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_pack')
     def list_pack(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``list_pack``.
 
@@ -22338,6 +24505,58 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._LIST_PACK_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_PREPEND_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_prepend',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"[]'),
+                        parameter_types=(None, None),
+                        parameters=('e', 'l'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='list_concat(list_value(e), l)',
+                    ),
+    )
+    @duckdb_function('list_prepend')
+    def list_prepend(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_prepend``.
+
+        Overloads:
+        - main.list_prepend(ANY e, ANY l) -> "NULL"[]
+        """
+        return call_duckdb_function(
+            self._LIST_PREPEND_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_PRODUCT_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_product',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'product')",
+                    ),
+    )
+    @duckdb_function('list_product')
+    def list_product(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_product``.
+
+        Overloads:
+        - main.list_product(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_PRODUCT_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -22367,6 +24586,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_reduce')
     def list_reduce(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``list_reduce``.
 
@@ -22407,6 +24627,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_resize')
     def list_resize(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``list_resize``.
 
@@ -22418,6 +24639,32 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._LIST_RESIZE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_REVERSE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_reverse',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='l[:-:-1]',
+                    ),
+    )
+    @duckdb_function('list_reverse')
+    def list_reverse(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_reverse``.
+
+        Overloads:
+        - main.list_reverse(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_REVERSE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -22447,6 +24694,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_reverse_sort')
     def list_reverse_sort(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``list_reverse_sort``.
 
@@ -22475,6 +24723,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_select')
     def list_select(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``list_select``.
 
@@ -22485,6 +24734,58 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._LIST_SELECT_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_SEM_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_sem',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'sem')",
+                    ),
+    )
+    @duckdb_function('list_sem')
+    def list_sem(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_sem``.
+
+        Overloads:
+        - main.list_sem(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_SEM_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_SKEWNESS_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_skewness',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'skewness')",
+                    ),
+    )
+    @duckdb_function('list_skewness')
+    def list_skewness(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_skewness``.
+
+        Overloads:
+        - main.list_skewness(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_SKEWNESS_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -22514,6 +24815,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_slice')
     def list_slice(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``list_slice``.
 
@@ -22566,6 +24868,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_sort')
     def list_sort(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``list_sort``.
 
@@ -22578,6 +24881,110 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._LIST_SORT_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_STDDEV_POP_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_stddev_pop',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'stddev_pop')",
+                    ),
+    )
+    @duckdb_function('list_stddev_pop')
+    def list_stddev_pop(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_stddev_pop``.
+
+        Overloads:
+        - main.list_stddev_pop(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_STDDEV_POP_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_STDDEV_SAMP_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_stddev_samp',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'stddev_samp')",
+                    ),
+    )
+    @duckdb_function('list_stddev_samp')
+    def list_stddev_samp(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_stddev_samp``.
+
+        Overloads:
+        - main.list_stddev_samp(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_STDDEV_SAMP_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_STRING_AGG_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_string_agg',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'string_agg')",
+                    ),
+    )
+    @duckdb_function('list_string_agg')
+    def list_string_agg(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_string_agg``.
+
+        Overloads:
+        - main.list_string_agg(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_STRING_AGG_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_SUM_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_sum',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'sum')",
+                    ),
+    )
+    @duckdb_function('list_sum')
+    def list_sum(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_sum``.
+
+        Overloads:
+        - main.list_sum(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_SUM_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -22595,6 +25002,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_transform')
     def list_transform(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``list_transform``.
 
@@ -22634,6 +25042,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_value')
     def list_value(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``list_value``.
 
@@ -22645,6 +25054,58 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._LIST_VALUE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_VAR_POP_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_var_pop',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'var_pop')",
+                    ),
+    )
+    @duckdb_function('list_var_pop')
+    def list_var_pop(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_var_pop``.
+
+        Overloads:
+        - main.list_var_pop(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_VAR_POP_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _LIST_VAR_SAMP_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='list_var_samp',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None,),
+                        parameters=('l',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(l, 'var_samp')",
+                    ),
+    )
+    @duckdb_function('list_var_samp')
+    def list_var_samp(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``list_var_samp``.
+
+        Overloads:
+        - main.list_var_samp(ANY l) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._LIST_VAR_SAMP_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -22662,6 +25123,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_where')
     def list_where(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``list_where``.
 
@@ -22689,6 +25151,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_zip')
     def list_zip(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``list_zip``.
 
@@ -22740,6 +25203,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('make_date')
     def make_date(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``make_date``.
 
@@ -22769,6 +25233,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('make_time')
     def make_time(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``make_time``.
 
@@ -22808,6 +25273,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('make_timestamp')
     def make_timestamp(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``make_timestamp``.
 
@@ -22836,6 +25302,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('make_timestamp_ms')
     def make_timestamp_ms(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``make_timestamp_ms``.
 
@@ -22863,6 +25330,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('make_timestamp_ns')
     def make_timestamp_ns(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``make_timestamp_ns``.
 
@@ -22914,6 +25382,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('make_timestamptz')
     def make_timestamptz(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``make_timestamptz``.
 
@@ -22953,6 +25422,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('map')
     def map(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``map``.
 
@@ -22981,6 +25451,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('map_concat')
     def map_concat(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``map_concat``.
 
@@ -23008,6 +25479,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('map_entries')
     def map_entries(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``map_entries``.
 
@@ -23035,6 +25507,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('map_extract')
     def map_extract(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``map_extract``.
 
@@ -23062,6 +25535,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('map_extract_value')
     def map_extract_value(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``map_extract_value``.
 
@@ -23089,6 +25563,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('map_from_entries')
     def map_from_entries(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``map_from_entries``.
 
@@ -23116,6 +25591,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('map_keys')
     def map_keys(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``map_keys``.
 
@@ -23143,6 +25619,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('map_values')
     def map_values(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``map_values``.
 
@@ -23182,6 +25659,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('md5_number')
     def md5_number(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``md5_number``.
 
@@ -23210,6 +25688,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('mod')
     def mod(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``mod``.
 
@@ -23235,6 +25714,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('multiply')
     def multiply(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``multiply``.
 
@@ -23260,6 +25740,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('now')
     def now(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``now``.
 
@@ -23270,6 +25751,58 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._NOW_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _NULLIF_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='nullif',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None, None),
+                        parameters=('a', 'b'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='CASE  WHEN ((a = b)) THEN (NULL) ELSE a END',
+                    ),
+    )
+    @duckdb_function('nullif')
+    def nullif(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``nullif``.
+
+        Overloads:
+        - main.nullif(ANY a, ANY b) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._NULLIF_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _OBJ_DESCRIPTION_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='obj_description',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None, None),
+                        parameters=('object_oid', 'catalog_name'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='NULL',
+                    ),
+    )
+    @duckdb_function('obj_description')
+    def obj_description(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``obj_description``.
+
+        Overloads:
+        - pg_catalog.obj_description(ANY object_oid, ANY catalog_name) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._OBJ_DESCRIPTION_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -23287,6 +25820,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('parse_duckdb_log_message')
     def parse_duckdb_log_message(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``parse_duckdb_log_message``.
 
@@ -23297,6 +25831,84 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._PARSE_DUCKDB_LOG_MESSAGE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _PG_CONF_LOAD_TIME_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='pg_conf_load_time',
+                        function_type=function_type,
+                        return_type=parse_type('TIMESTAMP WITH TIME ZONE'),
+                        parameter_types=(),
+                        parameters=(),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='current_timestamp',
+                    ),
+    )
+    @duckdb_function('pg_conf_load_time')
+    def pg_conf_load_time(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``pg_conf_load_time``.
+
+        Overloads:
+        - pg_catalog.pg_conf_load_time() -> TIMESTAMP WITH TIME ZONE
+        """
+        return call_duckdb_function(
+            self._PG_CONF_LOAD_TIME_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _PG_GET_EXPR_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='pg_get_expr',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None, None),
+                        parameters=('pg_node_tree', 'relation_oid'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='pg_node_tree',
+                    ),
+    )
+    @duckdb_function('pg_get_expr')
+    def pg_get_expr(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``pg_get_expr``.
+
+        Overloads:
+        - pg_catalog.pg_get_expr(ANY pg_node_tree, ANY relation_oid) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._PG_GET_EXPR_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _PG_POSTMASTER_START_TIME_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='pg_postmaster_start_time',
+                        function_type=function_type,
+                        return_type=parse_type('TIMESTAMP WITH TIME ZONE'),
+                        parameter_types=(),
+                        parameters=(),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='current_timestamp',
+                    ),
+    )
+    @duckdb_function('pg_postmaster_start_time')
+    def pg_postmaster_start_time(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``pg_postmaster_start_time``.
+
+        Overloads:
+        - pg_catalog.pg_postmaster_start_time() -> TIMESTAMP WITH TIME ZONE
+        """
+        return call_duckdb_function(
+            self._PG_POSTMASTER_START_TIME_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -23326,6 +25938,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('range')
     def range(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``range``.
 
@@ -23366,6 +25979,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('reduce')
     def reduce(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``reduce``.
 
@@ -23377,6 +25991,32 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._REDUCE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _REGEXP_SPLIT_TO_TABLE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='regexp_split_to_table',
+                        function_type=function_type,
+                        return_type=None,
+                        parameter_types=(None, None),
+                        parameters=('text', 'pattern'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='unnest(string_split_regex("text", pattern))',
+                    ),
+    )
+    @duckdb_function('regexp_split_to_table')
+    def regexp_split_to_table(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``regexp_split_to_table``.
+
+        Overloads:
+        - main.regexp_split_to_table(ANY text, ANY pattern) -> ANY
+        """
+        return call_duckdb_function(
+            self._REGEXP_SPLIT_TO_TABLE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -23394,6 +26034,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('remap_struct')
     def remap_struct(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``remap_struct``.
 
@@ -23421,6 +26062,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('repeat')
     def repeat(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``repeat``.
 
@@ -23446,6 +26088,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('replace_type')
     def replace_type(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``replace_type``.
 
@@ -23473,6 +26116,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('row')
     def row(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``row``.
 
@@ -23500,6 +26144,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('set_bit')
     def set_bit(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``set_bit``.
 
@@ -23527,6 +26172,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('setseed')
     def setseed(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``setseed``.
 
@@ -23537,6 +26183,32 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._SETSEED_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _SHOBJ_DESCRIPTION_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='shobj_description',
+                        function_type=function_type,
+                        return_type=parse_type('"NULL"'),
+                        parameter_types=(None, None),
+                        parameters=('object_oid', 'catalog_name'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='NULL',
+                    ),
+    )
+    @duckdb_function('shobj_description')
+    def shobj_description(self, *operands: object) -> TypedExpression:
+        """Call DuckDB function ``shobj_description``.
+
+        Overloads:
+        - pg_catalog.shobj_description(ANY object_oid, ANY catalog_name) -> "NULL"
+        """
+        return call_duckdb_function(
+            self._SHOBJ_DESCRIPTION_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -23566,6 +26238,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('strptime')
     def strptime(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``strptime``.
 
@@ -23594,6 +26267,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('struct_concat')
     def struct_concat(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``struct_concat``.
 
@@ -23633,6 +26307,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('struct_extract')
     def struct_extract(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``struct_extract``.
 
@@ -23661,6 +26336,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('struct_extract_at')
     def struct_extract_at(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``struct_extract_at``.
 
@@ -23688,6 +26364,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('struct_insert')
     def struct_insert(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``struct_insert``.
 
@@ -23715,6 +26392,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('struct_pack')
     def struct_pack(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``struct_pack``.
 
@@ -23742,6 +26420,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('struct_update')
     def struct_update(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``struct_update``.
 
@@ -23865,6 +26544,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('subtract')
     def subtract(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``subtract``.
 
@@ -24006,6 +26686,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('time_bucket')
     def time_bucket(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``time_bucket``.
 
@@ -24078,6 +26759,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('timezone')
     def timezone(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``timezone``.
 
@@ -24108,6 +26790,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('to_timestamp')
     def to_timestamp(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``to_timestamp``.
 
@@ -24135,6 +26818,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('today')
     def today(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``today``.
 
@@ -24160,6 +26844,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('transaction_timestamp')
     def transaction_timestamp(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``transaction_timestamp``.
 
@@ -24199,6 +26884,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('trunc')
     def trunc(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``trunc``.
 
@@ -24239,6 +26925,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('try_strptime')
     def try_strptime(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``try_strptime``.
 
@@ -24267,6 +26954,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('union_extract')
     def union_extract(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``union_extract``.
 
@@ -24294,6 +26982,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('union_tag')
     def union_tag(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``union_tag``.
 
@@ -24321,6 +27010,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('union_value')
     def union_value(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``union_value``.
 
@@ -24348,6 +27038,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('unpivot_list')
     def unpivot_list(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``unpivot_list``.
 
@@ -24375,6 +27066,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('uuid_extract_timestamp')
     def uuid_extract_timestamp(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``uuid_extract_timestamp``.
 
@@ -24414,6 +27106,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('variant_extract')
     def variant_extract(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``variant_extract``.
 
@@ -24440,6 +27133,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('write_log')
     def write_log(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``write_log``.
 
@@ -24479,6 +27173,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('xor')
     def xor(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``xor``.
 
@@ -24507,6 +27202,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('%',))
     def symbol_0025(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``%``.
 
@@ -24544,6 +27240,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('&',))
     def symbol_0026(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``&``.
 
@@ -24572,6 +27269,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('*',))
     def symbol_002a(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``*``.
 
@@ -24825,6 +27523,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('+',))
     def symbol_002b(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``+``.
 
@@ -24977,6 +27676,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('-',))
     def symbol_002d(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``-``.
 
@@ -25011,6 +27711,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('//',))
     def symbol_002f_002f(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``//``.
 
@@ -25048,6 +27749,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('<<',))
     def symbol_003c_003c(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``<<``.
 
@@ -25088,6 +27790,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('>>',))
     def symbol_003e_003e(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``>>``.
 
@@ -25116,6 +27819,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('@',))
     def symbol_0040(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``@``.
 
@@ -25155,6 +27859,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('|',))
     def symbol_007c(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``|``.
 
@@ -25183,6 +27888,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('||',))
     def symbol_007c_007c(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``||``.
 
@@ -25222,6 +27928,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('~',))
     def symbol_007e(self, *operands: object) -> TypedExpression:
         """Call DuckDB function ``~``.
 
@@ -25236,6 +27943,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
             return_category=self.return_category,
             operands=operands,
         )
+
     _IDENTIFIER_FUNCTIONS: ClassVar[dict[str, str]] = {
         '__internal_compress_string_uhugeint': '__internal_compress_string_uhugeint',
         '__internal_decompress_integral_uhugeint': '__internal_decompress_integral_uhugeint',
@@ -25245,6 +27953,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
         'apply': 'apply',
         'array_aggr': 'array_aggr',
         'array_aggregate': 'array_aggregate',
+        'array_append': 'array_append',
         'array_apply': 'array_apply',
         'array_cat': 'array_cat',
         'array_concat': 'array_concat',
@@ -25252,8 +27961,15 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
         'array_extract': 'array_extract',
         'array_filter': 'array_filter',
         'array_grade_up': 'array_grade_up',
+        'array_intersect': 'array_intersect',
+        'array_pop_back': 'array_pop_back',
+        'array_pop_front': 'array_pop_front',
+        'array_prepend': 'array_prepend',
+        'array_push_back': 'array_push_back',
+        'array_push_front': 'array_push_front',
         'array_reduce': 'array_reduce',
         'array_resize': 'array_resize',
+        'array_reverse': 'array_reverse',
         'array_reverse_sort': 'array_reverse_sort',
         'array_select': 'array_select',
         'array_slice': 'array_slice',
@@ -25264,6 +27980,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
         'array_zip': 'array_zip',
         'bitstring': 'bitstring',
         'cast_to_type': 'cast_to_type',
+        'col_description': 'col_description',
         'combine': 'combine',
         'concat': 'concat',
         'constant_or_null': 'constant_or_null',
@@ -25287,34 +28004,72 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
         'from_json': 'from_json',
         'from_json_strict': 'from_json_strict',
         'generate_series': 'generate_series',
+        'generate_subscripts': 'generate_subscripts',
         'get_current_time': 'get_current_time',
         'get_current_timestamp': 'get_current_timestamp',
         'getvariable': 'getvariable',
         'grade_up': 'grade_up',
         'greatest': 'greatest',
+        'inet_client_addr': 'inet_client_addr',
+        'inet_client_port': 'inet_client_port',
+        'inet_server_addr': 'inet_server_addr',
+        'inet_server_port': 'inet_server_port',
         'json_transform': 'json_transform',
         'json_transform_strict': 'json_transform_strict',
         'last_day': 'last_day',
         'least': 'least',
         'list_aggr': 'list_aggr',
         'list_aggregate': 'list_aggregate',
+        'list_any_value': 'list_any_value',
+        'list_append': 'list_append',
         'list_apply': 'list_apply',
+        'list_approx_count_distinct': 'list_approx_count_distinct',
+        'list_avg': 'list_avg',
+        'list_bit_and': 'list_bit_and',
+        'list_bit_or': 'list_bit_or',
+        'list_bit_xor': 'list_bit_xor',
+        'list_bool_and': 'list_bool_and',
+        'list_bool_or': 'list_bool_or',
         'list_cat': 'list_cat',
         'list_concat': 'list_concat',
+        'list_count': 'list_count',
         'list_distinct': 'list_distinct',
         'list_element': 'list_element',
+        'list_entropy': 'list_entropy',
         'list_extract': 'list_extract',
         'list_filter': 'list_filter',
+        'list_first': 'list_first',
         'list_grade_up': 'list_grade_up',
+        'list_histogram': 'list_histogram',
+        'list_intersect': 'list_intersect',
+        'list_kurtosis': 'list_kurtosis',
+        'list_kurtosis_pop': 'list_kurtosis_pop',
+        'list_last': 'list_last',
+        'list_mad': 'list_mad',
+        'list_max': 'list_max',
+        'list_median': 'list_median',
+        'list_min': 'list_min',
+        'list_mode': 'list_mode',
         'list_pack': 'list_pack',
+        'list_prepend': 'list_prepend',
+        'list_product': 'list_product',
         'list_reduce': 'list_reduce',
         'list_resize': 'list_resize',
+        'list_reverse': 'list_reverse',
         'list_reverse_sort': 'list_reverse_sort',
         'list_select': 'list_select',
+        'list_sem': 'list_sem',
+        'list_skewness': 'list_skewness',
         'list_slice': 'list_slice',
         'list_sort': 'list_sort',
+        'list_stddev_pop': 'list_stddev_pop',
+        'list_stddev_samp': 'list_stddev_samp',
+        'list_string_agg': 'list_string_agg',
+        'list_sum': 'list_sum',
         'list_transform': 'list_transform',
         'list_value': 'list_value',
+        'list_var_pop': 'list_var_pop',
+        'list_var_samp': 'list_var_samp',
         'list_where': 'list_where',
         'list_zip': 'list_zip',
         'make_date': 'make_date',
@@ -25335,15 +28090,22 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
         'mod': 'mod',
         'multiply': 'multiply',
         'now': 'now',
+        'nullif': 'nullif',
+        'obj_description': 'obj_description',
         'parse_duckdb_log_message': 'parse_duckdb_log_message',
+        'pg_conf_load_time': 'pg_conf_load_time',
+        'pg_get_expr': 'pg_get_expr',
+        'pg_postmaster_start_time': 'pg_postmaster_start_time',
         'range': 'range',
         'reduce': 'reduce',
+        'regexp_split_to_table': 'regexp_split_to_table',
         'remap_struct': 'remap_struct',
         'repeat': 'repeat',
         'replace_type': 'replace_type',
         'row': 'row',
         'set_bit': 'set_bit',
         'setseed': 'setseed',
+        'shobj_description': 'shobj_description',
         'strptime': 'strptime',
         'struct_concat': 'struct_concat',
         'struct_extract': 'struct_extract',
@@ -25368,6 +28130,7 @@ class ScalarGenericFunctions(_StaticFunctionNamespace):
         'write_log': 'write_log',
         'xor': 'xor',
     }
+
     _SYMBOLIC_FUNCTIONS: ClassVar[dict[str, str]] = {
         '%': 'symbol_0025',
         '&': 'symbol_0026',
@@ -25414,6 +28177,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('__internal_compress_integral_ubigint')
     def __internal_compress_integral_ubigint(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``__internal_compress_integral_ubigint``.
 
@@ -25476,6 +28240,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('__internal_compress_integral_uinteger')
     def __internal_compress_integral_uinteger(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``__internal_compress_integral_uinteger``.
 
@@ -25564,6 +28329,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('__internal_compress_integral_usmallint')
     def __internal_compress_integral_usmallint(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``__internal_compress_integral_usmallint``.
 
@@ -25678,6 +28444,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('__internal_compress_integral_utinyint')
     def __internal_compress_integral_utinyint(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``__internal_compress_integral_utinyint``.
 
@@ -25710,6 +28477,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('__internal_compress_string_hugeint')
     def __internal_compress_string_hugeint(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``__internal_compress_string_hugeint``.
 
@@ -25735,6 +28503,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('__internal_compress_string_ubigint')
     def __internal_compress_string_ubigint(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``__internal_compress_string_ubigint``.
 
@@ -25760,6 +28529,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('__internal_compress_string_uinteger')
     def __internal_compress_string_uinteger(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``__internal_compress_string_uinteger``.
 
@@ -25785,6 +28555,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('__internal_compress_string_usmallint')
     def __internal_compress_string_usmallint(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``__internal_compress_string_usmallint``.
 
@@ -25810,6 +28581,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('__internal_compress_string_utinyint')
     def __internal_compress_string_utinyint(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``__internal_compress_string_utinyint``.
 
@@ -25859,6 +28631,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('__internal_decompress_integral_bigint')
     def __internal_decompress_integral_bigint(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``__internal_decompress_integral_bigint``.
 
@@ -25922,6 +28695,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('__internal_decompress_integral_hugeint')
     def __internal_decompress_integral_hugeint(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``__internal_decompress_integral_hugeint``.
 
@@ -25962,6 +28736,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('__internal_decompress_integral_integer')
     def __internal_decompress_integral_integer(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``__internal_decompress_integral_integer``.
 
@@ -25988,6 +28763,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('__internal_decompress_integral_smallint')
     def __internal_decompress_integral_smallint(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``__internal_decompress_integral_smallint``.
 
@@ -26037,6 +28813,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('__internal_decompress_integral_ubigint')
     def __internal_decompress_integral_ubigint(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``__internal_decompress_integral_ubigint``.
 
@@ -26076,6 +28853,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('__internal_decompress_integral_uinteger')
     def __internal_decompress_integral_uinteger(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``__internal_decompress_integral_uinteger``.
 
@@ -26102,6 +28880,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('__internal_decompress_integral_usmallint')
     def __internal_decompress_integral_usmallint(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``__internal_decompress_integral_usmallint``.
 
@@ -26259,6 +29038,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('abs')
     def abs(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``abs``.
 
@@ -26297,6 +29077,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('acos')
     def acos(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``acos``.
 
@@ -26324,6 +29105,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('acosh')
     def acosh(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``acosh``.
 
@@ -26639,6 +29421,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('add')
     def add(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``add``.
 
@@ -26724,6 +29507,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('age')
     def age(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``age``.
 
@@ -26766,6 +29550,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_cosine_distance')
     def array_cosine_distance(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``array_cosine_distance``.
 
@@ -26806,6 +29591,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_cosine_similarity')
     def array_cosine_similarity(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``array_cosine_similarity``.
 
@@ -26846,6 +29632,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_cross_product')
     def array_cross_product(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``array_cross_product``.
 
@@ -26886,6 +29673,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_distance')
     def array_distance(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``array_distance``.
 
@@ -26926,6 +29714,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_dot_product')
     def array_dot_product(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``array_dot_product``.
 
@@ -26954,6 +29743,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_indexof')
     def array_indexof(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``array_indexof``.
 
@@ -26993,6 +29783,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_inner_product')
     def array_inner_product(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``array_inner_product``.
 
@@ -27033,6 +29824,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_length')
     def array_length(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``array_length``.
 
@@ -27073,6 +29865,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_negative_dot_product')
     def array_negative_dot_product(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``array_negative_dot_product``.
 
@@ -27113,6 +29906,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_negative_inner_product')
     def array_negative_inner_product(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``array_negative_inner_product``.
 
@@ -27141,6 +29935,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_position')
     def array_position(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``array_position``.
 
@@ -27168,6 +29963,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_unique')
     def array_unique(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``array_unique``.
 
@@ -27195,6 +29991,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('ascii')
     def ascii(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``ascii``.
 
@@ -27222,6 +30019,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('asin')
     def asin(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``asin``.
 
@@ -27249,6 +30047,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('asinh')
     def asinh(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``asinh``.
 
@@ -27276,6 +30075,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('atan')
     def atan(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``atan``.
 
@@ -27303,6 +30103,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('atan2')
     def atan2(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``atan2``.
 
@@ -27330,6 +30131,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('atanh')
     def atanh(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``atanh``.
 
@@ -27417,6 +30219,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('bit_count')
     def bit_count(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``bit_count``.
 
@@ -27461,6 +30264,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('bit_length')
     def bit_length(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``bit_length``.
 
@@ -27489,6 +30293,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('bit_position')
     def bit_position(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``bit_position``.
 
@@ -27516,6 +30321,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('cardinality')
     def cardinality(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``cardinality``.
 
@@ -27543,6 +30349,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('cbrt')
     def cbrt(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``cbrt``.
 
@@ -27594,6 +30401,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('ceil')
     def ceil(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``ceil``.
 
@@ -27647,6 +30455,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('ceiling')
     def ceiling(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``ceiling``.
 
@@ -27712,6 +30521,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('century')
     def century(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``century``.
 
@@ -27766,6 +30576,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('char_length')
     def char_length(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``char_length``.
 
@@ -27819,6 +30630,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('character_length')
     def character_length(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``character_length``.
 
@@ -27848,6 +30660,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('cos')
     def cos(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``cos``.
 
@@ -27875,6 +30688,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('cosh')
     def cosh(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``cosh``.
 
@@ -27902,6 +30716,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('cot')
     def cot(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``cot``.
 
@@ -27929,6 +30744,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('current_connection_id')
     def current_connection_id(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``current_connection_id``.
 
@@ -27956,6 +30772,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('current_query_id')
     def current_query_id(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``current_query_id``.
 
@@ -27983,6 +30800,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('current_transaction_id')
     def current_transaction_id(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``current_transaction_id``.
 
@@ -28010,6 +30828,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('currval')
     def currval(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``currval``.
 
@@ -28037,6 +30856,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('damerau_levenshtein')
     def damerau_levenshtein(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``damerau_levenshtein``.
 
@@ -28047,6 +30867,32 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._DAMERAU_LEVENSHTEIN_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _DATE_ADD_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='date_add',
+                        function_type=function_type,
+                        return_type=parse_type('BIGINT'),
+                        parameter_types=(None, None),
+                        parameters=('date', 'interval'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='(date + "interval")',
+                    ),
+    )
+    @duckdb_function('date_add')
+    def date_add(self, *operands: object) -> NumericExpression:
+        """Call DuckDB function ``date_add``.
+
+        Overloads:
+        - main.date_add(ANY date, ANY interval) -> BIGINT
+        """
+        return call_duckdb_function(
+            self._DATE_ADD_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -28100,6 +30946,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('date_diff')
     def date_diff(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``date_diff``.
 
@@ -28202,6 +31049,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('date_part')
     def date_part(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``date_part``.
 
@@ -28271,6 +31119,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('date_sub')
     def date_sub(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``date_sub``.
 
@@ -28301,6 +31150,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('date_trunc')
     def date_trunc(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``date_trunc``.
 
@@ -28364,6 +31214,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('datediff')
     def datediff(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``datediff``.
 
@@ -28466,6 +31317,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('datepart')
     def datepart(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``datepart``.
 
@@ -28535,6 +31387,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('datesub')
     def datesub(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``datesub``.
 
@@ -28565,6 +31418,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('datetrunc')
     def datetrunc(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``datetrunc``.
 
@@ -28628,6 +31482,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('day')
     def day(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``day``.
 
@@ -28694,6 +31549,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('dayofmonth')
     def dayofmonth(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``dayofmonth``.
 
@@ -28760,6 +31616,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('dayofweek')
     def dayofweek(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``dayofweek``.
 
@@ -28826,6 +31683,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('dayofyear')
     def dayofyear(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``dayofyear``.
 
@@ -28892,6 +31750,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('decade')
     def decade(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``decade``.
 
@@ -28922,6 +31781,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('degrees')
     def degrees(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``degrees``.
 
@@ -29069,6 +31929,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('divide')
     def divide(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``divide``.
 
@@ -29104,6 +31965,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('editdist3')
     def editdist3(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``editdist3``.
 
@@ -29203,6 +32065,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('epoch')
     def epoch(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``epoch``.
 
@@ -29308,6 +32171,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('epoch_ms')
     def epoch_ms(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``epoch_ms``.
 
@@ -29425,6 +32289,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('epoch_ns')
     def epoch_ns(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``epoch_ns``.
 
@@ -29531,6 +32396,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('epoch_us')
     def epoch_us(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``epoch_us``.
 
@@ -29600,6 +32466,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('era')
     def era(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``era``.
 
@@ -29630,6 +32497,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('even')
     def even(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``even``.
 
@@ -29657,6 +32525,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('exp')
     def exp(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``exp``.
 
@@ -29684,6 +32553,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('factorial')
     def factorial(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``factorial``.
 
@@ -29694,6 +32564,32 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._FACTORIAL_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _FDIV_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='fdiv',
+                        function_type=function_type,
+                        return_type=parse_type('DOUBLE'),
+                        parameter_types=(None, None),
+                        parameters=('x', 'y'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='floor((x / y))',
+                    ),
+    )
+    @duckdb_function('fdiv')
+    def fdiv(self, *operands: object) -> NumericExpression:
+        """Call DuckDB function ``fdiv``.
+
+        Overloads:
+        - main.fdiv(ANY x, ANY y) -> DOUBLE
+        """
+        return call_duckdb_function(
+            self._FDIV_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -29735,6 +32631,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('floor')
     def floor(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``floor``.
 
@@ -29747,6 +32644,32 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._FLOOR_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _FMOD_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='fmod',
+                        function_type=function_type,
+                        return_type=parse_type('DOUBLE'),
+                        parameter_types=(None, None),
+                        parameters=('x', 'y'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='(x - (y * floor((x / y))))',
+                    ),
+    )
+    @duckdb_function('fmod')
+    def fmod(self, *operands: object) -> NumericExpression:
+        """Call DuckDB function ``fmod``.
+
+        Overloads:
+        - main.fmod(ANY x, ANY y) -> DOUBLE
+        """
+        return call_duckdb_function(
+            self._FMOD_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -29764,6 +32687,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('gamma')
     def gamma(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``gamma``.
 
@@ -29803,6 +32727,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('gcd')
     def gcd(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``gcd``.
 
@@ -29855,6 +32780,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('generate_series')
     def generate_series(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``generate_series``.
 
@@ -29867,6 +32793,58 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._GENERATE_SERIES_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _GEOMEAN_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='geomean',
+                        function_type=function_type,
+                        return_type=parse_type('DOUBLE'),
+                        parameter_types=(None,),
+                        parameters=('x',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='exp(avg(ln(x)))',
+                    ),
+    )
+    @duckdb_function('geomean')
+    def geomean(self, *operands: object) -> NumericExpression:
+        """Call DuckDB function ``geomean``.
+
+        Overloads:
+        - main.geomean(ANY x) -> DOUBLE
+        """
+        return call_duckdb_function(
+            self._GEOMEAN_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _GEOMETRIC_MEAN_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='geometric_mean',
+                        function_type=function_type,
+                        return_type=parse_type('DOUBLE'),
+                        parameter_types=(None,),
+                        parameters=('x',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='geomean(x)',
+                    ),
+    )
+    @duckdb_function('geometric_mean')
+    def geometric_mean(self, *operands: object) -> NumericExpression:
+        """Call DuckDB function ``geometric_mean``.
+
+        Overloads:
+        - main.geometric_mean(ANY x) -> DOUBLE
+        """
+        return call_duckdb_function(
+            self._GEOMETRIC_MEAN_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -29884,6 +32862,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('get_bit')
     def get_bit(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``get_bit``.
 
@@ -29894,6 +32873,32 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._GET_BIT_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _GET_BLOCK_SIZE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='get_block_size',
+                        function_type=function_type,
+                        return_type=parse_type('BIGINT'),
+                        parameter_types=(None,),
+                        parameters=('db_name',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='(SELECT block_size FROM pragma_database_size() WHERE (database_name = db_name))',
+                    ),
+    )
+    @duckdb_function('get_block_size')
+    def get_block_size(self, *operands: object) -> NumericExpression:
+        """Call DuckDB function ``get_block_size``.
+
+        Overloads:
+        - main.get_block_size(ANY db_name) -> BIGINT
+        """
+        return call_duckdb_function(
+            self._GET_BLOCK_SIZE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -29923,6 +32928,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('greatest_common_divisor')
     def greatest_common_divisor(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``greatest_common_divisor``.
 
@@ -29951,6 +32957,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('hamming')
     def hamming(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``hamming``.
 
@@ -29978,6 +32985,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('hash')
     def hash(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``hash``.
 
@@ -30077,6 +33085,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('hour')
     def hour(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``hour``.
 
@@ -30110,6 +33119,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('instr')
     def instr(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``instr``.
 
@@ -30173,6 +33183,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('isodow')
     def isodow(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``isodow``.
 
@@ -30239,6 +33250,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('isoyear')
     def isoyear(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``isoyear``.
 
@@ -30269,6 +33281,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('jaccard')
     def jaccard(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``jaccard``.
 
@@ -30308,6 +33321,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('jaro_similarity')
     def jaro_similarity(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``jaro_similarity``.
 
@@ -30348,6 +33362,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('jaro_winkler_similarity')
     def jaro_winkler_similarity(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``jaro_winkler_similarity``.
 
@@ -30436,6 +33451,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('json_array_length')
     def json_array_length(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``json_array_length``.
 
@@ -30490,6 +33506,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('julian')
     def julian(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``julian``.
 
@@ -30531,6 +33548,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('lcm')
     def lcm(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``lcm``.
 
@@ -30571,6 +33589,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('least_common_multiple')
     def least_common_multiple(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``least_common_multiple``.
 
@@ -30623,6 +33642,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('len')
     def len(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``len``.
 
@@ -30676,6 +33696,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('length')
     def length(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``length``.
 
@@ -30705,6 +33726,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('length_grapheme')
     def length_grapheme(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``length_grapheme``.
 
@@ -30732,6 +33754,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('levenshtein')
     def levenshtein(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``levenshtein``.
 
@@ -30759,6 +33782,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('lgamma')
     def lgamma(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``lgamma``.
 
@@ -30798,6 +33822,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_cosine_distance')
     def list_cosine_distance(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``list_cosine_distance``.
 
@@ -30838,6 +33863,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_cosine_similarity')
     def list_cosine_similarity(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``list_cosine_similarity``.
 
@@ -30878,6 +33904,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_distance')
     def list_distance(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``list_distance``.
 
@@ -30918,6 +33945,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_dot_product')
     def list_dot_product(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``list_dot_product``.
 
@@ -30946,6 +33974,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_indexof')
     def list_indexof(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``list_indexof``.
 
@@ -30985,6 +34014,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_inner_product')
     def list_inner_product(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``list_inner_product``.
 
@@ -31025,6 +34055,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_negative_dot_product')
     def list_negative_dot_product(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``list_negative_dot_product``.
 
@@ -31065,6 +34096,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_negative_inner_product')
     def list_negative_inner_product(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``list_negative_inner_product``.
 
@@ -31093,6 +34125,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_position')
     def list_position(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``list_position``.
 
@@ -31120,6 +34153,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_unique')
     def list_unique(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``list_unique``.
 
@@ -31147,6 +34181,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('ln')
     def ln(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``ln``.
 
@@ -31186,6 +34221,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('log')
     def log(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``log``.
 
@@ -31214,6 +34250,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('log10')
     def log10(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``log10``.
 
@@ -31241,6 +34278,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('log2')
     def log2(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``log2``.
 
@@ -31251,6 +34289,84 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._LOG2_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _MAP_TO_PG_OID_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='map_to_pg_oid',
+                        function_type=function_type,
+                        return_type=parse_type('INTEGER'),
+                        parameter_types=(None,),
+                        parameters=('type_name',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CASE  WHEN ((type_name = 'bool')) THEN (16) WHEN ((type_name = 'int16')) THEN (21) WHEN ((type_name = 'int')) THEN (23) WHEN ((type_name = 'bigint')) THEN (20) WHEN ((type_name = 'date')) THEN (1082) WHEN ((type_name = 'time')) THEN (1083) WHEN ((type_name = 'datetime')) THEN (1114) WHEN ((type_name = 'dec')) THEN (1700) WHEN ((type_name = 'float')) THEN (700) WHEN ((type_name = 'double')) THEN (701) WHEN ((type_name = 'bpchar')) THEN (1043) WHEN ((type_name = 'binary')) THEN (17) WHEN ((type_name = 'interval')) THEN (1186) WHEN ((type_name = 'timestamptz')) THEN (1184) WHEN ((type_name = 'timetz')) THEN (1266) WHEN ((type_name = 'bit')) THEN (1560) WHEN ((type_name = 'guid')) THEN (2950) ELSE NULL END",
+                    ),
+    )
+    @duckdb_function('map_to_pg_oid')
+    def map_to_pg_oid(self, *operands: object) -> NumericExpression:
+        """Call DuckDB function ``map_to_pg_oid``.
+
+        Overloads:
+        - pg_catalog.map_to_pg_oid(ANY type_name) -> INTEGER
+        """
+        return call_duckdb_function(
+            self._MAP_TO_PG_OID_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _MD5_NUMBER_LOWER_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='md5_number_lower',
+                        function_type=function_type,
+                        return_type=parse_type('UBIGINT'),
+                        parameter_types=(None,),
+                        parameters=('param',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='CAST(CAST(CAST(CAST(md5_number(param) AS BIT) AS VARCHAR)[:64] AS BIT) AS UBIGINT)',
+                    ),
+    )
+    @duckdb_function('md5_number_lower')
+    def md5_number_lower(self, *operands: object) -> NumericExpression:
+        """Call DuckDB function ``md5_number_lower``.
+
+        Overloads:
+        - main.md5_number_lower(ANY param) -> UBIGINT
+        """
+        return call_duckdb_function(
+            self._MD5_NUMBER_LOWER_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _MD5_NUMBER_UPPER_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='md5_number_upper',
+                        function_type=function_type,
+                        return_type=parse_type('UBIGINT'),
+                        parameter_types=(None,),
+                        parameters=('param',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='CAST(CAST(CAST(CAST(md5_number(param) AS BIT) AS VARCHAR)[65:] AS BIT) AS UBIGINT)',
+                    ),
+    )
+    @duckdb_function('md5_number_upper')
+    def md5_number_upper(self, *operands: object) -> NumericExpression:
+        """Call DuckDB function ``md5_number_upper``.
+
+        Overloads:
+        - main.md5_number_upper(ANY param) -> UBIGINT
+        """
+        return call_duckdb_function(
+            self._MD5_NUMBER_UPPER_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -31340,6 +34456,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('microsecond')
     def microsecond(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``microsecond``.
 
@@ -31409,6 +34526,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('millennium')
     def millennium(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``millennium``.
 
@@ -31511,6 +34629,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('millisecond')
     def millisecond(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``millisecond``.
 
@@ -31616,6 +34735,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('minute')
     def minute(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``minute``.
 
@@ -31649,6 +34769,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('mismatches')
     def mismatches(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``mismatches``.
 
@@ -31808,6 +34929,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('mod')
     def mod(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``mod``.
 
@@ -31880,6 +35002,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('month')
     def month(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``month``.
 
@@ -32090,6 +35213,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('multiply')
     def multiply(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``multiply``.
 
@@ -32214,6 +35338,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('nanosecond')
     def nanosecond(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``nanosecond``.
 
@@ -32260,6 +35385,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('nextafter')
     def nextafter(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``nextafter``.
 
@@ -32288,6 +35414,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('nextval')
     def nextval(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``nextval``.
 
@@ -32315,6 +35442,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('normalized_interval')
     def normalized_interval(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``normalized_interval``.
 
@@ -32354,6 +35482,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('octet_length')
     def octet_length(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``octet_length``.
 
@@ -32382,6 +35511,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('ord')
     def ord(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``ord``.
 
@@ -32392,6 +35522,32 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._ORD_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _PG_MY_TEMP_SCHEMA_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='pg_my_temp_schema',
+                        function_type=function_type,
+                        return_type=parse_type('INTEGER'),
+                        parameter_types=(),
+                        parameters=(),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='0',
+                    ),
+    )
+    @duckdb_function('pg_my_temp_schema')
+    def pg_my_temp_schema(self, *operands: object) -> NumericExpression:
+        """Call DuckDB function ``pg_my_temp_schema``.
+
+        Overloads:
+        - pg_catalog.pg_my_temp_schema() -> INTEGER
+        """
+        return call_duckdb_function(
+            self._PG_MY_TEMP_SCHEMA_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -32409,6 +35565,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('pi')
     def pi(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``pi``.
 
@@ -32436,6 +35593,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('position')
     def position(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``position``.
 
@@ -32463,6 +35621,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('pow')
     def pow(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``pow``.
 
@@ -32490,6 +35649,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('power')
     def power(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``power``.
 
@@ -32553,6 +35713,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('quarter')
     def quarter(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``quarter``.
 
@@ -32583,6 +35744,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('radians')
     def radians(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``radians``.
 
@@ -32610,6 +35772,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('random')
     def random(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``random``.
 
@@ -32661,6 +35824,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('range')
     def range(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``range``.
 
@@ -32870,6 +36034,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('round')
     def round(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``round``.
 
@@ -32895,6 +36060,58 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._ROUND_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _ROUND_EVEN_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='round_even',
+                        function_type=function_type,
+                        return_type=parse_type('DOUBLE'),
+                        parameter_types=(None, None),
+                        parameters=('x', 'n'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='CASE  WHEN ((((abs(x) * power(10, (n + 1))) % 10) = 5)) THEN ((round((x / 2), n) * 2)) ELSE round(x, n) END',
+                    ),
+    )
+    @duckdb_function('round_even')
+    def round_even(self, *operands: object) -> NumericExpression:
+        """Call DuckDB function ``round_even``.
+
+        Overloads:
+        - main.round_even(ANY x, ANY n) -> DOUBLE
+        """
+        return call_duckdb_function(
+            self._ROUND_EVEN_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _ROUNDBANKERS_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='roundbankers',
+                        function_type=function_type,
+                        return_type=parse_type('DOUBLE'),
+                        parameter_types=(None, None),
+                        parameters=('x', 'n'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='round_even(x, n)',
+                    ),
+    )
+    @duckdb_function('roundbankers')
+    def roundbankers(self, *operands: object) -> NumericExpression:
+        """Call DuckDB function ``roundbankers``.
+
+        Overloads:
+        - main.roundbankers(ANY x, ANY n) -> DOUBLE
+        """
+        return call_duckdb_function(
+            self._ROUNDBANKERS_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -32984,6 +36201,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('second')
     def second(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``second``.
 
@@ -33149,6 +36367,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('sign')
     def sign(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``sign``.
 
@@ -33187,6 +36406,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('sin')
     def sin(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``sin``.
 
@@ -33214,6 +36434,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('sinh')
     def sinh(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``sinh``.
 
@@ -33241,6 +36462,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('sqrt')
     def sqrt(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``sqrt``.
 
@@ -33268,6 +36490,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('strlen')
     def strlen(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``strlen``.
 
@@ -33295,6 +36518,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('strpos')
     def strpos(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``strpos``.
 
@@ -33322,6 +36546,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('struct_indexof')
     def struct_indexof(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``struct_indexof``.
 
@@ -33349,6 +36574,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('struct_position')
     def struct_position(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``struct_position``.
 
@@ -33700,6 +36926,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('subtract')
     def subtract(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``subtract``.
 
@@ -33752,6 +36979,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('tan')
     def tan(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``tan``.
 
@@ -33779,6 +37007,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('tanh')
     def tanh(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``tanh``.
 
@@ -33806,6 +37035,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('timetz_byte_comparable')
     def timetz_byte_comparable(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``timetz_byte_comparable``.
 
@@ -33869,6 +37099,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('timezone')
     def timezone(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``timezone``.
 
@@ -33935,6 +37166,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('timezone_hour')
     def timezone_hour(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``timezone_hour``.
 
@@ -34001,6 +37233,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('timezone_minute')
     def timezone_minute(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``timezone_minute``.
 
@@ -34043,6 +37276,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('to_centuries')
     def to_centuries(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``to_centuries``.
 
@@ -34083,6 +37317,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('to_days')
     def to_days(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``to_days``.
 
@@ -34123,6 +37358,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('to_decades')
     def to_decades(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``to_decades``.
 
@@ -34151,6 +37387,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('to_hours')
     def to_hours(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``to_hours``.
 
@@ -34178,6 +37415,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('to_microseconds')
     def to_microseconds(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``to_microseconds``.
 
@@ -34217,6 +37455,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('to_millennia')
     def to_millennia(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``to_millennia``.
 
@@ -34245,6 +37484,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('to_milliseconds')
     def to_milliseconds(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``to_milliseconds``.
 
@@ -34272,6 +37512,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('to_minutes')
     def to_minutes(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``to_minutes``.
 
@@ -34311,6 +37552,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('to_months')
     def to_months(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``to_months``.
 
@@ -34351,6 +37593,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('to_quarters')
     def to_quarters(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``to_quarters``.
 
@@ -34379,6 +37622,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('to_seconds')
     def to_seconds(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``to_seconds``.
 
@@ -34418,6 +37662,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('to_weeks')
     def to_weeks(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``to_weeks``.
 
@@ -34458,6 +37703,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('to_years')
     def to_years(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``to_years``.
 
@@ -34762,6 +38008,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('trunc')
     def trunc(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``trunc``.
 
@@ -34812,6 +38059,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('txid_current')
     def txid_current(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``txid_current``.
 
@@ -34839,6 +38087,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('unicode')
     def unicode(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``unicode``.
 
@@ -34866,6 +38115,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('uuid_extract_version')
     def uuid_extract_version(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``uuid_extract_version``.
 
@@ -34876,6 +38126,32 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._UUID_EXTRACT_VERSION_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _WAVG_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='wavg',
+                        function_type=function_type,
+                        return_type=parse_type('DOUBLE'),
+                        parameter_types=(None, None),
+                        parameters=('value', 'weight'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='weighted_avg("value", weight)',
+                    ),
+    )
+    @duckdb_function('wavg')
+    def wavg(self, *operands: object) -> NumericExpression:
+        """Call DuckDB function ``wavg``.
+
+        Overloads:
+        - main.wavg(ANY value, ANY weight) -> DOUBLE
+        """
+        return call_duckdb_function(
+            self._WAVG_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -34929,6 +38205,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('week')
     def week(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``week``.
 
@@ -34995,6 +38272,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('weekday')
     def weekday(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``weekday``.
 
@@ -35061,6 +38339,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('weekofyear')
     def weekofyear(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``weekofyear``.
 
@@ -35074,6 +38353,32 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._WEEKOFYEAR_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _WEIGHTED_AVG_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='weighted_avg',
+                        function_type=function_type,
+                        return_type=parse_type('DOUBLE'),
+                        parameter_types=(None, None),
+                        parameters=('value', 'weight'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='(sum(("value" * weight)) / sum(CASE  WHEN (("value" IS NOT NULL)) THEN (weight) ELSE 0 END))',
+                    ),
+    )
+    @duckdb_function('weighted_avg')
+    def weighted_avg(self, *operands: object) -> NumericExpression:
+        """Call DuckDB function ``weighted_avg``.
+
+        Overloads:
+        - main.weighted_avg(ANY value, ANY weight) -> DOUBLE
+        """
+        return call_duckdb_function(
+            self._WEIGHTED_AVG_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -35187,6 +38492,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('xor')
     def xor(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``xor``.
 
@@ -35258,6 +38564,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('year')
     def year(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``year``.
 
@@ -35324,6 +38631,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('yearweek')
     def yearweek(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``yearweek``.
 
@@ -35354,6 +38662,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('!__postfix',))
     def symbol_0021_005f_005f_0070_006f_0073_0074_0066_0069_0078(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``!__postfix``.
 
@@ -35513,6 +38822,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('%',))
     def symbol_0025(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``%``.
 
@@ -35645,6 +38955,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('&',))
     def symbol_0026(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``&``.
 
@@ -35860,6 +39171,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('*',))
     def symbol_002a(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``*``.
 
@@ -35900,6 +39212,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('**',))
     def symbol_002a_002a(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``**``.
 
@@ -36215,6 +39528,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('+',))
     def symbol_002b(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``+``.
 
@@ -36600,6 +39914,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('-',))
     def symbol_002d(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``-``.
 
@@ -36677,6 +39992,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('/',))
     def symbol_002f(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``/``.
 
@@ -36824,6 +40140,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('//',))
     def symbol_002f_002f(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``//``.
 
@@ -36871,6 +40188,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('<->',))
     def symbol_003c_002d_003e(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``<->``.
 
@@ -36995,6 +40313,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('<<',))
     def symbol_003c_003c(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``<<``.
 
@@ -37042,6 +40361,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('<=>',))
     def symbol_003c_003d_003e(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``<=>``.
 
@@ -37166,6 +40486,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('>>',))
     def symbol_003e_003e(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``>>``.
 
@@ -37333,6 +40654,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('@',))
     def symbol_0040(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``@``.
 
@@ -37371,6 +40693,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('^',))
     def symbol_005e(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``^``.
 
@@ -37494,6 +40817,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('|',))
     def symbol_007c(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``|``.
 
@@ -37625,6 +40949,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('~',))
     def symbol_007e(self, *operands: object) -> NumericExpression:
         """Call DuckDB function ``~``.
 
@@ -37646,6 +40971,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
             return_category=self.return_category,
             operands=operands,
         )
+
     _IDENTIFIER_FUNCTIONS: ClassVar[dict[str, str]] = {
         '__internal_compress_integral_ubigint': '__internal_compress_integral_ubigint',
         '__internal_compress_integral_uinteger': '__internal_compress_integral_uinteger',
@@ -37704,6 +41030,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
         'current_transaction_id': 'current_transaction_id',
         'currval': 'currval',
         'damerau_levenshtein': 'damerau_levenshtein',
+        'date_add': 'date_add',
         'date_diff': 'date_diff',
         'date_part': 'date_part',
         'date_sub': 'date_sub',
@@ -37728,11 +41055,16 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
         'even': 'even',
         'exp': 'exp',
         'factorial': 'factorial',
+        'fdiv': 'fdiv',
         'floor': 'floor',
+        'fmod': 'fmod',
         'gamma': 'gamma',
         'gcd': 'gcd',
         'generate_series': 'generate_series',
+        'geomean': 'geomean',
+        'geometric_mean': 'geometric_mean',
         'get_bit': 'get_bit',
+        'get_block_size': 'get_block_size',
         'greatest_common_divisor': 'greatest_common_divisor',
         'hamming': 'hamming',
         'hash': 'hash',
@@ -37766,6 +41098,9 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
         'log': 'log',
         'log10': 'log10',
         'log2': 'log2',
+        'map_to_pg_oid': 'map_to_pg_oid',
+        'md5_number_lower': 'md5_number_lower',
+        'md5_number_upper': 'md5_number_upper',
         'microsecond': 'microsecond',
         'millennium': 'millennium',
         'millisecond': 'millisecond',
@@ -37780,6 +41115,7 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
         'normalized_interval': 'normalized_interval',
         'octet_length': 'octet_length',
         'ord': 'ord',
+        'pg_my_temp_schema': 'pg_my_temp_schema',
         'pi': 'pi',
         'position': 'position',
         'pow': 'pow',
@@ -37789,6 +41125,8 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
         'random': 'random',
         'range': 'range',
         'round': 'round',
+        'round_even': 'round_even',
+        'roundbankers': 'roundbankers',
         'second': 'second',
         'sign': 'sign',
         'sin': 'sin',
@@ -37822,13 +41160,16 @@ class ScalarNumericFunctions(_StaticFunctionNamespace):
         'txid_current': 'txid_current',
         'unicode': 'unicode',
         'uuid_extract_version': 'uuid_extract_version',
+        'wavg': 'wavg',
         'week': 'week',
         'weekday': 'weekday',
         'weekofyear': 'weekofyear',
+        'weighted_avg': 'weighted_avg',
         'xor': 'xor',
         'year': 'year',
         'yearweek': 'yearweek',
     }
+
     _SYMBOLIC_FUNCTIONS: ClassVar[dict[str, str]] = {
         '!__postfix': 'symbol_0021_005f_005f_0070_006f_0073_0074_0066_0069_0078',
         '%': 'symbol_0025',
@@ -37928,6 +41269,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('__internal_decompress_string')
     def __internal_decompress_string(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``__internal_decompress_string``.
 
@@ -37958,6 +41300,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('alias')
     def alias(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``alias``.
 
@@ -37985,6 +41328,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_extract')
     def array_extract(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``array_extract``.
 
@@ -38012,6 +41356,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('array_to_json')
     def array_to_json(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``array_to_json``.
 
@@ -38020,6 +41365,58 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._ARRAY_TO_JSON_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _ARRAY_TO_STRING_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='array_to_string',
+                        function_type=function_type,
+                        return_type=parse_type('VARCHAR'),
+                        parameter_types=(None, None),
+                        parameters=('arr', 'sep'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(CAST(arr AS VARCHAR[]), 'string_agg', sep)",
+                    ),
+    )
+    @duckdb_function('array_to_string')
+    def array_to_string(self, *operands: object) -> VarcharExpression:
+        """Call DuckDB function ``array_to_string``.
+
+        Overloads:
+        - main.array_to_string(ANY arr, ANY sep) -> VARCHAR
+        """
+        return call_duckdb_function(
+            self._ARRAY_TO_STRING_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _ARRAY_TO_STRING_COMMA_DEFAULT_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='array_to_string_comma_default',
+                        function_type=function_type,
+                        return_type=parse_type('VARCHAR'),
+                        parameter_types=(None, None),
+                        parameters=('arr', 'sep'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="list_aggr(CAST(arr AS VARCHAR[]), 'string_agg', sep)",
+                    ),
+    )
+    @duckdb_function('array_to_string_comma_default')
+    def array_to_string_comma_default(self, *operands: object) -> VarcharExpression:
+        """Call DuckDB function ``array_to_string_comma_default``.
+
+        Overloads:
+        - main.array_to_string_comma_default(ANY arr, ANY sep) -> VARCHAR
+        """
+        return call_duckdb_function(
+            self._ARRAY_TO_STRING_COMMA_DEFAULT_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -38049,6 +41446,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('bar')
     def bar(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``bar``.
 
@@ -38077,6 +41475,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('base64')
     def base64(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``base64``.
 
@@ -38164,6 +41563,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('bin')
     def bin(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``bin``.
 
@@ -38196,6 +41596,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('chr')
     def chr(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``chr``.
 
@@ -38223,6 +41624,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('concat_ws')
     def concat_ws(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``concat_ws``.
 
@@ -38233,6 +41635,32 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._CONCAT_WS_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _CURRENT_CATALOG_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='current_catalog',
+                        function_type=function_type,
+                        return_type=parse_type('VARCHAR'),
+                        parameter_types=(),
+                        parameters=(),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='main.current_database()',
+                    ),
+    )
+    @duckdb_function('current_catalog')
+    def current_catalog(self, *operands: object) -> VarcharExpression:
+        """Call DuckDB function ``current_catalog``.
+
+        Overloads:
+        - main.current_catalog() -> VARCHAR
+        """
+        return call_duckdb_function(
+            self._CURRENT_CATALOG_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -38249,7 +41677,20 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         comment=None,
                         macro_definition=None,
                     ),
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='current_database',
+                        function_type=function_type,
+                        return_type=parse_type('VARCHAR'),
+                        parameter_types=(),
+                        parameters=(),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='"system".main.current_database()',
+                    ),
     )
+    @duckdb_function('current_database')
     def current_database(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``current_database``.
 
@@ -38257,6 +41698,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
 
         Overloads:
         - main.current_database() -> VARCHAR
+        - pg_catalog.current_database() -> VARCHAR
         """
         return call_duckdb_function(
             self._CURRENT_DATABASE_SIGNATURES,
@@ -38276,7 +41718,20 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         comment=None,
                         macro_definition=None,
                     ),
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='current_query',
+                        function_type=function_type,
+                        return_type=parse_type('VARCHAR'),
+                        parameter_types=(),
+                        parameters=(),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='"system".main.current_query()',
+                    ),
     )
+    @duckdb_function('current_query')
     def current_query(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``current_query``.
 
@@ -38284,9 +41739,36 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
 
         Overloads:
         - main.current_query() -> VARCHAR
+        - pg_catalog.current_query() -> VARCHAR
         """
         return call_duckdb_function(
             self._CURRENT_QUERY_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _CURRENT_ROLE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='current_role',
+                        function_type=function_type,
+                        return_type=parse_type('VARCHAR'),
+                        parameter_types=(),
+                        parameters=(),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="'duckdb'",
+                    ),
+    )
+    @duckdb_function('current_role')
+    def current_role(self, *operands: object) -> VarcharExpression:
+        """Call DuckDB function ``current_role``.
+
+        Overloads:
+        - main.current_role() -> VARCHAR
+        """
+        return call_duckdb_function(
+            self._CURRENT_ROLE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -38303,7 +41785,20 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         comment=None,
                         macro_definition=None,
                     ),
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='current_schema',
+                        function_type=function_type,
+                        return_type=parse_type('VARCHAR'),
+                        parameter_types=(),
+                        parameters=(),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='"system".main.current_schema()',
+                    ),
     )
+    @duckdb_function('current_schema')
     def current_schema(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``current_schema``.
 
@@ -38311,6 +41806,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
 
         Overloads:
         - main.current_schema() -> VARCHAR
+        - pg_catalog.current_schema() -> VARCHAR
         """
         return call_duckdb_function(
             self._CURRENT_SCHEMA_SIGNATURES,
@@ -38330,7 +41826,20 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         comment=None,
                         macro_definition=None,
                     ),
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='current_schemas',
+                        function_type=function_type,
+                        return_type=parse_type('VARCHAR[]'),
+                        parameter_types=(None,),
+                        parameters=('include_implicit',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='"system".main.current_schemas(include_implicit)',
+                    ),
     )
+    @duckdb_function('current_schemas')
     def current_schemas(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``current_schemas``.
 
@@ -38338,9 +41847,36 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
 
         Overloads:
         - main.current_schemas(BOOLEAN include_implicit) -> VARCHAR[]
+        - pg_catalog.current_schemas(ANY include_implicit) -> VARCHAR[]
         """
         return call_duckdb_function(
             self._CURRENT_SCHEMAS_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _CURRENT_USER_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='current_user',
+                        function_type=function_type,
+                        return_type=parse_type('VARCHAR'),
+                        parameter_types=(),
+                        parameters=(),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="'duckdb'",
+                    ),
+    )
+    @duckdb_function('current_user')
+    def current_user(self, *operands: object) -> VarcharExpression:
+        """Call DuckDB function ``current_user``.
+
+        Overloads:
+        - main.current_user() -> VARCHAR
+        """
+        return call_duckdb_function(
+            self._CURRENT_USER_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -38382,6 +41918,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('dayname')
     def dayname(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``dayname``.
 
@@ -38411,6 +41948,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('decode')
     def decode(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``decode``.
 
@@ -38438,6 +41976,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('enum_first')
     def enum_first(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``enum_first``.
 
@@ -38465,6 +42004,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('enum_last')
     def enum_last(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``enum_last``.
 
@@ -38492,6 +42032,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('enum_range')
     def enum_range(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``enum_range``.
 
@@ -38519,6 +42060,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('enum_range_boundary')
     def enum_range_boundary(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``enum_range_boundary``.
 
@@ -38546,6 +42088,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('format')
     def format(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``format``.
 
@@ -38573,6 +42116,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('formatReadableDecimalSize')
     def formatReadableDecimalSize(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``formatReadableDecimalSize``.
 
@@ -38600,6 +42144,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('formatReadableSize')
     def formatReadableSize(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``formatReadableSize``.
 
@@ -38627,6 +42172,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('format_bytes')
     def format_bytes(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``format_bytes``.
 
@@ -38637,6 +42183,58 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._FORMAT_BYTES_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _FORMAT_PG_TYPE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='format_pg_type',
+                        function_type=function_type,
+                        return_type=parse_type('VARCHAR'),
+                        parameter_types=(None, None),
+                        parameters=('logical_type', 'type_name'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="CASE  WHEN ((upper(logical_type) = 'FLOAT')) THEN ('float4') WHEN ((upper(logical_type) = 'DOUBLE')) THEN ('float8') WHEN ((upper(logical_type) = 'DECIMAL')) THEN ('numeric') WHEN ((upper(logical_type) = 'ENUM')) THEN (lower(type_name)) WHEN ((upper(logical_type) = 'VARCHAR')) THEN ('varchar') WHEN ((upper(logical_type) = 'BLOB')) THEN ('bytea') WHEN ((upper(logical_type) = 'TIMESTAMP')) THEN ('timestamp') WHEN ((upper(logical_type) = 'TIME')) THEN ('time') WHEN ((upper(logical_type) = 'TIMESTAMP WITH TIME ZONE')) THEN ('timestamptz') WHEN ((upper(logical_type) = 'TIME WITH TIME ZONE')) THEN ('timetz') WHEN ((upper(logical_type) = 'SMALLINT')) THEN ('int2') WHEN ((upper(logical_type) = 'INTEGER')) THEN ('int4') WHEN ((upper(logical_type) = 'BIGINT')) THEN ('int8') WHEN ((upper(logical_type) = 'BOOLEAN')) THEN ('bool') ELSE lower(logical_type) END",
+                    ),
+    )
+    @duckdb_function('format_pg_type')
+    def format_pg_type(self, *operands: object) -> VarcharExpression:
+        """Call DuckDB function ``format_pg_type``.
+
+        Overloads:
+        - pg_catalog.format_pg_type(ANY logical_type, ANY type_name) -> VARCHAR
+        """
+        return call_duckdb_function(
+            self._FORMAT_PG_TYPE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _FORMAT_TYPE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='format_type',
+                        function_type=function_type,
+                        return_type=parse_type('VARCHAR'),
+                        parameter_types=(None, None),
+                        parameters=('type_oid', 'typemod'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="((SELECT format_pg_type(logical_type, type_name) FROM duckdb_types() AS t WHERE (t.type_oid = type_oid)) || CASE  WHEN ((typemod > 0)) THEN (concat('(', (typemod // 1000), ',', (typemod % 1000), ')')) ELSE '' END)",
+                    ),
+    )
+    @duckdb_function('format_type')
+    def format_type(self, *operands: object) -> VarcharExpression:
+        """Call DuckDB function ``format_type``.
+
+        Overloads:
+        - pg_catalog.format_type(ANY type_oid, ANY typemod) -> VARCHAR
+        """
+        return call_duckdb_function(
+            self._FORMAT_TYPE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -38654,6 +42252,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('gen_random_uuid')
     def gen_random_uuid(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``gen_random_uuid``.
 
@@ -38753,6 +42352,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('hex')
     def hex(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``hex``.
 
@@ -38786,6 +42386,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_af')
     def icu_collate_af(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_af``.
 
@@ -38811,6 +42412,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_am')
     def icu_collate_am(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_am``.
 
@@ -38836,6 +42438,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_ar')
     def icu_collate_ar(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_ar``.
 
@@ -38861,6 +42464,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_ar_sa')
     def icu_collate_ar_sa(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_ar_sa``.
 
@@ -38886,6 +42490,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_as')
     def icu_collate_as(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_as``.
 
@@ -38911,6 +42516,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_az')
     def icu_collate_az(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_az``.
 
@@ -38936,6 +42542,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_be')
     def icu_collate_be(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_be``.
 
@@ -38961,6 +42568,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_bg')
     def icu_collate_bg(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_bg``.
 
@@ -38986,6 +42594,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_bn')
     def icu_collate_bn(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_bn``.
 
@@ -39011,6 +42620,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_bo')
     def icu_collate_bo(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_bo``.
 
@@ -39036,6 +42646,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_br')
     def icu_collate_br(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_br``.
 
@@ -39061,6 +42672,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_bs')
     def icu_collate_bs(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_bs``.
 
@@ -39086,6 +42698,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_ca')
     def icu_collate_ca(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_ca``.
 
@@ -39111,6 +42724,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_ceb')
     def icu_collate_ceb(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_ceb``.
 
@@ -39136,6 +42750,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_chr')
     def icu_collate_chr(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_chr``.
 
@@ -39161,6 +42776,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_cs')
     def icu_collate_cs(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_cs``.
 
@@ -39186,6 +42802,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_cy')
     def icu_collate_cy(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_cy``.
 
@@ -39211,6 +42828,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_da')
     def icu_collate_da(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_da``.
 
@@ -39236,6 +42854,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_de')
     def icu_collate_de(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_de``.
 
@@ -39261,6 +42880,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_de_at')
     def icu_collate_de_at(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_de_at``.
 
@@ -39286,6 +42906,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_dsb')
     def icu_collate_dsb(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_dsb``.
 
@@ -39311,6 +42932,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_dz')
     def icu_collate_dz(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_dz``.
 
@@ -39336,6 +42958,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_ee')
     def icu_collate_ee(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_ee``.
 
@@ -39361,6 +42984,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_el')
     def icu_collate_el(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_el``.
 
@@ -39386,6 +43010,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_en')
     def icu_collate_en(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_en``.
 
@@ -39411,6 +43036,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_en_us')
     def icu_collate_en_us(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_en_us``.
 
@@ -39436,6 +43062,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_eo')
     def icu_collate_eo(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_eo``.
 
@@ -39461,6 +43088,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_es')
     def icu_collate_es(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_es``.
 
@@ -39486,6 +43114,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_et')
     def icu_collate_et(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_et``.
 
@@ -39511,6 +43140,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_fa')
     def icu_collate_fa(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_fa``.
 
@@ -39536,6 +43166,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_fa_af')
     def icu_collate_fa_af(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_fa_af``.
 
@@ -39561,6 +43192,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_ff')
     def icu_collate_ff(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_ff``.
 
@@ -39586,6 +43218,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_fi')
     def icu_collate_fi(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_fi``.
 
@@ -39611,6 +43244,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_fil')
     def icu_collate_fil(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_fil``.
 
@@ -39636,6 +43270,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_fo')
     def icu_collate_fo(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_fo``.
 
@@ -39661,6 +43296,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_fr')
     def icu_collate_fr(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_fr``.
 
@@ -39686,6 +43322,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_fr_ca')
     def icu_collate_fr_ca(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_fr_ca``.
 
@@ -39711,6 +43348,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_fy')
     def icu_collate_fy(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_fy``.
 
@@ -39736,6 +43374,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_ga')
     def icu_collate_ga(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_ga``.
 
@@ -39761,6 +43400,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_gl')
     def icu_collate_gl(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_gl``.
 
@@ -39786,6 +43426,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_gu')
     def icu_collate_gu(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_gu``.
 
@@ -39811,6 +43452,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_ha')
     def icu_collate_ha(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_ha``.
 
@@ -39836,6 +43478,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_haw')
     def icu_collate_haw(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_haw``.
 
@@ -39861,6 +43504,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_he')
     def icu_collate_he(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_he``.
 
@@ -39886,6 +43530,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_he_il')
     def icu_collate_he_il(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_he_il``.
 
@@ -39911,6 +43556,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_hi')
     def icu_collate_hi(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_hi``.
 
@@ -39936,6 +43582,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_hr')
     def icu_collate_hr(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_hr``.
 
@@ -39961,6 +43608,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_hsb')
     def icu_collate_hsb(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_hsb``.
 
@@ -39986,6 +43634,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_hu')
     def icu_collate_hu(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_hu``.
 
@@ -40011,6 +43660,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_hy')
     def icu_collate_hy(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_hy``.
 
@@ -40036,6 +43686,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_id')
     def icu_collate_id(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_id``.
 
@@ -40061,6 +43712,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_id_id')
     def icu_collate_id_id(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_id_id``.
 
@@ -40086,6 +43738,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_ig')
     def icu_collate_ig(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_ig``.
 
@@ -40111,6 +43764,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_is')
     def icu_collate_is(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_is``.
 
@@ -40136,6 +43790,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_it')
     def icu_collate_it(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_it``.
 
@@ -40161,6 +43816,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_ja')
     def icu_collate_ja(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_ja``.
 
@@ -40186,6 +43842,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_ka')
     def icu_collate_ka(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_ka``.
 
@@ -40211,6 +43868,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_kk')
     def icu_collate_kk(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_kk``.
 
@@ -40236,6 +43894,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_kl')
     def icu_collate_kl(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_kl``.
 
@@ -40261,6 +43920,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_km')
     def icu_collate_km(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_km``.
 
@@ -40286,6 +43946,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_kn')
     def icu_collate_kn(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_kn``.
 
@@ -40311,6 +43972,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_ko')
     def icu_collate_ko(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_ko``.
 
@@ -40336,6 +43998,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_kok')
     def icu_collate_kok(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_kok``.
 
@@ -40361,6 +44024,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_ku')
     def icu_collate_ku(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_ku``.
 
@@ -40386,6 +44050,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_ky')
     def icu_collate_ky(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_ky``.
 
@@ -40411,6 +44076,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_lb')
     def icu_collate_lb(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_lb``.
 
@@ -40436,6 +44102,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_lkt')
     def icu_collate_lkt(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_lkt``.
 
@@ -40461,6 +44128,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_ln')
     def icu_collate_ln(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_ln``.
 
@@ -40486,6 +44154,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_lo')
     def icu_collate_lo(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_lo``.
 
@@ -40511,6 +44180,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_lt')
     def icu_collate_lt(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_lt``.
 
@@ -40536,6 +44206,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_lv')
     def icu_collate_lv(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_lv``.
 
@@ -40561,6 +44232,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_mk')
     def icu_collate_mk(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_mk``.
 
@@ -40586,6 +44258,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_ml')
     def icu_collate_ml(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_ml``.
 
@@ -40611,6 +44284,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_mn')
     def icu_collate_mn(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_mn``.
 
@@ -40636,6 +44310,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_mr')
     def icu_collate_mr(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_mr``.
 
@@ -40661,6 +44336,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_ms')
     def icu_collate_ms(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_ms``.
 
@@ -40686,6 +44362,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_mt')
     def icu_collate_mt(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_mt``.
 
@@ -40711,6 +44388,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_my')
     def icu_collate_my(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_my``.
 
@@ -40736,6 +44414,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_nb')
     def icu_collate_nb(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_nb``.
 
@@ -40761,6 +44440,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_nb_no')
     def icu_collate_nb_no(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_nb_no``.
 
@@ -40786,6 +44466,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_ne')
     def icu_collate_ne(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_ne``.
 
@@ -40811,6 +44492,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_nl')
     def icu_collate_nl(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_nl``.
 
@@ -40836,6 +44518,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_nn')
     def icu_collate_nn(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_nn``.
 
@@ -40861,6 +44544,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_noaccent')
     def icu_collate_noaccent(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_noaccent``.
 
@@ -40886,6 +44570,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_om')
     def icu_collate_om(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_om``.
 
@@ -40911,6 +44596,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_or')
     def icu_collate_or(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_or``.
 
@@ -40936,6 +44622,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_pa')
     def icu_collate_pa(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_pa``.
 
@@ -40961,6 +44648,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_pa_in')
     def icu_collate_pa_in(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_pa_in``.
 
@@ -40986,6 +44674,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_pl')
     def icu_collate_pl(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_pl``.
 
@@ -41011,6 +44700,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_ps')
     def icu_collate_ps(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_ps``.
 
@@ -41036,6 +44726,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_pt')
     def icu_collate_pt(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_pt``.
 
@@ -41061,6 +44752,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_ro')
     def icu_collate_ro(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_ro``.
 
@@ -41086,6 +44778,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_ru')
     def icu_collate_ru(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_ru``.
 
@@ -41111,6 +44804,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_sa')
     def icu_collate_sa(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_sa``.
 
@@ -41136,6 +44830,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_se')
     def icu_collate_se(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_se``.
 
@@ -41161,6 +44856,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_si')
     def icu_collate_si(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_si``.
 
@@ -41186,6 +44882,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_sk')
     def icu_collate_sk(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_sk``.
 
@@ -41211,6 +44908,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_sl')
     def icu_collate_sl(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_sl``.
 
@@ -41236,6 +44934,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_smn')
     def icu_collate_smn(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_smn``.
 
@@ -41261,6 +44960,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_sq')
     def icu_collate_sq(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_sq``.
 
@@ -41286,6 +44986,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_sr')
     def icu_collate_sr(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_sr``.
 
@@ -41311,6 +45012,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_sr_ba')
     def icu_collate_sr_ba(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_sr_ba``.
 
@@ -41336,6 +45038,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_sr_me')
     def icu_collate_sr_me(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_sr_me``.
 
@@ -41361,6 +45064,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_sr_rs')
     def icu_collate_sr_rs(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_sr_rs``.
 
@@ -41386,6 +45090,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_sv')
     def icu_collate_sv(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_sv``.
 
@@ -41411,6 +45116,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_sw')
     def icu_collate_sw(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_sw``.
 
@@ -41436,6 +45142,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_ta')
     def icu_collate_ta(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_ta``.
 
@@ -41461,6 +45168,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_te')
     def icu_collate_te(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_te``.
 
@@ -41486,6 +45194,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_th')
     def icu_collate_th(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_th``.
 
@@ -41511,6 +45220,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_tk')
     def icu_collate_tk(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_tk``.
 
@@ -41536,6 +45246,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_to')
     def icu_collate_to(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_to``.
 
@@ -41561,6 +45272,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_tr')
     def icu_collate_tr(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_tr``.
 
@@ -41586,6 +45298,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_ug')
     def icu_collate_ug(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_ug``.
 
@@ -41611,6 +45324,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_uk')
     def icu_collate_uk(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_uk``.
 
@@ -41636,6 +45350,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_ur')
     def icu_collate_ur(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_ur``.
 
@@ -41661,6 +45376,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_uz')
     def icu_collate_uz(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_uz``.
 
@@ -41686,6 +45402,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_vi')
     def icu_collate_vi(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_vi``.
 
@@ -41711,6 +45428,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_wae')
     def icu_collate_wae(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_wae``.
 
@@ -41736,6 +45454,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_wo')
     def icu_collate_wo(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_wo``.
 
@@ -41761,6 +45480,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_xh')
     def icu_collate_xh(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_xh``.
 
@@ -41786,6 +45506,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_yi')
     def icu_collate_yi(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_yi``.
 
@@ -41811,6 +45532,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_yo')
     def icu_collate_yo(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_yo``.
 
@@ -41836,6 +45558,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_yue')
     def icu_collate_yue(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_yue``.
 
@@ -41861,6 +45584,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_yue_cn')
     def icu_collate_yue_cn(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_yue_cn``.
 
@@ -41886,6 +45610,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_zh')
     def icu_collate_zh(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_zh``.
 
@@ -41911,6 +45636,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_zh_cn')
     def icu_collate_zh_cn(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_zh_cn``.
 
@@ -41936,6 +45662,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_zh_hk')
     def icu_collate_zh_hk(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_zh_hk``.
 
@@ -41961,6 +45688,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_zh_mo')
     def icu_collate_zh_mo(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_zh_mo``.
 
@@ -41986,6 +45714,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_zh_sg')
     def icu_collate_zh_sg(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_zh_sg``.
 
@@ -42011,6 +45740,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_zh_tw')
     def icu_collate_zh_tw(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_zh_tw``.
 
@@ -42036,6 +45766,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_collate_zu')
     def icu_collate_zu(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_collate_zu``.
 
@@ -42061,6 +45792,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('icu_sort_key')
     def icu_sort_key(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``icu_sort_key``.
 
@@ -42069,6 +45801,32 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._ICU_SORT_KEY_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _JSON_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='json',
+                        function_type=function_type,
+                        return_type=parse_type('JSON'),
+                        parameter_types=(None,),
+                        parameters=('x',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="json_extract(x, '$')",
+                    ),
+    )
+    @duckdb_function('json')
+    def json(self, *operands: object) -> VarcharExpression:
+        """Call DuckDB function ``json``.
+
+        Overloads:
+        - main.json(ANY x) -> JSON
+        """
+        return call_duckdb_function(
+            self._JSON_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -42086,6 +45844,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('json_array')
     def json_array(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``json_array``.
 
@@ -42111,6 +45870,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('json_deserialize_sql')
     def json_deserialize_sql(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``json_deserialize_sql``.
 
@@ -42196,6 +45956,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('json_extract')
     def json_extract(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``json_extract``.
 
@@ -42286,6 +46047,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('json_extract_path')
     def json_extract_path(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``json_extract_path``.
 
@@ -42376,6 +46138,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('json_extract_path_text')
     def json_extract_path_text(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``json_extract_path_text``.
 
@@ -42466,6 +46229,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('json_extract_string')
     def json_extract_string(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``json_extract_string``.
 
@@ -42479,6 +46243,84 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._JSON_EXTRACT_STRING_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _JSON_GROUP_ARRAY_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='json_group_array',
+                        function_type=function_type,
+                        return_type=parse_type('JSON'),
+                        parameter_types=(None,),
+                        parameters=('x',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='CAST(((\'[\' || string_agg(CASE  WHEN ((x IS NULL)) THEN (CAST(\'null\' AS "JSON")) ELSE to_json(x) END, \',\')) || \']\') AS "JSON")',
+                    ),
+    )
+    @duckdb_function('json_group_array')
+    def json_group_array(self, *operands: object) -> VarcharExpression:
+        """Call DuckDB function ``json_group_array``.
+
+        Overloads:
+        - main.json_group_array(ANY x) -> JSON
+        """
+        return call_duckdb_function(
+            self._JSON_GROUP_ARRAY_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _JSON_GROUP_OBJECT_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='json_group_object',
+                        function_type=function_type,
+                        return_type=parse_type('JSON'),
+                        parameter_types=(None, None),
+                        parameters=('n', 'v'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='CAST(((\'{\' || string_agg(((to_json(CAST(n AS VARCHAR)) || \':\') || CASE  WHEN ((v IS NULL)) THEN (CAST(\'null\' AS "JSON")) ELSE to_json(v) END), \',\')) || \'}\') AS "JSON")',
+                    ),
+    )
+    @duckdb_function('json_group_object')
+    def json_group_object(self, *operands: object) -> VarcharExpression:
+        """Call DuckDB function ``json_group_object``.
+
+        Overloads:
+        - main.json_group_object(ANY n, ANY v) -> JSON
+        """
+        return call_duckdb_function(
+            self._JSON_GROUP_OBJECT_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _JSON_GROUP_STRUCTURE_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='json_group_structure',
+                        function_type=function_type,
+                        return_type=parse_type('JSON'),
+                        parameter_types=(None,),
+                        parameters=('x',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='(json_structure(json_group_array(x)) -> 0)',
+                    ),
+    )
+    @duckdb_function('json_group_structure')
+    def json_group_structure(self, *operands: object) -> VarcharExpression:
+        """Call DuckDB function ``json_group_structure``.
+
+        Overloads:
+        - main.json_group_structure(ANY x) -> JSON
+        """
+        return call_duckdb_function(
+            self._JSON_GROUP_STRUCTURE_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -42556,6 +46398,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('json_keys')
     def json_keys(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``json_keys``.
 
@@ -42586,6 +46429,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('json_merge_patch')
     def json_merge_patch(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``json_merge_patch``.
 
@@ -42611,6 +46455,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('json_object')
     def json_object(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``json_object``.
 
@@ -42636,6 +46481,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('json_pretty')
     def json_pretty(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``json_pretty``.
 
@@ -42661,6 +46507,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('json_quote')
     def json_quote(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``json_quote``.
 
@@ -42734,6 +46581,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('json_serialize_plan')
     def json_serialize_plan(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``json_serialize_plan``.
 
@@ -42811,6 +46659,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('json_serialize_sql')
     def json_serialize_sql(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``json_serialize_sql``.
 
@@ -42852,6 +46701,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('json_structure')
     def json_structure(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``json_structure``.
 
@@ -42938,6 +46788,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('json_type')
     def json_type(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``json_type``.
 
@@ -43028,6 +46879,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('json_value')
     def json_value(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``json_value``.
 
@@ -43058,6 +46910,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('lcase')
     def lcase(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``lcase``.
 
@@ -43085,6 +46938,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('left')
     def left(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``left``.
 
@@ -43112,6 +46966,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('left_grapheme')
     def left_grapheme(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``left_grapheme``.
 
@@ -43139,6 +46994,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_element')
     def list_element(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``list_element``.
 
@@ -43166,6 +47022,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('list_extract')
     def list_extract(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``list_extract``.
 
@@ -43193,6 +47050,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('lower')
     def lower(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``lower``.
 
@@ -43220,6 +47078,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('lpad')
     def lpad(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``lpad``.
 
@@ -43259,6 +47118,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('ltrim')
     def ltrim(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``ltrim``.
 
@@ -43299,6 +47159,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('md5')
     def md5(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``md5``.
 
@@ -43351,6 +47212,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('monthname')
     def monthname(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``monthname``.
 
@@ -43380,6 +47242,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('nfc_normalize')
     def nfc_normalize(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``nfc_normalize``.
 
@@ -43419,6 +47282,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('parse_dirname')
     def parse_dirname(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``parse_dirname``.
 
@@ -43459,6 +47323,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('parse_dirpath')
     def parse_dirpath(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``parse_dirpath``.
 
@@ -43523,6 +47388,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('parse_filename')
     def parse_filename(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``parse_filename``.
 
@@ -43565,6 +47431,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('parse_path')
     def parse_path(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``parse_path``.
 
@@ -43576,6 +47443,123 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._PARSE_PATH_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _PG_GET_CONSTRAINTDEF_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='pg_get_constraintdef',
+                        function_type=function_type,
+                        return_type=parse_type('VARCHAR'),
+                        parameter_types=(None,),
+                        parameters=('constraint_oid',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='(SELECT constraint_text FROM duckdb_constraints() AS d_constraint WHERE ((d_constraint.table_oid = (constraint_oid // 1000000)) AND (d_constraint.constraint_index = (constraint_oid % 1000000))))',
+                    ),
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='pg_get_constraintdef',
+                        function_type=function_type,
+                        return_type=parse_type('VARCHAR'),
+                        parameter_types=(None, None),
+                        parameters=('constraint_oid', 'pretty_bool'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='pg_get_constraintdef(constraint_oid)',
+                    ),
+    )
+    @duckdb_function('pg_get_constraintdef')
+    def pg_get_constraintdef(self, *operands: object) -> VarcharExpression:
+        """Call DuckDB function ``pg_get_constraintdef``.
+
+        Overloads:
+        - pg_catalog.pg_get_constraintdef(ANY constraint_oid) -> VARCHAR
+        - pg_catalog.pg_get_constraintdef(ANY constraint_oid, ANY pretty_bool) -> VARCHAR
+        """
+        return call_duckdb_function(
+            self._PG_GET_CONSTRAINTDEF_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _PG_GET_VIEWDEF_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='pg_get_viewdef',
+                        function_type=function_type,
+                        return_type=parse_type('VARCHAR'),
+                        parameter_types=(None,),
+                        parameters=('oid',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='(SELECT "sql" FROM duckdb_views() AS v WHERE (v.view_oid = oid))',
+                    ),
+    )
+    @duckdb_function('pg_get_viewdef')
+    def pg_get_viewdef(self, *operands: object) -> VarcharExpression:
+        """Call DuckDB function ``pg_get_viewdef``.
+
+        Overloads:
+        - pg_catalog.pg_get_viewdef(ANY oid) -> VARCHAR
+        """
+        return call_duckdb_function(
+            self._PG_GET_VIEWDEF_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _PG_SIZE_PRETTY_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='pg_size_pretty',
+                        function_type=function_type,
+                        return_type=parse_type('VARCHAR'),
+                        parameter_types=(None,),
+                        parameters=('bytes',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='format_bytes(bytes)',
+                    ),
+    )
+    @duckdb_function('pg_size_pretty')
+    def pg_size_pretty(self, *operands: object) -> VarcharExpression:
+        """Call DuckDB function ``pg_size_pretty``.
+
+        Overloads:
+        - pg_catalog.pg_size_pretty(ANY bytes) -> VARCHAR
+        """
+        return call_duckdb_function(
+            self._PG_SIZE_PRETTY_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _PG_TYPEOF_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='pg_catalog',
+                        function_name='pg_typeof',
+                        function_type=function_type,
+                        return_type=parse_type('VARCHAR'),
+                        parameter_types=(None,),
+                        parameters=('expression',),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='lower(typeof(expression))',
+                    ),
+    )
+    @duckdb_function('pg_typeof')
+    def pg_typeof(self, *operands: object) -> VarcharExpression:
+        """Call DuckDB function ``pg_typeof``.
+
+        Overloads:
+        - pg_catalog.pg_typeof(ANY expression) -> VARCHAR
+        """
+        return call_duckdb_function(
+            self._PG_TYPEOF_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -43593,6 +47577,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('printf')
     def printf(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``printf``.
 
@@ -43620,6 +47605,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('regexp_escape')
     def regexp_escape(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``regexp_escape``.
 
@@ -43695,6 +47681,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('regexp_extract')
     def regexp_extract(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``regexp_extract``.
 
@@ -43750,6 +47737,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('regexp_extract_all')
     def regexp_extract_all(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``regexp_extract_all``.
 
@@ -43791,6 +47779,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('regexp_replace')
     def regexp_replace(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``regexp_replace``.
 
@@ -43831,6 +47820,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('regexp_split_to_array')
     def regexp_split_to_array(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``regexp_split_to_array``.
 
@@ -43859,6 +47849,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('repeat')
     def repeat(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``repeat``.
 
@@ -43886,6 +47877,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('replace')
     def replace(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``replace``.
 
@@ -43913,6 +47905,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('reverse')
     def reverse(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``reverse``.
 
@@ -43940,6 +47933,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('right')
     def right(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``right``.
 
@@ -43967,6 +47961,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('right_grapheme')
     def right_grapheme(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``right_grapheme``.
 
@@ -43994,6 +47989,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('row_to_json')
     def row_to_json(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``row_to_json``.
 
@@ -44019,6 +48015,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('rpad')
     def rpad(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``rpad``.
 
@@ -44058,6 +48055,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('rtrim')
     def rtrim(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``rtrim``.
 
@@ -44069,6 +48067,32 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._RTRIM_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _SESSION_USER_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='session_user',
+                        function_type=function_type,
+                        return_type=parse_type('VARCHAR'),
+                        parameter_types=(),
+                        parameters=(),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition="'duckdb'",
+                    ),
+    )
+    @duckdb_function('session_user')
+    def session_user(self, *operands: object) -> VarcharExpression:
+        """Call DuckDB function ``session_user``.
+
+        Overloads:
+        - main.session_user() -> VARCHAR
+        """
+        return call_duckdb_function(
+            self._SESSION_USER_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -44098,6 +48122,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('sha1')
     def sha1(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``sha1``.
 
@@ -44138,6 +48163,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('sha256')
     def sha256(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``sha256``.
 
@@ -44166,6 +48192,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('split')
     def split(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``split``.
 
@@ -44176,6 +48203,32 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._SPLIT_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _SPLIT_PART_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='split_part',
+                        function_type=function_type,
+                        return_type=parse_type('VARCHAR'),
+                        parameter_types=(None, None, None),
+                        parameters=('string', 'delimiter', 'position'),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='CASE  WHEN (((string IS NOT NULL) AND ("delimiter" IS NOT NULL) AND ("position" IS NOT NULL))) THEN (COALESCE(string_split(string, "delimiter")["position"], \'\')) ELSE NULL END',
+                    ),
+    )
+    @duckdb_function('split_part')
+    def split_part(self, *operands: object) -> VarcharExpression:
+        """Call DuckDB function ``split_part``.
+
+        Overloads:
+        - main.split_part(ANY string, ANY delimiter, ANY position) -> VARCHAR
+        """
+        return call_duckdb_function(
+            self._SPLIT_PART_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -44193,6 +48246,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('stats')
     def stats(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``stats``.
 
@@ -44220,6 +48274,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('str_split')
     def str_split(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``str_split``.
 
@@ -44259,6 +48314,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('str_split_regex')
     def str_split_regex(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``str_split_regex``.
 
@@ -44359,6 +48415,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('strftime')
     def strftime(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``strftime``.
 
@@ -44392,6 +48449,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('string_split')
     def string_split(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``string_split``.
 
@@ -44431,6 +48489,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('string_split_regex')
     def string_split_regex(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``string_split_regex``.
 
@@ -44459,6 +48518,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('string_to_array')
     def string_to_array(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``string_to_array``.
 
@@ -44486,6 +48546,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('strip_accents')
     def strip_accents(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``strip_accents``.
 
@@ -44525,6 +48586,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('substr')
     def substr(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``substr``.
 
@@ -44565,6 +48627,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('substring')
     def substring(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``substring``.
 
@@ -44605,6 +48668,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('substring_grapheme')
     def substring_grapheme(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``substring_grapheme``.
 
@@ -44645,6 +48709,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('to_base')
     def to_base(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``to_base``.
 
@@ -44673,6 +48738,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('to_base64')
     def to_base64(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``to_base64``.
 
@@ -44760,6 +48826,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('to_binary')
     def to_binary(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``to_binary``.
 
@@ -44864,6 +48931,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('to_hex')
     def to_hex(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``to_hex``.
 
@@ -44897,6 +48965,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('to_json')
     def to_json(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``to_json``.
 
@@ -44922,6 +48991,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('translate')
     def translate(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``translate``.
 
@@ -44961,6 +49031,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('trim')
     def trim(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``trim``.
 
@@ -44989,6 +49060,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('typeof')
     def typeof(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``typeof``.
 
@@ -45016,6 +49088,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('ucase')
     def ucase(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``ucase``.
 
@@ -45043,6 +49116,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('upper')
     def upper(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``upper``.
 
@@ -45070,6 +49144,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('url_decode')
     def url_decode(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``url_decode``.
 
@@ -45097,6 +49172,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('url_encode')
     def url_encode(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``url_encode``.
 
@@ -45107,6 +49183,32 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
         """
         return call_duckdb_function(
             self._URL_ENCODE_SIGNATURES,
+            return_category=self.return_category,
+            operands=operands,
+        )
+    _USER_SIGNATURES: ClassVar[tuple[DuckDBFunctionDefinition, ...]] = (
+                    DuckDBFunctionDefinition(
+                        schema_name='main',
+                        function_name='user',
+                        function_type=function_type,
+                        return_type=parse_type('VARCHAR'),
+                        parameter_types=(),
+                        parameters=(),
+                        varargs=None,
+                        description=None,
+                        comment=None,
+                        macro_definition='current_user',
+                    ),
+    )
+    @duckdb_function('user')
+    def user(self, *operands: object) -> VarcharExpression:
+        """Call DuckDB function ``user``.
+
+        Overloads:
+        - main.user() -> VARCHAR
+        """
+        return call_duckdb_function(
+            self._USER_SIGNATURES,
             return_category=self.return_category,
             operands=operands,
         )
@@ -45124,6 +49226,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('uuid')
     def uuid(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``uuid``.
 
@@ -45151,6 +49254,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('uuidv4')
     def uuidv4(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``uuidv4``.
 
@@ -45178,6 +49282,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('uuidv7')
     def uuidv7(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``uuidv7``.
 
@@ -45205,6 +49310,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('variant_typeof')
     def variant_typeof(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``variant_typeof``.
 
@@ -45232,6 +49338,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('vector_type')
     def vector_type(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``vector_type``.
 
@@ -45259,6 +49366,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function('version')
     def version(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``version``.
 
@@ -45346,6 +49454,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
                         macro_definition=None,
                     ),
     )
+    @duckdb_function(symbols=('->>',))
     def symbol_002d_003e_003e(self, *operands: object) -> VarcharExpression:
         """Call DuckDB function ``->>``.
 
@@ -45362,20 +49471,26 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
             return_category=self.return_category,
             operands=operands,
         )
+
     _IDENTIFIER_FUNCTIONS: ClassVar[dict[str, str]] = {
         '__internal_decompress_string': '__internal_decompress_string',
         'alias': 'alias',
         'array_extract': 'array_extract',
         'array_to_json': 'array_to_json',
+        'array_to_string': 'array_to_string',
+        'array_to_string_comma_default': 'array_to_string_comma_default',
         'bar': 'bar',
         'base64': 'base64',
         'bin': 'bin',
         'chr': 'chr',
         'concat_ws': 'concat_ws',
+        'current_catalog': 'current_catalog',
         'current_database': 'current_database',
         'current_query': 'current_query',
+        'current_role': 'current_role',
         'current_schema': 'current_schema',
         'current_schemas': 'current_schemas',
+        'current_user': 'current_user',
         'dayname': 'dayname',
         'decode': 'decode',
         'enum_first': 'enum_first',
@@ -45386,6 +49501,8 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
         'formatReadableDecimalSize': 'formatReadableDecimalSize',
         'formatReadableSize': 'formatReadableSize',
         'format_bytes': 'format_bytes',
+        'format_pg_type': 'format_pg_type',
+        'format_type': 'format_type',
         'gen_random_uuid': 'gen_random_uuid',
         'hex': 'hex',
         'icu_collate_af': 'icu_collate_af',
@@ -45520,12 +49637,16 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
         'icu_collate_zh_tw': 'icu_collate_zh_tw',
         'icu_collate_zu': 'icu_collate_zu',
         'icu_sort_key': 'icu_sort_key',
+        'json': 'json',
         'json_array': 'json_array',
         'json_deserialize_sql': 'json_deserialize_sql',
         'json_extract': 'json_extract',
         'json_extract_path': 'json_extract_path',
         'json_extract_path_text': 'json_extract_path_text',
         'json_extract_string': 'json_extract_string',
+        'json_group_array': 'json_group_array',
+        'json_group_object': 'json_group_object',
+        'json_group_structure': 'json_group_structure',
         'json_keys': 'json_keys',
         'json_merge_patch': 'json_merge_patch',
         'json_object': 'json_object',
@@ -45551,6 +49672,10 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
         'parse_dirpath': 'parse_dirpath',
         'parse_filename': 'parse_filename',
         'parse_path': 'parse_path',
+        'pg_get_constraintdef': 'pg_get_constraintdef',
+        'pg_get_viewdef': 'pg_get_viewdef',
+        'pg_size_pretty': 'pg_size_pretty',
+        'pg_typeof': 'pg_typeof',
         'printf': 'printf',
         'regexp_escape': 'regexp_escape',
         'regexp_extract': 'regexp_extract',
@@ -45565,9 +49690,11 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
         'row_to_json': 'row_to_json',
         'rpad': 'rpad',
         'rtrim': 'rtrim',
+        'session_user': 'session_user',
         'sha1': 'sha1',
         'sha256': 'sha256',
         'split': 'split',
+        'split_part': 'split_part',
         'stats': 'stats',
         'str_split': 'str_split',
         'str_split_regex': 'str_split_regex',
@@ -45591,6 +49718,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
         'upper': 'upper',
         'url_decode': 'url_decode',
         'url_encode': 'url_encode',
+        'user': 'user',
         'uuid': 'uuid',
         'uuidv4': 'uuidv4',
         'uuidv7': 'uuidv7',
@@ -45598,6 +49726,7 @@ class ScalarVarcharFunctions(_StaticFunctionNamespace):
         'vector_type': 'vector_type',
         'version': 'version',
     }
+
     _SYMBOLIC_FUNCTIONS: ClassVar[dict[str, str]] = {
         '->>': 'symbol_002d_003e_003e',
     }

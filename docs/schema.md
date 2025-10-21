@@ -2,7 +2,7 @@
 
 > **Note**
 > The latest schema documentation is part of the versioned Sphinx site at
-> {doc}`versions/1.3/schema_management <versions/1.3/schema_management>`.
+> {doc}`versions/1.4/schema_management <versions/1.4/schema_management>`.
 
 DuckPlus surfaces lightweight helpers to audit column metadata between relations
 or file-based datasets. The utilities expose the same column-order guarantees as

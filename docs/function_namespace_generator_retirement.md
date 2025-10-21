@@ -40,7 +40,7 @@ Before the generator can be removed, all of the following must be true:
 |---------|--------|
 | 1.2.0   | Ship decorator-backed modules alongside the generated catalog and mark the generator as deprecated in release notes. |
 | 1.3.0   | Stop importing `_generated_function_namespaces` by default. Tests should fail if the generator is required. |
-| 1.4.0   | Delete `scripts/generate_function_namespaces.py` and the generated module entirely. |
+| 1.4.0   | Publish scalar macro overrides from decorator-backed modules, refresh release docs to point at the override packages, and delete `scripts/generate_function_namespaces.py` once parity is confirmed. |
 
 If the decorator-backed modules slip, push the retirement by one minor release
 while keeping the deprecation notice active.

@@ -1,10 +1,10 @@
 # DuckDB function modules
 
-DuckPlus 1.3 completes the migration to domain-organised DuckDB function
-helpers so IDEs and documentation point at real Python modules instead of the
-generated catalog. Every aggregate family now lives under
-:mod:`duckplus.functions`, binding to the typed expression namespaces at import
-time via decorator side effects.
+DuckPlus 1.4 keeps the domain-organised aggregate helpers introduced last
+release and finishes migrating DuckDB's scalar macro surface into
+decorator-backed modules. Every aggregate family and every scalar macro now
+ships from :mod:`duckplus.functions`, binding to the typed expression namespaces
+at import time via explicit side effects instead of the generated catalog.
 
 ## Importing the aggregate helpers
 
@@ -165,15 +165,14 @@ without parsing generated registries.【F:duckplus/functions/aggregate/approxima
 
 ## Scalar string macro helpers
 
-DuckDB currently exposes 130 macros through ``duckdb_functions()``. Migrating the
-string bucket moves :func:`duckplus.functions.scalar.string.split_part`,
+DuckDB exposes its scalar macros through ``duckdb_functions()``. The string
+bucket brings :func:`duckplus.functions.scalar.string.split_part`,
 :func:`duckplus.functions.scalar.string.array_to_string`, and
 :func:`duckplus.functions.scalar.string.array_to_string_comma_default` into
-decorator-backed helpers that register on import, accounting for three of those
-macros (~2.3%). The scalar barrel mirrors the aggregate layout so callers can
-import from :mod:`duckplus.functions` or
+decorator-backed helpers that register on import. The scalar barrel mirrors the
+aggregate layout so callers can import from :mod:`duckplus.functions` or
 :mod:`duckplus.functions.scalar` while tests pin the module provenance and
-side-effect tuple.【F:duckplus/functions/scalar/string.py†L1-L136】【F:duckplus/functions/scalar/__init__.py†L1-L78】【F:duckplus/functions/__init__.py†L1-L134】【F:tests/test_function_import_barrels.py†L1-L320】【F:tests/test_typed_function_namespace.py†L1-L360】
+side-effect tuple.【F:duckplus/functions/scalar/string.py†L1-L136】【F:duckplus/functions/scalar/__init__.py†L1-L122】【F:duckplus/functions/__init__.py†L1-L134】【F:tests/test_function_import_barrels.py†L1-L320】【F:tests/test_typed_function_namespace.py†L1-L360】
 
 ## Scalar list macro helpers
 
@@ -181,19 +180,19 @@ Array/list macros such as :func:`duckplus.functions.scalar.list.array_append`,
 :func:`~duckplus.functions.scalar.list.array_prepend`, and
 :func:`~duckplus.functions.scalar.list.array_pop_front` now live in
 :mod:`duckplus.functions.scalar.list`. The module registers eight macros onto the
-generic scalar namespace at import time, raising the migrated-macro coverage to
-11 of 130 (~8.5%) while keeping docstrings and overload metadata defined in pure
-Python. The static typed override mirrors those definitions so
+generic scalar namespace at import time while keeping docstrings and overload
+metadata defined in pure Python. The static typed override mirrors those
+definitions so
 :class:`duckplus.static_typed._generated_function_namespaces.ScalarGenericFunctions`
 exposes the decorator-backed implementations without relying on the generated
 registry, and regression tests assert the provenance for both the runtime and
-typed helpers.【F:duckplus/functions/scalar/list.py†L1-L249】【F:duckplus/static_typed/function_overrides/scalar_generic.py†L1-L249】【F:duckplus/static_typed/function_overrides/__init__.py†L1-L16】【F:tests/test_function_import_barrels.py†L1-L320】【F:tests/test_typed_function_namespace.py†L1-L360】
+typed helpers.【F:duckplus/functions/scalar/list.py†L1-L383】【F:duckplus/static_typed/function_overrides/scalar_generic.py†L1-L383】【F:duckplus/static_typed/function_overrides/__init__.py†L1-L18】【F:tests/test_function_import_barrels.py†L1-L320】【F:tests/test_typed_function_namespace.py†L1-L360】
 
 ## Scalar catalog macro helpers
 
 Session and catalog helpers—including :func:`duckplus.functions.scalar.system.current_catalog`,
 :func:`~duckplus.functions.scalar.system.current_user`, and
-:func:`~duckplus.functions.scalar.system.pg_get_viewdef`—now ship from
+:func:`~duckplus.functions.scalar.system.pg_get_viewdef`—ship from
 :mod:`duckplus.functions.scalar.system`. The module registers twelve macros onto
 the varchar namespace, covering PostgreSQL compatibility shims and DuckDB’s
 ``pg_catalog`` wrappers while preserving their macro definitions for typed
@@ -201,39 +200,44 @@ overrides. The static typed override mirrors the decorator-backed helpers so
 :class:`duckplus.static_typed._generated_function_namespaces.ScalarVarcharFunctions`
 exposes the Python implementations at import time, and regression tests assert
 their provenance through both the top-level barrel and typed namespace.
-【F:duckplus/functions/scalar/system.py†L1-L366】【F:duckplus/static_typed/function_overrides/scalar_system.py†L1-L366】【F:duckplus/functions/scalar/__init__.py†L1-L122】【F:duckplus/functions/__init__.py†L1-L134】【F:tests/test_function_import_barrels.py†L1-L320】【F:tests/test_typed_function_namespace.py†L360-L440】
+【F:duckplus/functions/scalar/system.py†L1-L618】【F:duckplus/static_typed/function_overrides/scalar_system.py†L1-L618】【F:duckplus/functions/scalar/__init__.py†L1-L122】【F:duckplus/functions/__init__.py†L1-L134】【F:tests/test_function_import_barrels.py†L1-L320】【F:tests/test_typed_function_namespace.py†L360-L440】
 
 ## Scalar PostgreSQL privilege macro helpers
 
 PostgreSQL privilege compatibility shims—including
 :func:`duckplus.functions.scalar.postgres_privilege.has_any_column_privilege`,
 :func:`~duckplus.functions.scalar.postgres_privilege.has_table_privilege`, and
-:func:`~duckplus.functions.scalar.postgres_privilege.has_tablespace_privilege`—now
+:func:`~duckplus.functions.scalar.postgres_privilege.has_tablespace_privilege`—
 reside in :mod:`duckplus.functions.scalar.postgres_privilege`. The module
-registers eleven boolean macros at import time, lifting the migrated-macro
-coverage to 34 of 130 (~26%) while documenting the constant-``TRUE`` behaviour
-DuckDB exposes today. The static typed override mirrors the boolean helpers so
+registers eleven boolean macros at import time while documenting the
+constant-``TRUE`` behaviour DuckDB exposes today. The static typed override
+mirrors the boolean helpers so
 :class:`duckplus.static_typed._generated_function_namespaces.ScalarBooleanFunctions`
 exposes the decorator-backed implementations without depending on the generated
 namespace, and regression tests confirm both the barrel exports and typed
-namespace provenance.
-【F:duckplus/functions/scalar/postgres_privilege.py†L1-L726】【F:duckplus/static_typed/function_overrides/scalar_postgres_privilege.py†L1-L322】【F:duckplus/functions/scalar/__init__.py†L1-L220】【F:duckplus/functions/__init__.py†L1-L220】【F:tests/test_function_import_barrels.py†L1-L420】【F:tests/test_typed_function_namespace.py†L360-L520】
+namespace provenance.【F:duckplus/functions/scalar/postgres_privilege.py†L1-L706】【F:duckplus/static_typed/function_overrides/scalar_postgres_privilege.py†L1-L570】【F:duckplus/functions/scalar/__init__.py†L1-L220】【F:duckplus/functions/__init__.py†L1-L220】【F:tests/test_function_import_barrels.py†L1-L420】【F:tests/test_typed_function_namespace.py†L360-L520】
 
 ## Scalar PostgreSQL visibility macro helpers
 
 PostgreSQL visibility shims—including
 :func:`duckplus.functions.scalar.postgres_visibility.pg_collation_is_visible`,
 :func:`~duckplus.functions.scalar.postgres_visibility.pg_has_role`, and
-:func:`~duckplus.functions.scalar.postgres_visibility.pg_ts_parser_is_visible`—now
+:func:`~duckplus.functions.scalar.postgres_visibility.pg_ts_parser_is_visible`—
 ship from :mod:`duckplus.functions.scalar.postgres_visibility`. The module
-registers thirteen boolean macros at import time, increasing the migrated-macro
-coverage to 47 of 130 (~36%) while documenting DuckDB’s search-path behaviour
-for OID lookups. Static typed overrides mirror the helpers so
+registers thirteen boolean macros at import time while documenting DuckDB’s
+search-path behaviour for OID lookups. Static typed overrides mirror the
+helpers so
 :class:`duckplus.static_typed._generated_function_namespaces.ScalarBooleanFunctions`
 resolves the decorator-backed implementations without relying on generated
 stubs, and regression tests assert both the barrel exports and typed namespace
 provenance for the new visibility helpers.
-【F:duckplus/functions/scalar/postgres_visibility.py†L1-L276】【F:duckplus/static_typed/function_overrides/scalar_postgres_visibility.py†L1-L276】【F:duckplus/functions/scalar/__init__.py†L1-L220】【F:duckplus/functions/__init__.py†L1-L220】【F:tests/test_function_import_barrels.py†L1-L420】【F:tests/test_typed_function_namespace.py†L360-L540】
+【F:duckplus/functions/scalar/postgres_visibility.py†L1-L617】【F:duckplus/static_typed/function_overrides/scalar_postgres_visibility.py†L1-L617】【F:duckplus/functions/scalar/__init__.py†L1-L220】【F:duckplus/functions/__init__.py†L1-L220】【F:tests/test_function_import_barrels.py†L1-L420】【F:tests/test_typed_function_namespace.py†L360-L540】
+
+Taken together the string, list, catalog, privilege, and visibility modules
+cover all forty-seven scalar macros DuckDB exposes today. DuckPlus 1.4 therefore
+serves decorator-backed implementations for 100% of DuckDB’s scalar macros while
+keeping import-time side effects explicit for both runtime and typed
+namespaces.
 
 ## When to add new modules
 

@@ -7,6 +7,7 @@ stay easy to follow.
 ```{toctree}
 :maxdepth: 2
 
+versions/1.4/index
 versions/1.3/index
 versions/1.2/index
 versions/1.1/index

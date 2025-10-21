@@ -51,6 +51,7 @@ from ._generated_function_namespaces import (
     DuckDBFunctionNamespace,
 )
 from ..functions.aggregate import approximation as _aggregate_approximation  # noqa: F401
+from . import function_overrides as _function_overrides  # noqa: F401
 
 __all__ = [
     "AliasedExpression",

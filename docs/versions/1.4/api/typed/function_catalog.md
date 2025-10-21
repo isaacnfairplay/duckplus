@@ -1,4 +1,4 @@
-# DuckDB typed function catalog (DuckPlus 1.3)
+# DuckDB typed function catalog (DuckPlus 1.4)
 
 This catalog enumerates every DuckDB scalar, aggregate, and window function
 exposed through DuckPlus' static typed API. Entries are grouped by return
