@@ -1,6 +1,6 @@
 """Unit tests covering DuckDB type parsing and hierarchy."""
 
-from duckplus.typed.types import (
+from duckplus.static_typed.types import (
     DecimalType,
     ListType,
     StructField,

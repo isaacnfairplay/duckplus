@@ -6,8 +6,7 @@ from typing import TYPE_CHECKING
 
 from . import functions  # pylint: disable=unused-import
 from . import static_typed  # pylint: disable=unused-import
-from . import typed  # pylint: disable=unused-import
-from .typed import (
+from .static_typed import (
     Blob,
     Boolean,
     Date,
@@ -31,7 +30,8 @@ from .typed import (
     ducktype,
     select,
 )
-from .static_typed import ducktype as static_ducktype
+
+static_ducktype = ducktype
 
 __all__ = [
     "DuckCon",
@@ -39,7 +39,6 @@ __all__ = [
     "Table",
     "io",
     "schema",
-    "typed",
     "static_typed",
     "ducktype",
     "static_ducktype",

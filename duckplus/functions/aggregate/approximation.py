@@ -12,12 +12,12 @@ from duckplus.functions._base import (
     invoke_duckdb_function,
     register_duckdb_function,
 )
-from duckplus.typed.expression import NumericExpression, TypedExpression
-from duckplus.typed.functions import DuckDBFunctionDefinition
-from duckplus.typed.types import parse_type
+from duckplus.static_typed.expression import NumericExpression, TypedExpression
+from duckplus.static_typed.functions import DuckDBFunctionDefinition
+from duckplus.static_typed.types import parse_type
 
 if TYPE_CHECKING:  # pragma: no cover - import cycle guard for type checkers
-    from duckplus.typed._generated_function_namespaces import (
+    from duckplus.static_typed._generated_function_namespaces import (
         AggregateGenericFunctions,
         AggregateNumericFunctions,
     )
@@ -855,7 +855,7 @@ def histogram_exact_filter(
 def _register() -> None:
     """Attach approximation helpers onto the aggregate namespaces."""
 
-    from duckplus.typed._generated_function_namespaces import (
+    from duckplus.static_typed._generated_function_namespaces import (
         AggregateGenericFunctions,
         AggregateNumericFunctions,
     )

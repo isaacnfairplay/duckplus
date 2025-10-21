@@ -21,11 +21,15 @@ import duckdb  # type: ignore[import-not-found]
 
 from ._table_utils import require_connection
 from .duckcon import DuckCon
-from .typed import ducktype
-from .typed.select import SelectStatementBuilder
-from .typed.dependencies import ExpressionDependency
-from .typed.expressions.base import AliasedExpression, BooleanExpression, TypedExpression
-from .typed.types import BooleanType
+from .static_typed import ducktype
+from .static_typed.select import SelectStatementBuilder
+from .static_typed.dependencies import ExpressionDependency
+from .static_typed.expressions.base import (
+    AliasedExpression,
+    BooleanExpression,
+    TypedExpression,
+)
+from .static_typed.types import BooleanType
 
 
 T = TypeVar("T")
@@ -484,7 +488,7 @@ class Relation:
     ) -> "Relation":  # pylint: disable=too-many-locals
         """Return a new relation with additional computed columns.
 
-        Expressions must be provided through :mod:`duckplus.typed`. Typed
+        Expressions must be provided through :mod:`duckplus.static_typed`. Typed
         expressions carry dependency metadata, allowing the helper to validate
         that references only target columns present on the original relation.
         """

@@ -1,98 +1,70 @@
-"""Typed expression primitives for DuckPlus."""
+"""Compatibility wrapper redirecting to :mod:`duckplus.static_typed`."""
 
-# pylint: disable=duplicate-code,wildcard-import,unused-wildcard-import
+from __future__ import annotations
 
-from .dependencies import ExpressionDependency
-from .expression import (
-    AliasedExpression,
-    BlobExpression,
-    BooleanExpression,
-    CaseExpressionBuilder,
-    DateExpression,
-    GenericExpression,
-    NumericAggregateFactory,
-    NumericExpression,
-    TemporalAggregateFactory,
-    SelectStatementBuilder,
-    TimestampExpression,
-    TypedExpression,
-    VarcharExpression,
-)
-from .expressions.decimal import DECIMAL_FACTORY_NAMES as _DECIMAL_FACTORY_NAMES
-from .expressions.decimal import *  # noqa: F401,F403 - re-export decimal factories
-from .ducktype import (
-    Blob,
-    Boolean,
-    Date,
-    Double,
-    Generic,
-    Integer,
-    Numeric,
-    Smallint,
-    Tinyint,
-    Timestamp,
-    Timestamp_ms,
-    Timestamp_ns,
-    Timestamp_s,
-    Timestamp_tz,
-    Timestamp_us,
-    Utinyint,
-    Usmallint,
-    Uinteger,
-    Float,
-    Varchar,
-    ducktype,
-    select,
-)
-from ._generated_function_namespaces import (
-    AGGREGATE_FUNCTIONS,
-    SCALAR_FUNCTIONS,
-    WINDOW_FUNCTIONS,
-    DuckDBFunctionNamespace,
-)
-from ..functions.aggregate import approximation as _aggregate_approximation  # noqa: F401
+import importlib
+import sys
+import warnings
+from types import ModuleType
+from typing import Any
 
-__all__ = [
-    "AliasedExpression",
-    "BlobExpression",
-    "BooleanExpression",
-    "CaseExpressionBuilder",
-    "DateExpression",
-    "GenericExpression",
-    "NumericAggregateFactory",
-    "NumericExpression",
-    "TemporalAggregateFactory",
-    "SelectStatementBuilder",
-    "TimestampExpression",
-    "TypedExpression",
-    "VarcharExpression",
-    "ExpressionDependency",
+from duckplus import static_typed as _static_typed
+
+warnings.warn(
+    "'duckplus.typed' is deprecated; import from 'duckplus.static_typed' instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
+
+__all__ = list(_static_typed.__all__)
+__path__ = _static_typed.__path__  # type: ignore[attr-defined]
+
+
+def __getattr__(name: str) -> Any:
+    """Proxy attribute lookups to :mod:`duckplus.static_typed`."""
+
+    if hasattr(_static_typed, name):
+        value = getattr(_static_typed, name)
+        globals()[name] = value
+        return value
+
+    module = importlib.import_module(f"duckplus.static_typed.{name}")
+    sys.modules[f"{__name__}.{name}"] = module
+    return module
+
+
+def __dir__() -> list[str]:
+    """Expose static typed exports to dir() callers."""
+
+    return sorted(__all__)
+
+
+def _alias_module(name: str, module: ModuleType) -> None:
+    """Register ``module`` under the deprecated package name."""
+
+    qualified = f"{__name__}.{name}"
+    sys.modules.setdefault(qualified, module)
+
+
+for _submodule_name in [
     "ducktype",
-    "Numeric",
-    "Varchar",
-    "Boolean",
-    "Blob",
-    "Generic",
-    "Tinyint",
-    "Smallint",
-    "Integer",
-    "Utinyint",
-    "Usmallint",
-    "Uinteger",
-    "Float",
-    "Double",
-    "Date",
-    "Timestamp",
-    "Timestamp_s",
-    "Timestamp_ms",
-    "Timestamp_us",
-    "Timestamp_ns",
-    "Timestamp_tz",
+    "expression",
+    "expressions",
+    "dependencies",
+    "functions",
     "select",
-    "SCALAR_FUNCTIONS",
-    "AGGREGATE_FUNCTIONS",
-    "WINDOW_FUNCTIONS",
-    "DuckDBFunctionNamespace",
-]
+    "types",
+    "_generated_function_namespaces",
+]:
+    try:
+        _module = importlib.import_module(f"duckplus.static_typed.{_submodule_name}")
+    except ModuleNotFoundError:
+        continue
+    _alias_module(_submodule_name, _module)
 
-__all__.extend(_DECIMAL_FACTORY_NAMES)
+
+for _export_name in __all__:
+    globals()[_export_name] = getattr(_static_typed, _export_name)
+
+
+del _alias_module, _module, _submodule_name, _export_name

@@ -30,7 +30,7 @@ remains in place.
 ## Decimal factory module
 - **Module:** `duckplus/typed/expressions/decimal.py`
 - **Mechanism:** The
-  :func:`duckplus.typed.expressions.decimal.register_decimal_factories`
+  :func:`duckplus.static_typed.expressions.decimal.register_decimal_factories`
   decorator applies at class definition time so every decimal helper binds
   directly to :class:`DuckTypeNamespace` while the module exports each factory
   as a normal attribute.

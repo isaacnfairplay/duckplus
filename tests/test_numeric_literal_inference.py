@@ -6,8 +6,8 @@ from decimal import Decimal
 
 import pytest
 
-from duckplus.typed import ducktype
-from duckplus.typed.types import DecimalType, IntegerType, NumericType, infer_numeric_literal_type
+from duckplus.static_typed import ducktype
+from duckplus.static_typed.types import DecimalType, IntegerType, NumericType, infer_numeric_literal_type
 
 
 @pytest.mark.parametrize(

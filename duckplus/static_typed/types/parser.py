@@ -1,4 +1,4 @@
-"""Parser translating DuckDB type strings into :mod:`duckplus.typed.types`."""
+"""Parser translating DuckDB type strings into :mod:`duckplus.static_typed.types`."""
 
 # pylint: disable=too-many-return-statements,missing-function-docstring,too-few-public-methods,duplicate-code
 

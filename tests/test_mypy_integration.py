@@ -9,7 +9,7 @@ from mypy import api as mypy_api
 
 def test_generic_sum_is_rejected(tmp_path: Path) -> None:
     source = """
-from duckplus.typed import ducktype
+from duckplus.static_typed import ducktype
 
 def demo() -> None:
     expr = ducktype.Generic("customer")
@@ -27,7 +27,7 @@ def demo() -> None:
 
 def test_ducktype_convenience_module_is_mypy_clean(tmp_path: Path) -> None:
     source = """
-from duckplus.typed.ducktype import Numeric, select
+from duckplus.static_typed.ducktype import Numeric, select
 
 
 def demo() -> None:

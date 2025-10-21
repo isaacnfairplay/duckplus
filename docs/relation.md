@@ -1,8 +1,8 @@
 # Relation helpers
 
 > **Note**
-> The up-to-date 1.2 documentation lives under
-> {doc}`versions/1.2/core/relations <versions/1.2/core/relations>` in the Sphinx
+> The up-to-date 1.3 documentation lives under
+> {doc}`versions/1.3/core/relations <versions/1.3/core/relations>` in the Sphinx
 > site. This legacy Markdown file is retained for historical reference.
 
 The `duckplus.relation.Relation` wrapper keeps the lightweight DuckDB relation
@@ -87,16 +87,15 @@ arguments—``sheet``, ``header``, ``skip``, ``limit``, ``names``, ``dtype``, an
 
 ## Adding computed columns
 
-`Relation.add` accepts typed expressions from :mod:`duckplus.typed` that have
-been aliased with :meth:`~duckplus.typed.expressions.base.TypedExpression.alias`.
+`Relation.add` accepts typed expressions from :mod:`duckplus.static_typed` that have
+been aliased with :meth:`~duckplus.static_typed.expressions.base.TypedExpression.alias`.
 The positional helpers avoid repeating column names while preserving dependency
 metadata so DuckPlus can validate that references only target columns already
 present on the relation. Keyword arguments remain supported for callers that
 prefer explicit mappings.
 
 ```python
-from duckplus import DuckCon, Relation
-from duckplus.typed import ducktype
+from duckplus import DuckCon, Relation, ducktype
 
 manager = DuckCon()
 with manager as connection:
@@ -134,8 +133,7 @@ other helpers, while `if_exists=True` columns mirror the optional behaviour of
 `keep_if_exists` and friends.
 
 ```python
-from duckplus import DuckCon, Relation
-from duckplus.typed import ducktype
+from duckplus import DuckCon, Relation, ducktype
 
 manager = DuckCon()
 with manager as connection:

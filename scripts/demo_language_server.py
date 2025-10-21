@@ -34,7 +34,7 @@ def _demo_source() -> str:
     """Return the demo source file fed to the language server."""
 
     return (
-        "from duckplus.typed import AGGREGATE_FUNCTIONS, SCALAR_FUNCTIONS\n\n"
+        "from duckplus.static_typed import AGGREGATE_FUNCTIONS, SCALAR_FUNCTIONS\n\n"
         "scalar_expr = SCALAR_FUNCTIONS.Varchar.\n"
         "numeric_expr = SCALAR_FUNCTIONS.Numeric.\n"
         "aggregate_expr = AGGREGATE_FUNCTIONS.Numeric.\n\n"

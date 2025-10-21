@@ -7,7 +7,7 @@ import duckdb
 import pytest
 
 from duckplus import DuckCon, Relation, io as io_helpers
-from duckplus.typed import ducktype
+from duckplus.static_typed import ducktype
 
 
 def _make_relation(manager: DuckCon, query: str) -> Relation:
