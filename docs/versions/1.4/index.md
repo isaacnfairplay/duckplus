@@ -1,11 +1,14 @@
-# DuckPlus 1.4
+# DuckPlus 1.4.2
 
-DuckPlus 1.4 extends the direct-Python helper strategy to DuckDB's scalar macro
-surface so decorator-backed modules now publish the `split_part` family, array
-helpers, and PostgreSQL catalog shims. The static typed API imports those
+DuckPlus 1.4.2 extends the direct-Python helper strategy to DuckDB's scalar
+macro surface so decorator-backed modules now publish the `split_part` family,
+array helpers, and PostgreSQL catalog shims. The static typed API imports those
 modules during package initialisation, ensuring both runtime and typed
 namespaces resolve the real helper implementations instead of the generated
-function catalog. Documentation and package metadata now highlight the macro
+function catalog. Patch release 1.4.2 further binds the macro helpers onto their
+expression classes, enabling fluent method calls like
+``ducktype.Generic("items").array_to_string(", ")`` without dropping down to the
+namespace objects. Documentation and package metadata now highlight the macro
 migration so contributors can rely on the override modules when exploring the
 function surface.
 
@@ -23,6 +26,11 @@ notes and breaking-change callouts.
   privilege, and visibility macros. Import-time decorators register overloads
   on the correct namespaces so IDEs and documentation resolve the Python
   implementations instead of generated metadata.
+- **Fluent macro chaining** – Static typed overrides now attach string and
+  array macros directly to their corresponding expression classes (for example,
+  ``VarcharExpression.split_part`` and ``GenericExpression.array_to_string``),
+  so user code can chain helpers without manually referencing the typed
+  namespaces.
 - **Typed namespace override coverage** – :mod:`duckplus.static_typed` now
   imports the macro override package by default, replacing the generated
   entries with the decorator-backed helpers as soon as the typed namespace

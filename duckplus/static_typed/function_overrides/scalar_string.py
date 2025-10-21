@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
 
-from duckplus.static_typed.expression import VarcharExpression
+from duckplus.static_typed.expression import GenericExpression, VarcharExpression
 from duckplus.static_typed.functions import (
     DuckDBFunctionDefinition,
     call_duckdb_function,
@@ -12,8 +12,11 @@ from duckplus.static_typed.functions import (
 )
 from duckplus.static_typed.types import parse_type
 
+from ._expression_methods import attach_expression_method
+
 if TYPE_CHECKING:  # pragma: no cover - import cycle guard for type checkers
     from duckplus.static_typed._generated_function_namespaces import (
+        SCALAR_FUNCTIONS,
         ScalarVarcharFunctions,
     )
 
@@ -134,14 +137,26 @@ def array_to_string_comma_default(
     )
 
 
+def _coerce_varchar_operands(operands: tuple[object, ...]) -> tuple[object, ...]:
+    coerced: list[object] = []
+    for operand in operands:
+        if isinstance(operand, str):
+            coerced.append(VarcharExpression.coerce_literal(operand))
+        else:
+            coerced.append(operand)
+    return tuple(coerced)
+
+
 def _register() -> None:
     """Attach scalar string macro helpers onto the scalar namespace."""
 
     from duckplus.static_typed._generated_function_namespaces import (
+        SCALAR_FUNCTIONS,
         ScalarVarcharFunctions,
     )
 
     namespace: Any = ScalarVarcharFunctions
+    varchar_namespace = SCALAR_FUNCTIONS.Varchar
 
     namespace._SPLIT_PART_SIGNATURES = _SPLIT_PART_SIGNATURES
     namespace.split_part = cast(Any, split_part)
@@ -169,6 +184,25 @@ def _register() -> None:
         "array_to_string_comma_default",
         names=getattr(array_to_string_comma_default, "__duckdb_identifiers__", ()),
         symbols=getattr(array_to_string_comma_default, "__duckdb_symbols__", ()),
+    )
+
+    attach_expression_method(
+        VarcharExpression,
+        varchar_namespace,
+        split_part,
+        operands_transform=_coerce_varchar_operands,
+    )
+    attach_expression_method(
+        GenericExpression,
+        varchar_namespace,
+        array_to_string,
+        operands_transform=_coerce_varchar_operands,
+    )
+    attach_expression_method(
+        GenericExpression,
+        varchar_namespace,
+        array_to_string_comma_default,
+        operands_transform=_coerce_varchar_operands,
     )
 
 
