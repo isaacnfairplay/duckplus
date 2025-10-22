@@ -30,5 +30,12 @@ language_server_demo
 ty_language_server
 ```
 
+```{toctree}
+:maxdepth: 2
+:caption: Repository resources
+
+repository-map
+```
+
 Use the version switcher in the navigation bar to browse documentation for
 older releases once they are published.
