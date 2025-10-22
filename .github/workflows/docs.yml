@@ -33,6 +33,14 @@ jobs:
           pip install ".[dev]"
           pip install -r docs/requirements.txt
 
+      - name: Generate repository table of contents
+        run: |
+          python scripts/generate_repo_toc.py \
+            --output docs/repository-map.md \
+            --repo "${{ github.repository }}" \
+            --ref "${{ github.sha }}" \
+            --tree-ref "${{ github.sha }}"
+
       - name: Build documentation (versioned)
         run: sphinx-multiversion docs docs/_build/html
 
