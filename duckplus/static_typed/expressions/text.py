@@ -8,7 +8,7 @@ from typing import Iterable
 
 from ..dependencies import DependencyLike, ExpressionDependency
 from ..types import DuckDBType, VarcharType
-from .base import TypedExpression, BooleanExpression
+from .base import TypedExpression, BooleanExpression, _scalar_varchar_namespace
 from .boolean import BooleanFactory
 from .case import CaseExpressionBuilder
 from .numeric import NumericExpression
@@ -138,6 +138,18 @@ class VarcharExpression(TypedExpression):
         dependencies = self.dependencies.union(operand.dependencies)
         sql = f"trim({self.render()}, {operand.render()})"
         return type(self)._raw(sql, dependencies=dependencies)
+
+    def split_part(
+        self, delimiter: object, position: object
+    ) -> "VarcharExpression":
+        """Split the expression by ``delimiter`` and return the 1-indexed part."""
+
+        if isinstance(delimiter, str):
+            delimiter = VarcharExpression.coerce_literal(delimiter)
+        if isinstance(position, str):
+            position = VarcharExpression.coerce_literal(position)
+        namespace = _scalar_varchar_namespace()
+        return namespace.split_part(self, delimiter, position)
 
     def _coerce_operand(self, other: object) -> "VarcharExpression":
         if isinstance(other, VarcharExpression):

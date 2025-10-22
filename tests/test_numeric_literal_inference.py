@@ -7,7 +7,15 @@ from decimal import Decimal
 import pytest
 
 from duckplus.static_typed import ducktype
-from duckplus.static_typed.types import DecimalType, IntegerType, NumericType, infer_numeric_literal_type
+from duckplus.static_typed.types import (
+    DecimalType,
+    IntegerType,
+    NumericType,
+    UintegerType,
+    UsmallintType,
+    UtinyintType,
+    infer_numeric_literal_type,
+)
 
 
 @pytest.mark.parametrize(
@@ -85,6 +93,17 @@ def test_infer_numeric_literal_type_for_decimal(
 def test_numeric_expression_literal_uses_inferred_type() -> None:
     expression = ducktype.Numeric.literal(42)
     assert expression.duck_type.render() == "UTINYINT"
+
+
+def test_unsigned_literal_matches_factory_defaults() -> None:
+    tinyint_literal = ducktype.Utinyint.literal(1)
+    assert tinyint_literal.duck_type == UtinyintType()
+
+    smallint_literal = ducktype.Usmallint.literal(1)
+    assert smallint_literal.duck_type == UsmallintType()
+
+    integer_literal = ducktype.Uinteger.literal(1)
+    assert integer_literal.duck_type == UintegerType()
 
 
 def test_numeric_expression_literal_decimal_precision() -> None:

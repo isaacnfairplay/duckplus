@@ -7,7 +7,7 @@ from __future__ import annotations
 from collections.abc import Iterable as IterableABC
 from decimal import Decimal
 from types import NotImplementedType
-from typing import Iterable, TypeVar, Union
+from typing import TYPE_CHECKING, Iterable, TypeVar, Union
 
 from ..dependencies import (
     DependencyLike,
@@ -16,6 +16,21 @@ from ..dependencies import (
 )
 from ..types import BooleanType, DuckDBType, GenericType
 from .utils import quote_identifier, quote_qualified_identifier
+
+if TYPE_CHECKING:  # pragma: no cover - typing helper
+    from .text import VarcharExpression
+
+
+def _scalar_generic_namespace():
+    from .._generated_function_namespaces import SCALAR_FUNCTIONS
+
+    return SCALAR_FUNCTIONS.Generic
+
+
+def _scalar_varchar_namespace():
+    from .._generated_function_namespaces import SCALAR_FUNCTIONS
+
+    return SCALAR_FUNCTIONS.Varchar
 
 ExpressionT = TypeVar("ExpressionT", bound="TypedExpression")
 ComparisonResult = Union["BooleanExpression", NotImplementedType]
@@ -408,6 +423,76 @@ class GenericExpression(TypedExpression):
             dependencies=dependencies,
             duck_type=self.duck_type,
         )
+
+    def array_append(self, element: object) -> "GenericExpression":
+        """Append ``element`` to the array represented by this expression."""
+
+        namespace = _scalar_generic_namespace()
+        return namespace.array_append(self, element)
+
+    def array_intersect(self, other: object) -> "GenericExpression":
+        """Return the intersection between this array and ``other``."""
+
+        namespace = _scalar_generic_namespace()
+        return namespace.array_intersect(self, other)
+
+    def array_pop_back(self) -> "GenericExpression":
+        """Remove the final element from the array expression."""
+
+        namespace = _scalar_generic_namespace()
+        return namespace.array_pop_back(self)
+
+    def array_pop_front(self) -> "GenericExpression":
+        """Remove the first element from the array expression."""
+
+        namespace = _scalar_generic_namespace()
+        return namespace.array_pop_front(self)
+
+    def array_prepend(self, element: object) -> "GenericExpression":
+        """Prepend ``element`` to the array represented by this expression."""
+
+        namespace = _scalar_generic_namespace()
+        return namespace.array_prepend(element, self)
+
+    def array_push_back(self, element: object) -> "GenericExpression":
+        """Push ``element`` onto the end of the array expression."""
+
+        namespace = _scalar_generic_namespace()
+        return namespace.array_push_back(self, element)
+
+    def array_push_front(self, element: object) -> "GenericExpression":
+        """Push ``element`` onto the front of the array expression."""
+
+        namespace = _scalar_generic_namespace()
+        return namespace.array_push_front(self, element)
+
+    def array_reverse(self) -> "GenericExpression":
+        """Reverse the order of the array expression."""
+
+        namespace = _scalar_generic_namespace()
+        return namespace.array_reverse(self)
+
+    def array_to_string(self, separator: object) -> "VarcharExpression":
+        """Join array elements into a string separated by ``separator``."""
+
+        from .text import VarcharExpression as _VarcharExpression
+
+        if isinstance(separator, str):
+            separator = _VarcharExpression.coerce_literal(separator)
+        namespace = _scalar_varchar_namespace()
+        return namespace.array_to_string(self, separator)
+
+    def array_to_string_comma_default(
+        self, separator: object
+    ) -> "VarcharExpression":
+        """Join array elements using ``separator`` with comma fallback."""
+
+        from .text import VarcharExpression as _VarcharExpression
+
+        if isinstance(separator, str):
+            separator = _VarcharExpression.coerce_literal(separator)
+        namespace = _scalar_varchar_namespace()
+        return namespace.array_to_string_comma_default(self, separator)
 
     @classmethod
     def column(

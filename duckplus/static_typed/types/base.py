@@ -115,6 +115,33 @@ class IntegerType(NumericType):
         return super().accepts(candidate)
 
 
+class UtinyintType(IntegerType):
+    """DuckDB UTINYINT type."""
+
+    __slots__ = ()
+
+    def __init__(self) -> None:
+        super().__init__("UTINYINT")
+
+
+class UsmallintType(IntegerType):
+    """DuckDB USMALLINT type."""
+
+    __slots__ = ()
+
+    def __init__(self) -> None:
+        super().__init__("USMALLINT")
+
+
+class UintegerType(IntegerType):
+    """DuckDB UINTEGER type."""
+
+    __slots__ = ()
+
+    def __init__(self) -> None:
+        super().__init__("UINTEGER")
+
+
 class FloatingType(NumericType):
     __slots__ = ()
 

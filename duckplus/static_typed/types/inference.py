@@ -5,7 +5,16 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import cast
 
-from .base import DecimalType, DuckDBType, FloatingType, IntegerType, NumericType
+from .base import (
+    DecimalType,
+    DuckDBType,
+    FloatingType,
+    IntegerType,
+    NumericType,
+    UintegerType,
+    UsmallintType,
+    UtinyintType,
+)
 
 # pylint: disable=too-many-return-statements
 
@@ -41,11 +50,11 @@ def _infer_integer_type(value: int) -> DuckDBType:
             return IntegerType("HUGEINT")
         return NumericType("NUMERIC")
     if value <= _UTINYINT_MAX:
-        return IntegerType("UTINYINT")
+        return UtinyintType()
     if value <= _USMALLINT_MAX:
-        return IntegerType("USMALLINT")
+        return UsmallintType()
     if value <= _UINTEGER_MAX:
-        return IntegerType("UINTEGER")
+        return UintegerType()
     if value <= _UBIGINT_MAX:
         return IntegerType("UBIGINT")
     if value <= _HUGEINT_MAX:

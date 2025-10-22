@@ -1,14 +1,22 @@
-# DuckPlus 1.4.3
+# DuckPlus 1.4.7
 
-DuckPlus 1.4.3 extends the direct-Python helper strategy to DuckDB's scalar
-macro surface so decorator-backed modules now publish the `split_part` family,
-array helpers, and PostgreSQL catalog shims. The static typed API imports those
-modules during package initialisation, ensuring both runtime and typed
-namespaces resolve the real helper implementations instead of the generated
-function catalog. Patch release 1.4.3 further binds the macro helpers onto their
-expression classes, enabling fluent method calls like
+DuckPlus 1.4.7 finalises the 1.4 series by locking the static typed contracts to
+what ships on PyPI. The ty and mypy suites now exercise the entire
+static-typed API surface, and the release gate demands 100 percent parity so
+editor integrations stay aligned with runtime behaviour. Unsigned integer
+factories are exported alongside the rest of the numeric hierarchy and
+type-casting now infers their DuckDB representations automatically, rounding out
+the migration away from generated registries.
+
+Earlier 1.4.x releases extended the direct-Python helper strategy to DuckDB's
+scalar macro surface so decorator-backed modules now publish the `split_part`
+family, array helpers, and PostgreSQL catalog shims. The static typed API
+imports those modules during package initialisation, ensuring both runtime and
+typed namespaces resolve the real helper implementations instead of the
+generated function catalog. The macro helpers remain bound to their expression
+classes, enabling fluent method calls like
 ``ducktype.Generic("items").array_to_string(", ")`` without dropping down to the
-namespace objects. Documentation and package metadata now highlight the macro
+namespace objects. Documentation and package metadata highlight the macro
 migration so contributors can rely on the override modules when exploring the
 function surface.
 
@@ -21,6 +29,13 @@ notes and breaking-change callouts.
 
 ## Release highlights
 
+- **Ty and mypy parity contracts** – Version-gated integration tests now enforce
+  100 percent agreement between the type checkers and the runtime API surface,
+  ensuring editors surface every helper and diagnostic that succeeds in Python.
+- **Unsigned integer factory exports** – `Uinteger`, `Usmallint`, and
+  `Utinyint` factories are public package members, and casting derives their
+  DuckDB types automatically so literal parsing and expression casts stay
+  consistent.
 - **Decorator-backed scalar macros** – DuckPlus 1.4 adds
   :mod:`duckplus.functions.scalar` modules for string, list, PostgreSQL catalog,
   privilege, and visibility macros. Import-time decorators register overloads

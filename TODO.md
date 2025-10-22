@@ -126,8 +126,8 @@ Reorient the function exposure strategy so every helper is defined directly in P
 - **Progress:** 5 of 5 scalar macro buckets migrated (~100%).
 
 ### Discovery Log – Release version alignment (2025-10-21)
-1. Update the Sphinx configuration to advertise DuckPlus 1.4.3 so doc builds label the upcoming release correctly.【F:docs/conf.py†L19-L20】
-2. Refresh the version switcher JSON so published sites offer the 1.4.3 guides alongside prior releases and the rolling ``latest`` channel.【F:docs/_static/version_switcher.json†L1-L27】
+1. Update the Sphinx configuration to advertise DuckPlus 1.4.7 so doc builds label the upcoming release correctly.【F:docs/conf.py†L19-L20】
+2. Refresh the version switcher JSON so published sites offer the 1.4.7 guides alongside prior releases and the rolling ``latest`` channel.【F:docs/_static/version_switcher.json†L1-L27】
 3. These adjustments keep the documentation navigation ready for the release without changing the existing quick-start toctrees.【F:docs/index.md†L1-L20】
 
 ## DuckDB Function Module Layout

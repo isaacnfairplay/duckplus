@@ -13,6 +13,9 @@ from ..types import (
     FloatingType,
     IntegerType,
     NumericType,
+    UintegerType,
+    UsmallintType,
+    UtinyintType,
     infer_numeric_literal_type,
 )
 from .base import GenericExpression, TypedExpression
@@ -379,19 +382,19 @@ class IntegerExpression(_BaseIntegerExpression):
 class UnsignedTinyintExpression(_BaseIntegerExpression):
     @classmethod
     def default_type(cls) -> DuckDBType:
-        return IntegerType("UTINYINT")
+        return UtinyintType()
 
 
 class UnsignedSmallintExpression(_BaseIntegerExpression):
     @classmethod
     def default_type(cls) -> DuckDBType:
-        return IntegerType("USMALLINT")
+        return UsmallintType()
 
 
 class UnsignedIntegerExpression(_BaseIntegerExpression):
     @classmethod
     def default_type(cls) -> DuckDBType:
-        return IntegerType("UINTEGER")
+        return UintegerType()
 
 
 class FloatExpression(NumericExpression):

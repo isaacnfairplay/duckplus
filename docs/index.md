@@ -22,5 +22,13 @@ contributing
 function_namespace_generator_retirement
 ```
 
+```{toctree}
+:maxdepth: 1
+:caption: Language server compatibility
+
+language_server_demo
+ty_language_server
+```
+
 Use the version switcher in the navigation bar to browse documentation for
 older releases once they are published.

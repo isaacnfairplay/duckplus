@@ -1,7 +1,7 @@
-# PyPI Distribution Assessment (duckplus 1.4.3)
+# PyPI Distribution Assessment (duckplus 1.4.7)
 
 ## Overview
-We installed `duckplus==1.4.3` from PyPI and exercised its public API inside an
+We installed `duckplus==1.4.7` from PyPI and exercised its public API inside an
 isolated subprocess so the packaged code would not interfere with the repository
 modules. The probe covers connection helpers, typed expressions, domain
 functions, and schema utilities, and returns a JSON summary that the regression
@@ -18,7 +18,7 @@ suite asserts on.【F:tests/test_pypi_distribution.py†L22-L331】
 - All 47 scalar macros described in the documentation load from
   `duckplus.functions.scalar`, and the typed namespaces expose the same
   helpers across the varchar, boolean, and generic categories. Patch release
-  1.4.3 also makes the applicable macros available as fluent expression methods
+  1.4.7 also makes the applicable macros available as fluent expression methods
   (for example, `ducktype.Varchar("label").split_part(" ", 1)`), matching the
   repository documentation.【F:tests/test_pypi_distribution.py†L36-L157】【F:tests/test_pypi_distribution.py†L243-L273】
 - `duckplus.schema.diff_relations` still detects type drift between relations,
