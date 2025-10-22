@@ -1,11 +1,11 @@
-# DuckPlus 1.4.2
+# DuckPlus 1.4.3
 
-DuckPlus 1.4.2 extends the direct-Python helper strategy to DuckDB's scalar
+DuckPlus 1.4.3 extends the direct-Python helper strategy to DuckDB's scalar
 macro surface so decorator-backed modules now publish the `split_part` family,
 array helpers, and PostgreSQL catalog shims. The static typed API imports those
 modules during package initialisation, ensuring both runtime and typed
 namespaces resolve the real helper implementations instead of the generated
-function catalog. Patch release 1.4.2 further binds the macro helpers onto their
+function catalog. Patch release 1.4.3 further binds the macro helpers onto their
 expression classes, enabling fluent method calls like
 ``ducktype.Generic("items").array_to_string(", ")`` without dropping down to the
 namespace objects. Documentation and package metadata now highlight the macro

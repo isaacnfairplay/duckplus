@@ -1,7 +1,7 @@
-# PyPI Distribution Assessment (duckplus 1.4.2)
+# PyPI Distribution Assessment (duckplus 1.4.3)
 
 ## Overview
-We installed `duckplus==1.4.2` from PyPI and exercised its public API inside an
+We installed `duckplus==1.4.3` from PyPI and exercised its public API inside an
 isolated subprocess so the packaged code would not interfere with the repository
 modules. The probe covers connection helpers, typed expressions, domain
 functions, and schema utilities, and returns a JSON summary that the regression
@@ -18,7 +18,7 @@ suite asserts on.【F:tests/test_pypi_distribution.py†L22-L331】
 - All 47 scalar macros described in the documentation load from
   `duckplus.functions.scalar`, and the typed namespaces expose the same
   helpers across the varchar, boolean, and generic categories. Patch release
-  1.4.2 also makes the applicable macros available as fluent expression methods
+  1.4.3 also makes the applicable macros available as fluent expression methods
   (for example, `ducktype.Varchar("label").split_part(" ", 1)`), matching the
   repository documentation.【F:tests/test_pypi_distribution.py†L36-L157】【F:tests/test_pypi_distribution.py†L243-L273】
 - `duckplus.schema.diff_relations` still detects type drift between relations,
@@ -33,9 +33,24 @@ suite asserts on.【F:tests/test_pypi_distribution.py†L22-L331】
   from the numeric aggregate namespace; attempting to call the exported
   `approx_quantile_numeric` raises `AttributeError("'str' object has no
   attribute 'return_category'")`, confirming the decorator did not register a
-  usable wrapper.【F:tests/test_pypi_distribution.py†L87-L170】【168975†L1-L2】
+  usable wrapper.【F:tests/test_pypi_distribution.py†L87-L170】
 - Importing `duckplus.typed` from the wheel still emits the expected
   deprecation warning, but it does not return the exact same factory objects as
   `duckplus.static_typed`, so consumers relying on object identity or module
   paths may observe the discrepancy.【F:tests/test_pypi_distribution.py†L110-L172】
+
+## Git installation probe
+Installing directly from the Git repository mirrors the same helper surface as
+the PyPI wheel and passes a fresh mypy run after installation. The regression
+suite provisions a temporary virtual environment, installs
+`pip install git+https://github.com/isaacnfairplay/duckplus.git`, and asserts
+that:
+
+- `DuckCon` helpers remain callable, aggregate a small dataset, and close the
+  managed connection after exiting the context.【F:tests/test_git_installation.py†L45-L102】
+- Boolean typed expressions match the repository's `.coalesce()` availability,
+  so git installs track the same ergonomics contributors exercise locally.【F:tests/test_git_installation.py†L12-L102】
+- Running `python -m mypy -p duckplus` inside the freshly installed
+  environment reports success, confirming the packaged stubs remain
+  PEP 561-compliant.【F:tests/test_git_installation.py†L104-L113】
 
