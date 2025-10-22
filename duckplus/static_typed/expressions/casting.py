@@ -44,6 +44,9 @@ def cast_expression(
 
 
 def _normalise_duck_type(target: object) -> DuckDBType:
+    factory_duck_type = _duck_type_from_factory(target)
+    if factory_duck_type is not None:
+        return factory_duck_type
     if isinstance(target, DuckDBType):
         return target
     if isinstance(target, str):
@@ -59,6 +62,29 @@ def _normalise_duck_type(target: object) -> DuckDBType:
         f"subclasses (got {type(target)!r})"
     )
     raise TypeError(msg)
+
+
+def _duck_type_from_factory(target: object) -> DuckDBType | None:
+    from .binary import BlobFactory  # pylint: disable=import-outside-toplevel
+    from .boolean import BooleanFactory  # pylint: disable=import-outside-toplevel
+    from .generic import GenericFactory  # pylint: disable=import-outside-toplevel
+    from .numeric import NumericFactory  # pylint: disable=import-outside-toplevel
+    from .temporal import TemporalFactory  # pylint: disable=import-outside-toplevel
+    from .text import VarcharFactory  # pylint: disable=import-outside-toplevel
+
+    if isinstance(target, NumericFactory):
+        return target.expression_type.default_type()
+    if isinstance(target, TemporalFactory):
+        return target.expression_type.default_type()
+    if isinstance(target, BooleanFactory):
+        return target.literal(True).duck_type
+    if isinstance(target, VarcharFactory):
+        return target.literal("").duck_type
+    if isinstance(target, BlobFactory):
+        return target.literal(b"").duck_type
+    if isinstance(target, GenericFactory):
+        return target.null().duck_type
+    return None
 
 
 def _expression_type_for_duck_type(

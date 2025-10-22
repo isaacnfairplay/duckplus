@@ -4,42 +4,36 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 from mypy import api as mypy_api
 
-
-def test_generic_sum_is_rejected(tmp_path: Path) -> None:
-    source = """
-from duckplus.static_typed import ducktype
-
-def demo() -> None:
-    expr = ducktype.Generic("customer")
-    expr.sum()
-"""
-    path = tmp_path / "invalid_generic_sum.py"
-    path.write_text(source, encoding="utf-8")
-
-    stdout, stderr, status = mypy_api.run([str(path)])
-    assert status != 0
-    assert "error" in stdout.lower()
-    assert "has no attribute \"sum\"" in stdout
-    assert stderr == ""
+from .typecheck_cases import CheckerExpectation, TypeCheckCase, cases_for
 
 
-def test_ducktype_convenience_module_is_mypy_clean(tmp_path: Path) -> None:
-    source = """
-from duckplus.static_typed.ducktype import Numeric, select
+MYPY_CASES = cases_for("mypy")
 
 
-def demo() -> None:
-    builder = select()
-    expr = Numeric.literal(1)
-    builder = builder.column(expr, alias="value")
-    builder.build()
-"""
-    path = tmp_path / "typed_ducktype_usage.py"
-    path.write_text(source, encoding="utf-8")
+def _evaluate_mypy(case: TypeCheckCase, expectation: CheckerExpectation, stdout: str, stderr: str, status: int) -> None:
+    output = (stdout + stderr).lower()
+    if expectation.ok:
+        assert status == 0, f"mypy should succeed for {case.name}: {stdout}{stderr}"
+        assert stdout.strip().startswith("Success: no issues found")
+        assert stderr == ""
+        return
+
+    assert status != 0, f"mypy should fail for {case.name}"  # pragma: no branch - enforced below
+    diagnostic = expectation.normalised_diagnostic()
+    if diagnostic:
+        assert diagnostic in output, f"expected {diagnostic!r} in mypy output for {case.name}"
+
+
+@pytest.mark.parametrize("case", MYPY_CASES, ids=lambda case: case.name)
+def test_mypy_contract(tmp_path: Path, case: TypeCheckCase) -> None:
+    path = tmp_path / case.filename
+    path.write_text(case.rendered_source(), encoding="utf-8")
+
+    expectation = case.expectation_for("mypy")
+    assert expectation is not None  # pragma: no branch - defended by cases_for
 
     stdout, stderr, status = mypy_api.run([str(path)])
-    assert status == 0
-    assert stdout.strip().startswith("Success: no issues found")
-    assert stderr == ""
+    _evaluate_mypy(case, expectation, stdout, stderr, status)

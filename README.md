@@ -4,7 +4,7 @@ A tightly scoped field guide for building reliable DuckDB workloads with DuckPlu
 It captures the core patterns, design opinions, and guardrails encoded in the
 codebase so an AI or human teammate can adopt the same defaults quickly.
 
-**Current release:** `duckplus==1.4.3`. The [versioned documentation](https://isaacnfairplay.github.io/duckplus/1.4/) tracks the
+**Current release:** `duckplus==1.4.7`. The [versioned documentation](https://isaacnfairplay.github.io/duckplus/1.4/) tracks the
 same helpers and metadata published to PyPI so contributors can rely on the
 examples below during upgrades.
 

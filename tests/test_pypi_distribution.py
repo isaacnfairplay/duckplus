@@ -1,4 +1,4 @@
-"""Integration checks for the published duckplus==1.4.3 wheel via subprocess probes."""
+"""Integration checks for the published duckplus==1.4.7 wheel via subprocess probes."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ def _run_probe(script: str) -> dict[str, object]:
     except subprocess.CalledProcessError as exc:  # pragma: no cover - diagnostic path
         stderr = exc.stderr or ""
         if "site-packages/duckplus/__init__.py" in stderr and "No such file" in stderr:
-            pytest.skip("duckplus==1.4.3 is not available in the probe environment")
+            pytest.skip("duckplus==1.4.7 is not available in the probe environment")
         raise
     return json.loads(result.stdout)
 

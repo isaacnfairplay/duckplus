@@ -17,6 +17,9 @@ from .base import (
     IntegerType,
     IntervalType,
     NumericType,
+    UintegerType,
+    UsmallintType,
+    UtinyintType,
     TemporalType,
     UnknownType,
     VarcharType,
@@ -52,6 +55,12 @@ def _varchar_type(name: str) -> DuckDBType | None:
 
 
 def _integer_type(name: str) -> DuckDBType | None:
+    if name == "UTINYINT":
+        return UtinyintType()
+    if name == "USMALLINT":
+        return UsmallintType()
+    if name == "UINTEGER":
+        return UintegerType()
     if name in _UNSIGNED_INTEGER_ALIASES or name in _SIGNED_INTEGER_ALIASES:
         return IntegerType(name)
     return None
