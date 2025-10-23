@@ -6,16 +6,23 @@ from __future__ import annotations
 
 import importlib
 from dataclasses import dataclass
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, cast
+from typing import TYPE_CHECKING, Any, Optional, SupportsInt, TypeVar, cast
 from typing import Literal
 import warnings
 
 import duckdb  # type: ignore[import-not-found]
+from duckdb import sqltypes
+
+from duckplus.static_typed.types import DuckDBType
 
 
 ExtraExtensionName = Literal["nanodbc", "excel"]
+
+
+TypeSpecifier = str | sqltypes.DuckDBPyType | DuckDBType
+FieldMapping = Mapping[str, TypeSpecifier] | Sequence[tuple[str, TypeSpecifier]]
 
 
 @dataclass(frozen=True)
@@ -303,6 +310,362 @@ class DuckCon:  # pylint: disable=too-many-instance-attributes
             return False
         return True
 
+    def begin(self) -> duckdb.DuckDBPyConnection:
+        """Begin a transaction on the managed connection."""
+
+        return self.connection.begin()
+
+    def commit(self) -> duckdb.DuckDBPyConnection:
+        """Commit the active transaction on the managed connection."""
+
+        return self.connection.commit()
+
+    def rollback(self) -> duckdb.DuckDBPyConnection:
+        """Roll back the active transaction on the managed connection."""
+
+        return self.connection.rollback()
+
+    def execute(
+        self, query: Any, parameters: Any = None
+    ) -> duckdb.DuckDBPyConnection:
+        """Execute ``query`` with optional ``parameters`` using DuckDB."""
+
+        return self.connection.execute(query, parameters)
+
+    def sql(
+        self, query: Any, *, alias: str = "", params: Any = None
+    ) -> "Relation":
+        """Run ``query`` and wrap the resulting relation in :class:`Relation`."""
+
+        from .relation import Relation  # pylint: disable=import-outside-toplevel
+
+        relation = self.connection.sql(query, alias=alias, params=params)
+        return Relation.from_relation(self, relation)
+
+    def fetchone(self) -> tuple[Any, ...] | None:
+        """Return the next row from the most recent query."""
+
+        return self.connection.fetchone()
+
+    def fetchmany(self, size: SupportsInt | None = None) -> list[tuple[Any, ...]]:
+        """Return up to ``size`` rows from the most recent query."""
+
+        helper = "DuckCon.fetchmany"
+        if size is None:
+            rows = self.connection.fetchmany()
+        else:
+            normalised = self._normalise_fetch_size(
+                size, helper=helper, parameter="size"
+            )
+            rows = self.connection.fetchmany(normalised)
+        return list(rows)
+
+    def fetchall(self) -> list[tuple[Any, ...]]:
+        """Return all remaining rows from the most recent query."""
+
+        rows = self.connection.fetchall()
+        return list(rows)
+
+    def fetch_df(self, *, date_as_object: bool = False) -> Any:
+        """Return the most recent result as a Pandas DataFrame."""
+
+        helper = "DuckCon.fetch_df"
+        self._require_module("pandas", helper, "pip install pandas")
+        return self.connection.fetch_df(date_as_object=date_as_object)
+
+    def fetchdf(self, *, date_as_object: bool = False) -> Any:
+        """Alias for :meth:`fetch_df` matching DuckDB's naming."""
+
+        return self.fetch_df(date_as_object=date_as_object)
+
+    def fetch_df_chunk(
+        self,
+        vectors_per_chunk: SupportsInt | None = None,
+        *,
+        date_as_object: bool = False,
+    ) -> Any:
+        """Return a chunk of rows from the most recent result as a DataFrame."""
+
+        helper = "DuckCon.fetch_df_chunk"
+        self._require_module("pandas", helper, "pip install pandas")
+        if vectors_per_chunk is None:
+            return self.connection.fetch_df_chunk(date_as_object=date_as_object)
+        normalised = self._normalise_fetch_size(
+            vectors_per_chunk,
+            helper=helper,
+            parameter="vectors_per_chunk",
+        )
+        return self.connection.fetch_df_chunk(
+            normalised, date_as_object=date_as_object
+        )
+
+    def fetchnumpy(self) -> dict[str, Any]:
+        """Return the most recent result as NumPy arrays keyed by column."""
+
+        helper = "DuckCon.fetchnumpy"
+        self._require_module("numpy", helper, "pip install numpy")
+        arrays = self.connection.fetchnumpy()
+        return dict(arrays)
+
+    def fetch_arrow_table(
+        self, rows_per_batch: SupportsInt | None = None
+    ) -> Any:
+        """Return the most recent result as a PyArrow table."""
+
+        helper = "DuckCon.fetch_arrow_table"
+        self._require_module("pyarrow", helper, "pip install pyarrow")
+        if rows_per_batch is None:
+            return self.connection.fetch_arrow_table()
+        normalised = self._normalise_fetch_size(
+            rows_per_batch, helper=helper, parameter="rows_per_batch"
+        )
+        return self.connection.fetch_arrow_table(normalised)
+
+    def fetch_record_batch(
+        self, rows_per_batch: SupportsInt | None = None
+    ) -> Any:
+        """Return the most recent result as a PyArrow RecordBatch reader."""
+
+        helper = "DuckCon.fetch_record_batch"
+        self._require_module("pyarrow", helper, "pip install pyarrow")
+        if rows_per_batch is None:
+            return self.connection.fetch_record_batch()
+        normalised = self._normalise_fetch_size(
+            rows_per_batch, helper=helper, parameter="rows_per_batch"
+        )
+        return self.connection.fetch_record_batch(normalised)
+
+    def close(self) -> None:
+        """Close the managed connection if it is open."""
+
+        if self._connection is None:
+            return
+        self._connection.close()
+        self._connection = None
+
+    def cursor(self) -> duckdb.DuckDBPyConnection:
+        """Return a new cursor object bound to the managed connection."""
+
+        return self.connection.cursor()
+
+    def install_extension(
+        self, name: str, *, force_install: bool = False
+    ) -> None:
+        """Install a DuckDB extension on the managed connection."""
+
+        if not isinstance(name, str):
+            msg = "install_extension name must be a string"
+            raise TypeError(msg)
+        normalised = name.strip()
+        if not normalised:
+            msg = "install_extension name cannot be empty"
+            raise ValueError(msg)
+        self.connection.install_extension(normalised, force_install=force_install)
+
+    def load_extension(self, name: str) -> None:
+        """Load a previously installed DuckDB extension."""
+
+        if not isinstance(name, str):
+            msg = "load_extension name must be a string"
+            raise TypeError(msg)
+        normalised = name.strip()
+        if not normalised:
+            msg = "load_extension name cannot be empty"
+            raise ValueError(msg)
+        self.connection.load_extension(normalised)
+
+    def interrupt(self) -> None:
+        """Interrupt the currently running query on the managed connection."""
+
+        self.connection.interrupt()
+
+    def register(self, name: str, value: object) -> duckdb.DuckDBPyConnection:
+        """Register ``value`` as a virtual table under ``name``."""
+
+        if not isinstance(name, str):
+            msg = "register name must be a string"
+            raise TypeError(msg)
+        normalised = name.strip()
+        if not normalised:
+            msg = "register name cannot be empty"
+            raise ValueError(msg)
+        return self.connection.register(normalised, value)
+
+    def unregister(self, name: str) -> duckdb.DuckDBPyConnection:
+        """Remove a previously registered virtual table."""
+
+        if not isinstance(name, str):
+            msg = "unregister name must be a string"
+            raise TypeError(msg)
+        normalised = name.strip()
+        if not normalised:
+            msg = "unregister name cannot be empty"
+            raise ValueError(msg)
+        return self.connection.unregister(normalised)
+
+    def type(self, specifier: TypeSpecifier) -> sqltypes.DuckDBPyType:
+        """Return a DuckDB type object for ``specifier``."""
+
+        return self._normalise_type_specifier(
+            specifier,
+            helper="DuckCon.type",
+            parameter="specifier",
+        )
+
+    def sqltype(self, specifier: TypeSpecifier) -> sqltypes.DuckDBPyType:
+        """Alias for :meth:`type` preserving DuckDB's original API."""
+
+        return self.type(specifier)
+
+    def decimal_type(
+        self,
+        precision: SupportsInt,
+        scale: SupportsInt,
+    ) -> sqltypes.DuckDBPyType:
+        """Create a DECIMAL type with the given ``precision`` and ``scale``."""
+
+        helper = "DuckCon.decimal_type"
+        normalised_precision = self._normalise_fetch_size(
+            precision,
+            helper=helper,
+            parameter="precision",
+        )
+        normalised_scale = self._normalise_non_negative_int(
+            scale,
+            helper=helper,
+            parameter="scale",
+        )
+        if normalised_scale > normalised_precision:
+            msg = "DuckCon.decimal_type scale cannot exceed precision"
+            raise ValueError(msg)
+        return self.connection.decimal_type(normalised_precision, normalised_scale)
+
+    def string_type(self, collation: str | None = None) -> sqltypes.DuckDBPyType:
+        """Create a DuckDB string type with an optional ``collation``."""
+
+        if collation is None:
+            normalised = ""
+        else:
+            if not isinstance(collation, str):
+                msg = "DuckCon.string_type collation must be a string"
+                raise TypeError(msg)
+            normalised = collation.strip()
+        return self.connection.string_type(normalised)
+
+    def list_type(self, element: TypeSpecifier) -> sqltypes.DuckDBPyType:
+        """Create a DuckDB LIST type for ``element``."""
+
+        helper = "DuckCon.list_type"
+        duck_type = self._normalise_type_specifier(
+            element,
+            helper=helper,
+            parameter="element",
+        )
+        return self.connection.list_type(duck_type)
+
+    def array_type(
+        self,
+        element: TypeSpecifier,
+        size: SupportsInt,
+    ) -> sqltypes.DuckDBPyType:
+        """Create a DuckDB ARRAY type of ``element`` with ``size`` entries."""
+
+        helper = "DuckCon.array_type"
+        duck_type = self._normalise_type_specifier(
+            element,
+            helper=helper,
+            parameter="element",
+        )
+        normalised_size = self._normalise_fetch_size(
+            size,
+            helper=helper,
+            parameter="size",
+        )
+        return self.connection.array_type(duck_type, normalised_size)
+
+    def map_type(
+        self,
+        key_type: TypeSpecifier,
+        value_type: TypeSpecifier,
+    ) -> sqltypes.DuckDBPyType:
+        """Create a DuckDB MAP type from ``key_type`` and ``value_type``."""
+
+        helper = "DuckCon.map_type"
+        normalised_key = self._normalise_type_specifier(
+            key_type,
+            helper=helper,
+            parameter="key_type",
+        )
+        normalised_value = self._normalise_type_specifier(
+            value_type,
+            helper=helper,
+            parameter="value_type",
+        )
+        return self.connection.map_type(normalised_key, normalised_value)
+
+    def struct_type(self, fields: FieldMapping) -> sqltypes.DuckDBPyType:
+        """Create a DuckDB STRUCT type with ``fields``."""
+
+        helper = "DuckCon.struct_type"
+        normalised = self._normalise_field_mapping(
+            fields,
+            helper=helper,
+            parameter="fields",
+        )
+        return self.connection.struct_type(dict(normalised))
+
+    def row_type(self, fields: FieldMapping) -> sqltypes.DuckDBPyType:
+        """Create a DuckDB ROW type with ``fields``."""
+
+        helper = "DuckCon.row_type"
+        normalised = self._normalise_field_mapping(
+            fields,
+            helper=helper,
+            parameter="fields",
+        )
+        return self.connection.row_type(dict(normalised))
+
+    def union_type(self, members: FieldMapping) -> sqltypes.DuckDBPyType:
+        """Create a DuckDB UNION type with ``members``."""
+
+        helper = "DuckCon.union_type"
+        normalised = self._normalise_field_mapping(
+            members,
+            helper=helper,
+            parameter="members",
+        )
+        return self.connection.union_type(dict(normalised))
+
+    def enum_type(
+        self,
+        name: str,
+        base_type: TypeSpecifier,
+        values: Sequence[str],
+    ) -> sqltypes.DuckDBPyType:
+        """Create a DuckDB ENUM type from ``values``."""
+
+        helper = "DuckCon.enum_type"
+        normalised_name = self._normalise_identifier(
+            name,
+            helper=helper,
+            parameter="name",
+        )
+        normalised_type = self._normalise_type_specifier(
+            base_type,
+            helper=helper,
+            parameter="base_type",
+        )
+        normalised_values = self._normalise_string_sequence(
+            values,
+            helper=helper,
+            parameter="values",
+        )
+        return self.connection.enum_type(
+            normalised_name,
+            normalised_type,
+            normalised_values,
+        )
+
     def table(self, name: str) -> "Table":
         """Return a managed table wrapper bound to this connection."""
 
@@ -310,8 +673,171 @@ class DuckCon:  # pylint: disable=too-many-instance-attributes
 
         return Table(self, name)
 
-if TYPE_CHECKING:  # pragma: no cover - import for typing only
-    from .table import Table
+    @staticmethod
+    def _require_module(module: str, helper: str, install_hint: str) -> Any:
+        try:
+            return importlib.import_module(module)
+        except ModuleNotFoundError as exc:
+            msg = f"{helper} requires {module}. Install it with {install_hint}."
+            raise ModuleNotFoundError(msg) from exc
+
+    @staticmethod
+    def _normalise_fetch_size(
+        value: SupportsInt, *, helper: str, parameter: str
+    ) -> int:
+        if isinstance(value, bool):
+            msg = f"{helper} {parameter} must be an integer"
+            raise TypeError(msg)
+        try:
+            normalised = int(value)
+        except (TypeError, ValueError) as error:  # pragma: no cover - defensive
+            msg = f"{helper} {parameter} must be an integer"
+            raise TypeError(msg) from error
+        if normalised <= 0:
+            msg = f"{helper} {parameter} must be greater than zero"
+            raise ValueError(msg)
+        return normalised
+
+    @staticmethod
+    def _normalise_non_negative_int(
+        value: SupportsInt,
+        *,
+        helper: str,
+        parameter: str,
+    ) -> int:
+        if isinstance(value, bool):
+            msg = f"{helper} {parameter} must be an integer"
+            raise TypeError(msg)
+        try:
+            normalised = int(value)
+        except (TypeError, ValueError) as error:  # pragma: no cover - defensive
+            msg = f"{helper} {parameter} must be an integer"
+            raise TypeError(msg) from error
+        if normalised < 0:
+            msg = f"{helper} {parameter} must be zero or greater"
+            raise ValueError(msg)
+        return normalised
+
+    def _normalise_type_specifier(
+        self,
+        specifier: TypeSpecifier,
+        *,
+        helper: str,
+        parameter: str,
+    ) -> sqltypes.DuckDBPyType:
+        if isinstance(specifier, sqltypes.DuckDBPyType):
+            return specifier
+        if isinstance(specifier, DuckDBType):
+            rendered = specifier.render()
+        elif isinstance(specifier, str):
+            rendered = specifier.strip()
+            if not rendered:
+                msg = f"{helper} {parameter} cannot be empty"
+                raise ValueError(msg)
+        else:
+            msg = (
+                f"{helper} {parameter} must be a string, DuckDBType, or DuckDBPyType"
+            )
+            raise TypeError(msg)
+        return self.connection.type(rendered)
+
+    def _normalise_field_mapping(
+        self,
+        fields: FieldMapping,
+        *,
+        helper: str,
+        parameter: str,
+    ) -> list[tuple[str, sqltypes.DuckDBPyType]]:
+        if isinstance(fields, Mapping):
+            items = list(fields.items())
+        else:
+            if isinstance(fields, (str, bytes)):
+                msg = f"{helper} {parameter} must be a mapping or sequence of pairs"
+                raise TypeError(msg)
+            items = []
+            for index, entry in enumerate(fields):
+                if not isinstance(entry, Sequence) or len(entry) != 2:
+                    msg = (
+                        f"{helper} {parameter}[{index}] must be a (name, type) pair"
+                    )
+                    raise TypeError(msg)
+                items.append((entry[0], entry[1]))
+        if not items:
+            msg = f"{helper} {parameter} cannot be empty"
+            raise ValueError(msg)
+        normalised: list[tuple[str, sqltypes.DuckDBPyType]] = []
+        seen: set[str] = set()
+        for index, (name, specifier) in enumerate(items):
+            normalised_name = self._normalise_identifier(
+                name,
+                helper=helper,
+                parameter=f"{parameter}[{index}] name",
+            )
+            if normalised_name in seen:
+                msg = (
+                    f"{helper} {parameter} contains duplicate field '{normalised_name}'"
+                )
+                raise ValueError(msg)
+            seen.add(normalised_name)
+            normalised_type = self._normalise_type_specifier(
+                specifier,
+                helper=helper,
+                parameter=f"{parameter}[{normalised_name}] type",
+            )
+            normalised.append((normalised_name, normalised_type))
+        return normalised
+
+    @staticmethod
+    def _normalise_identifier(
+        value: str,
+        *,
+        helper: str,
+        parameter: str,
+    ) -> str:
+        if not isinstance(value, str):
+            msg = f"{helper} {parameter} must be a string"
+            raise TypeError(msg)
+        normalised = value.strip()
+        if not normalised:
+            msg = f"{helper} {parameter} cannot be empty"
+            raise ValueError(msg)
+        return normalised
+
+    @staticmethod
+    def _normalise_string_sequence(
+        values: Sequence[str],
+        *,
+        helper: str,
+        parameter: str,
+    ) -> list[str]:
+        if isinstance(values, (str, bytes)):
+            msg = f"{helper} {parameter} must be a sequence of strings"
+            raise TypeError(msg)
+        normalised: list[str] = []
+        seen: set[str] = set()
+        for index, value in enumerate(values):
+            if not isinstance(value, str):
+                msg = f"{helper} {parameter}[{index}] must be a string"
+                raise TypeError(msg)
+            trimmed = value.strip()
+            if not trimmed:
+                msg = f"{helper} {parameter}[{index}] cannot be empty"
+                raise ValueError(msg)
+            if trimmed in seen:
+                msg = (
+                    f"{helper} {parameter} contains duplicate value '{trimmed}'"
+                )
+                raise ValueError(msg)
+            seen.add(trimmed)
+            normalised.append(trimmed)
+        if not normalised:
+            msg = f"{helper} {parameter} cannot be empty"
+            raise ValueError(msg)
+        return normalised
+
+    if TYPE_CHECKING:  # pragma: no cover - import for typing only
+        from .relation import Relation
+        from .table import Table
 
 
 HelperFunction = TypeVar("HelperFunction", bound=Callable[..., Any])
