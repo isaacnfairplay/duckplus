@@ -2456,3 +2456,20 @@ def test_relation_iter_polars_batches_yields_frames(monkeypatch) -> None:
     assert stub_polars.calls[0].schema == ("value",)
     assert stub_polars.calls[0].rows == ((1,), (2,))
     assert stub_polars.calls[1].rows == ((3,),)
+
+
+def test_relation_union_all_preserves_duplicates() -> None:
+    manager = DuckCon()
+
+    with manager as connection:
+        left = Relation.from_relation(
+            manager, connection.sql("SELECT 1::INTEGER AS value")
+        )
+        right = Relation.from_relation(
+            manager, connection.sql("SELECT 1::INTEGER AS value")
+        )
+
+        result = left.union_all(right)
+        rows = result.relation.fetchall()
+
+    assert rows == [(1,), (1,)]

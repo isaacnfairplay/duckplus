@@ -2800,14 +2800,18 @@ class Relation:
             raise RuntimeError(msg)
 
         try:
-            if include_all:
-                relation = self._relation.union_all(other._relation)  # type: ignore[operator]
-            else:
-                relation = self._relation.union(other._relation)  # type: ignore[operator]
+            relation = self._relation.union(other._relation)  # type: ignore[operator]
+            if not include_all:
+                relation = relation.distinct()
         except duckdb.BinderException as error:
             msg = "Union operation references incompatible columns"
             raise ValueError(msg) from error
         return self.__class__.from_relation(self.duckcon, relation)
+
+    def union_all(self, other: "Relation") -> "Relation":
+        """Return the ``UNION ALL`` of two relations."""
+
+        return self.union(other, include_all=True)
 
     def order_by(self, *clauses: str) -> "Relation":
         """Return the relation ordered by the provided SQL clauses."""

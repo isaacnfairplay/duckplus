@@ -107,7 +107,7 @@ RELATION_ATTRIBUTE_MAP: dict[str, str] = {
     "torch": "torch",
     "type": "type",
     "union": "union",
-    "union_all": "union",
+    "union_all": "union_all",
     "write_csv": "write_csv",
     "write_parquet": "write_parquet",
     "unique": "unique",
