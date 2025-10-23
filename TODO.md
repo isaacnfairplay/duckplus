@@ -8,6 +8,480 @@ Answer these before starting any TODO item to confirm scope and alignment with t
 4. Which success criteria and edge cases ensure the new behaviour integrates cleanly with the rest of the API without relying on dynamic registries?
 5. Which validation steps (pytest, mypy, uvx, pylint, documentation rebuilds) are required to prove the behaviour matches expectations?
 
+## Active Initiatives
+- [x] Expand generated DuckDB function contract tests beyond the initial `a` letter bucket so runtime registries can be retired incrementally. *(Progress: buckets `a`-`z` generated; 26/26 = 100% complete.)*
+- [x] Achieve static parity for DuckDB relation attributes, including CRUD, query, and display helpers. *(Progress: 111/111 attributes implemented; 100% coverage.)*
+
+## Automated parity ledgers
+The JSON blocks below are synchronised with ``tests/test_duckdb_contracts.py``. Update them whenever the contract tests report a mismatch.
+
+### DuckDB function namespace parity
+<!-- DUCK_FUNCTION_PARITY:BEGIN -->
+{
+  "aggregate": {
+    "Boolean": {
+      "Generic": [
+        "sum"
+      ],
+      "Numeric": [
+        "count_if",
+        "countif"
+      ]
+    },
+    "Generic": {
+      "Blob": [
+        "arg_max",
+        "arg_max_null",
+        "arg_min",
+        "arg_min_null",
+        "argmax",
+        "argmin",
+        "max",
+        "max_by",
+        "min",
+        "min_by"
+      ]
+    },
+    "Numeric": {
+      "Blob": [
+        "arg_max",
+        "arg_max_null",
+        "arg_min",
+        "arg_min_null",
+        "argmax",
+        "argmin",
+        "max_by",
+        "min_by"
+      ],
+      "Generic": [
+        "any_value",
+        "approx_quantile",
+        "arbitrary",
+        "avg",
+        "bit_and",
+        "bit_or",
+        "bit_xor",
+        "bitstring_agg",
+        "first",
+        "last",
+        "mean",
+        "quantile_cont",
+        "sum"
+      ]
+    },
+    "Temporal": {
+      "Blob": [
+        "arg_max",
+        "arg_max_null",
+        "arg_min",
+        "arg_min_null",
+        "argmax",
+        "argmin",
+        "max_by",
+        "min_by"
+      ],
+      "Generic": [
+        "approx_quantile",
+        "avg",
+        "mean",
+        "quantile_cont"
+      ],
+      "Numeric": [
+        "mad"
+      ]
+    },
+    "Varchar": {
+      "Blob": [
+        "arg_max",
+        "arg_max_null",
+        "arg_min",
+        "arg_min_null",
+        "argmax",
+        "argmin",
+        "max_by",
+        "min_by"
+      ]
+    }
+  },
+  "scalar": {
+    "Blob": {
+      "Generic": [
+        "md5_number"
+      ],
+      "Numeric": [
+        "octet_length"
+      ],
+      "Varchar": [
+        "base64",
+        "decode",
+        "hex",
+        "md5",
+        "sha1",
+        "sha256",
+        "to_base64",
+        "to_hex"
+      ]
+    },
+    "Boolean": {
+      "Varchar": [
+        "current_schemas"
+      ]
+    },
+    "Generic": {
+      "Blob": [
+        "repeat"
+      ],
+      "Boolean": [
+        "has_any_column_privilege",
+        "has_column_privilege",
+        "has_database_privilege",
+        "has_foreign_data_wrapper_privilege",
+        "has_function_privilege",
+        "has_language_privilege",
+        "has_schema_privilege",
+        "has_sequence_privilege",
+        "has_server_privilege",
+        "has_table_privilege",
+        "has_tablespace_privilege",
+        "map_contains_entry",
+        "map_contains_value",
+        "pg_collation_is_visible",
+        "pg_conversion_is_visible",
+        "pg_function_is_visible",
+        "pg_has_role",
+        "pg_is_other_temp_schema",
+        "pg_opclass_is_visible",
+        "pg_operator_is_visible",
+        "pg_opfamily_is_visible",
+        "pg_table_is_visible",
+        "pg_ts_config_is_visible",
+        "pg_ts_dict_is_visible",
+        "pg_ts_parser_is_visible",
+        "pg_ts_template_is_visible",
+        "pg_type_is_visible"
+      ],
+      "Numeric": [
+        "date_add",
+        "fdiv",
+        "fmod",
+        "geomean",
+        "geometric_mean",
+        "get_block_size",
+        "map_to_pg_oid",
+        "md5_number_lower",
+        "md5_number_upper",
+        "pg_my_temp_schema",
+        "round_even",
+        "roundbankers",
+        "wavg",
+        "weighted_avg"
+      ],
+      "Varchar": [
+        "array_to_string",
+        "array_to_string_comma_default",
+        "current_catalog",
+        "current_database",
+        "current_query",
+        "current_role",
+        "current_schema",
+        "current_schemas",
+        "current_user",
+        "format_pg_type",
+        "format_type",
+        "json",
+        "json_group_array",
+        "json_group_object",
+        "json_group_structure",
+        "pg_get_constraintdef",
+        "pg_get_viewdef",
+        "pg_size_pretty",
+        "pg_typeof",
+        "session_user",
+        "split_part",
+        "user"
+      ]
+    },
+    "Numeric": {
+      "Boolean": [
+        "isfinite",
+        "isinf",
+        "isnan",
+        "signbit"
+      ],
+      "Generic": [
+        "%",
+        "&",
+        "*",
+        "+",
+        "-",
+        "//",
+        "<<",
+        ">>",
+        "@",
+        "__internal_decompress_integral_uhugeint",
+        "abs",
+        "add",
+        "bitstring",
+        "divide",
+        "epoch_ms",
+        "equi_width_bins",
+        "generate_series",
+        "make_date",
+        "make_time",
+        "make_timestamp",
+        "make_timestamp_ms",
+        "make_timestamp_ns",
+        "make_timestamptz",
+        "mod",
+        "multiply",
+        "range",
+        "set_bit",
+        "setseed",
+        "subtract",
+        "to_timestamp",
+        "trunc",
+        "xor",
+        "|",
+        "~"
+      ],
+      "Varchar": [
+        "__internal_decompress_string",
+        "bar",
+        "bin",
+        "chr",
+        "formatReadableDecimalSize",
+        "formatReadableSize",
+        "format_bytes",
+        "hex",
+        "to_base",
+        "to_binary",
+        "to_hex"
+      ]
+    },
+    "Temporal": {
+      "Boolean": [
+        "isfinite",
+        "isinf"
+      ],
+      "Generic": [
+        "*",
+        "+",
+        "-",
+        "add",
+        "current_date",
+        "current_localtime",
+        "current_localtimestamp",
+        "epoch_ms",
+        "equi_width_bins",
+        "generate_series",
+        "get_current_time",
+        "get_current_timestamp",
+        "last_day",
+        "make_date",
+        "multiply",
+        "now",
+        "range",
+        "subtract",
+        "time_bucket",
+        "timezone",
+        "today",
+        "transaction_timestamp"
+      ],
+      "Numeric": [
+        "/",
+        "age",
+        "century",
+        "day",
+        "dayofmonth",
+        "dayofweek",
+        "dayofyear",
+        "decade",
+        "epoch",
+        "epoch_ns",
+        "epoch_us",
+        "era",
+        "hour",
+        "isodow",
+        "isoyear",
+        "julian",
+        "microsecond",
+        "millennium",
+        "millisecond",
+        "minute",
+        "month",
+        "nanosecond",
+        "normalized_interval",
+        "quarter",
+        "second",
+        "timetz_byte_comparable",
+        "timezone_hour",
+        "timezone_minute",
+        "week",
+        "weekday",
+        "weekofyear",
+        "year",
+        "yearweek"
+      ],
+      "Varchar": [
+        "dayname",
+        "monthname",
+        "strftime"
+      ]
+    },
+    "Varchar": {
+      "Blob": [
+        "encode",
+        "from_base64",
+        "from_binary",
+        "from_hex",
+        "repeat",
+        "unbin",
+        "unhex"
+      ],
+      "Boolean": [
+        "!~~",
+        "!~~*",
+        "^@",
+        "contains",
+        "ends_with",
+        "ilike_escape",
+        "in_search_path",
+        "json_contains",
+        "json_exists",
+        "json_valid",
+        "like_escape",
+        "not_ilike_escape",
+        "not_like_escape",
+        "prefix",
+        "regexp_full_match",
+        "regexp_matches",
+        "starts_with",
+        "suffix",
+        "~~",
+        "~~*",
+        "~~~"
+      ],
+      "Generic": [
+        "__internal_compress_string_uhugeint",
+        "array_extract",
+        "bitstring",
+        "current_setting",
+        "date_part",
+        "date_trunc",
+        "datepart",
+        "datetrunc",
+        "error",
+        "from_json",
+        "from_json_strict",
+        "getvariable",
+        "json_transform",
+        "json_transform_strict",
+        "list_element",
+        "list_extract",
+        "md5_number",
+        "parse_duckdb_log_message",
+        "strptime",
+        "timezone",
+        "try_strptime",
+        "uuid_extract_timestamp",
+        "write_log"
+      ],
+      "Numeric": [
+        "__internal_compress_string_hugeint",
+        "__internal_compress_string_ubigint",
+        "__internal_compress_string_uinteger",
+        "__internal_compress_string_usmallint",
+        "__internal_compress_string_utinyint",
+        "ascii",
+        "bit_length",
+        "char_length",
+        "character_length",
+        "currval",
+        "damerau_levenshtein",
+        "date_diff",
+        "date_sub",
+        "datediff",
+        "datesub",
+        "editdist3",
+        "hamming",
+        "instr",
+        "jaccard",
+        "jaro_similarity",
+        "jaro_winkler_similarity",
+        "json_array_length",
+        "len",
+        "length",
+        "length_grapheme",
+        "levenshtein",
+        "mismatches",
+        "nextval",
+        "ord",
+        "position",
+        "strlen",
+        "strpos",
+        "unicode",
+        "uuid_extract_version"
+      ]
+    }
+  },
+  "window": {}
+}
+<!-- DUCK_FUNCTION_PARITY:END -->
+
+### DuckDB API attribute coverage
+<!-- DUCK_API_ATTRIBUTE_GAPS:BEGIN -->
+{
+  "connection": [
+    "append",
+    "arrow",
+    "checkpoint",
+    "create_function",
+    "description",
+    "df",
+    "dtype",
+    "duplicate",
+    "executemany",
+    "extract_statements",
+    "filesystem_is_registered",
+    "from_arrow",
+    "from_csv_auto",
+    "from_df",
+    "from_parquet",
+    "from_query",
+    "get_table_names",
+    "list_filesystems",
+    "pl",
+    "query",
+    "query_progress",
+    "register_filesystem",
+    "remove_function",
+    "rowcount",
+    "table_function",
+    "tf",
+    "torch",
+    "unregister_filesystem",
+    "values",
+    "view"
+  ],
+  "relation": [
+  ]
+}
+<!-- DUCK_API_ATTRIBUTE_GAPS:END -->
+
+### Parity snapshot (2025-10-22)
+- Connection attributes: 36/66 implemented (~54.5% coverage).
+- Relation attributes: 111/111 implemented (100% coverage).
+- Scalar functions: 1,293/1,562 implemented (~82.8% coverage).
+- Aggregate functions: 923/978 implemented (~94.4% coverage).
+- Overall function coverage: 2,216/2,540 implemented (~87.2% coverage).
+
+### Ty dir() contract mismatches
+<!-- TY_DIR_MISMATCHES:BEGIN -->
+{
+  "missing": []
+}
+<!-- TY_DIR_MISMATCHES:END -->
+
 ### Discovery Log – Test introspection coverage (2024-05-09)
 1. Exercising helper metadata through unit tests guarantees the fluent API stays discoverable via ``DuckCon`` methods rather than hidden registries, keeping chaining ergonomics intact.
 2. Assertions will live in ``tests/test_duckcon.py`` and ``tests/test_typed_function_namespace.py`` so they directly target helpers defined in ``duckplus/io`` and ``duckplus/typed/_generated_function_namespaces`` where decorators bind behaviour at import time.

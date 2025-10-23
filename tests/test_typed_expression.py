@@ -196,6 +196,18 @@ def test_varchar_expression_method_split_part() -> None:
     assert expression.dependencies == {col_dep("label")}
 
 
+def test_varchar_left_method_tracks_dependencies() -> None:
+    expression = ducktype.Varchar("customer").left(5)
+    assert isinstance(expression, VarcharExpression)
+    assert expression.render() == 'left("customer", 5)'
+    assert expression.dependencies == {col_dep("customer")}
+
+
+def test_varchar_left_rejects_boolean_count() -> None:
+    with pytest.raises(TypeError):
+        ducktype.Varchar("customer").left(True)
+
+
 def test_scalar_generic_functions_include_array_append() -> None:
     expression = SCALAR_FUNCTIONS.Generic.array_append(
         ducktype.Generic("items"),

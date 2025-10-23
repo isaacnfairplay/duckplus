@@ -10,12 +10,13 @@ import re
 from dataclasses import dataclass, field
 from os import PathLike
 from pathlib import Path
-from collections.abc import Sequence, Iterator
+from collections.abc import Iterator, Sequence
+from numbers import Real
 from uuid import uuid4
 import warnings
 from importlib import import_module
-from typing import Any, Iterable, Mapping, TypeVar, cast, overload
-from typing import Literal, Self
+from typing import Any, Callable, Iterable, Mapping, Type, TypeVar, cast, overload
+from typing import List, Literal, Self, Set, SupportsInt, Tuple
 
 import duckdb  # type: ignore[import-not-found]
 
@@ -57,7 +58,7 @@ class Relation:
         # DuckDB returns custom type objects in ``relation.types`` so we cast
         # them to their string representation for stable comparison.
         types = tuple(str(type_) for type_ in self._relation.types)
-        casefolded: dict[str, list[str]] = {}
+        casefolded: dict[str, List[str]] = {}
         for column in columns:
             key = column.casefold()
             casefolded.setdefault(key, []).append(column)
@@ -84,6 +85,52 @@ class Relation:
         """Expose the underlying DuckDB relation."""
 
         return self._relation
+
+    @property
+    def alias(self) -> str:
+        """Return the alias assigned to the underlying DuckDB relation."""
+
+        return self._relation.alias
+
+    def set_alias(self, alias: str) -> "Relation":
+        """Return a copy of the relation with the provided ``alias``."""
+
+        helper = "Relation.set_alias"
+        require_connection(self.duckcon, helper)
+        normalised = self._normalise_nonempty_string(
+            alias, helper=helper, parameter="alias"
+        )
+        try:
+            relation = self._relation.set_alias(normalised)
+        except duckdb.Error as error:  # pragma: no cover - defensive guard
+            msg = "set_alias alias is invalid"
+            raise ValueError(msg) from error
+        return self.__class__.from_relation(self.duckcon, relation)
+
+    @property
+    def description(self) -> tuple[tuple[Any, ...], ...]:
+        """Return the DB-API cursor-style description for the relation."""
+
+        return tuple(tuple(entry) for entry in self._relation.description)
+
+    @property
+    def dtypes(self) -> tuple[Any, ...]:
+        """Return the DuckDB column types associated with the relation."""
+
+        return tuple(self._relation.dtypes)
+
+    @property
+    def shape(self) -> tuple[int, int]:
+        """Return the number of rows and columns in the relation."""
+
+        rows, columns = self._relation.shape
+        return int(rows), int(columns)
+
+    @property
+    def type(self) -> Any:  # noqa: A003 - property name matches DuckDB attribute
+        """Expose DuckDB's relation classification (e.g. ``QUERY_RELATION``)."""
+
+        return self._relation.type
 
     def row_count(self) -> int:
         """Return the number of rows produced by the relation."""
@@ -128,6 +175,357 @@ class Relation:
             column: float(value)
             for column, value in zip(self.columns, row, strict=False)
         }
+
+    def apply(
+        self,
+        function_name: str,
+        function_argument: str,
+        *,
+        groups: Sequence[str] | str | None = None,
+        parameter: str | None = None,
+        projected_columns: Sequence[str] | str | None = None,
+    ) -> "Relation":
+        """Call DuckDB's ``apply`` helper with normalised inputs."""
+
+        helper = "Relation.apply"
+        require_connection(self.duckcon, helper)
+
+        name = self._normalise_nonempty_string(
+            function_name, helper=helper, parameter="function_name"
+        )
+        argument = self._normalise_nonempty_string(
+            function_argument, helper=helper, parameter="function_argument"
+        )
+        group_clause = self._normalise_expression_clause(
+            groups, helper=helper, parameter="groups"
+        )
+        parameter_clause = self._normalise_optional_string(
+            parameter,
+            helper=helper,
+            parameter="parameter",
+            allow_empty=True,
+        )
+        projection_clause = self._normalise_expression_clause(
+            projected_columns, helper=helper, parameter="projected_columns"
+        )
+
+        try:
+            relation = self._relation.apply(
+                name,
+                argument,
+                group_expr=group_clause,
+                function_parameter=parameter_clause,
+                projected_columns=projection_clause,
+            )
+        except duckdb.Error as error:  # pragma: no cover - defensive
+            msg = "apply failed: verify function names and column references"
+            raise ValueError(msg) from error
+
+        return self.__class__.from_relation(self.duckcon, relation)
+
+    def value_counts(
+        self,
+        column: str,
+        *,
+        groups: Sequence[str] | str | None = None,
+    ) -> "Relation":
+        """Return counts for ``column`` optionally grouped by ``groups``."""
+
+        helper = "Relation.value_counts"
+        require_connection(self.duckcon, helper)
+
+        column_name = self._normalise_nonempty_string(
+            column, helper=helper, parameter="column"
+        )
+        group_clause = self._normalise_expression_clause(
+            groups, helper=helper, parameter="groups"
+        )
+
+        try:
+            relation = self._relation.value_counts(column_name, groups=group_clause)
+        except duckdb.Error as error:  # pragma: no cover - defensive
+            msg = "value_counts failed: verify column names and groups"
+            raise ValueError(msg) from error
+
+        return self.__class__.from_relation(self.duckcon, relation)
+
+    def unique(self, expression: str) -> "Relation":
+        """Return distinct values produced by ``expression``."""
+
+        helper = "Relation.unique"
+        require_connection(self.duckcon, helper)
+        expression_sql = self._normalise_nonempty_string(
+            expression, helper=helper, parameter="expression"
+        )
+
+        try:
+            relation = self._relation.unique(expression_sql)
+        except duckdb.Error as error:  # pragma: no cover - defensive
+            msg = "unique failed: verify the provided expression"
+            raise ValueError(msg) from error
+
+        return self.__class__.from_relation(self.duckcon, relation)
+
+    def select_types(self, types: Sequence[str] | str) -> "Relation":
+        """Select relation columns by DuckDB data type."""
+
+        helper = "Relation.select_types"
+        require_connection(self.duckcon, helper)
+        filters = self._normalise_type_list(
+            types, helper=helper, parameter="types"
+        )
+
+        typed_filters = cast(List[Any], filters)
+
+        try:
+            relation = self._relation.select_types(typed_filters)
+        except duckdb.Error as error:  # pragma: no cover - defensive
+            msg = "select_types failed: verify the provided type filters"
+            raise ValueError(msg) from error
+
+        return self.__class__.from_relation(self.duckcon, relation)
+
+    def select_dtypes(self, types: Sequence[str] | str) -> "Relation":
+        """Select relation columns by DuckDB type name."""
+
+        helper = "Relation.select_dtypes"
+        require_connection(self.duckcon, helper)
+        filters = self._normalise_type_list(
+            types, helper=helper, parameter="types"
+        )
+
+        typed_filters = cast(List[Any], filters)
+
+        try:
+            relation = self._relation.select_dtypes(typed_filters)
+        except duckdb.Error as error:  # pragma: no cover - defensive
+            msg = "select_dtypes failed: verify the provided type filters"
+            raise ValueError(msg) from error
+
+        return self.__class__.from_relation(self.duckcon, relation)
+
+    def map(
+        self,
+        map_function: Callable[[duckdb.DuckDBPyRelation], object],
+        *,
+        schema: Mapping[str, object]
+        | Sequence[tuple[str, object]]
+        | None = None,
+    ) -> "Relation":
+        """Call DuckDB's ``map`` helper with validation."""
+
+        helper = "Relation.map"
+        require_connection(self.duckcon, helper)
+        if not callable(map_function):
+            msg = f"{helper} requires a callable map_function"
+            raise TypeError(msg)
+
+        normalised_schema = self._normalise_schema_mapping(
+            schema, helper=helper
+        )
+        typed_schema = cast(dict[str, Any], normalised_schema) if normalised_schema else None
+
+        try:
+            relation = self._relation.map(map_function, schema=typed_schema)
+        except duckdb.Error as error:  # pragma: no cover - defensive
+            msg = "map failed: ensure the callable returns a relation"
+            raise ValueError(msg) from error
+
+        if not isinstance(relation, duckdb.DuckDBPyRelation):
+            msg = "Relation.map callable must return a DuckDB relation"
+            raise TypeError(msg)
+
+        return self.__class__.from_relation(self.duckcon, relation)
+
+    def sql_query(self) -> str:
+        """Return the SQL string that would produce the relation."""
+
+        helper = "Relation.sql_query"
+        require_connection(self.duckcon, helper)
+        return self._relation.sql_query()
+
+    def query(self, virtual_table_name: str, sql_query: str) -> "Relation":
+        """Run ``sql_query`` against the relation exposed as ``virtual_table_name``."""
+
+        helper = "Relation.query"
+        require_connection(self.duckcon, helper)
+        view_name = self._normalise_relation_name(
+            virtual_table_name, helper=helper, parameter="virtual_table_name"
+        )
+        sql_text = self._normalise_nonempty_string(
+            sql_query, helper=helper, parameter="sql_query"
+        )
+
+        try:
+            relation = self._relation.query(view_name, sql_text)
+        except duckdb.Error as error:  # pragma: no cover - defensive
+            msg = "query failed: verify SQL text and column references"
+            raise ValueError(msg) from error
+
+        return self.__class__.from_relation(self.duckcon, relation)
+
+    def execute(self) -> "Relation":
+        """Execute the relation and return a materialised result set."""
+
+        helper = "Relation.execute"
+        require_connection(self.duckcon, helper)
+
+        try:
+            relation = self._relation.execute()
+        except duckdb.Error as error:  # pragma: no cover - defensive
+            msg = "execute failed: verify the underlying query"
+            raise ValueError(msg) from error
+
+        return self.__class__.from_relation(self.duckcon, relation)
+
+    def explain(self, explain_type: duckdb.ExplainType | str = "standard") -> str:
+        """Return DuckDB's query plan for the relation."""
+
+        helper = "Relation.explain"
+        require_connection(self.duckcon, helper)
+
+        explain_value: duckdb.ExplainType
+        if isinstance(explain_type, str):
+            normalised = explain_type.strip()
+            if not normalised:
+                msg = f"{helper} explain_type cannot be empty"
+                raise ValueError(msg)
+            try:
+                explain_value = getattr(duckdb.ExplainType, normalised.upper())
+            except AttributeError as error:
+                msg = f"{helper} explain_type '{explain_type}' is not supported"
+                raise ValueError(msg) from error
+        else:
+            explain_value = explain_type
+
+        return self._relation.explain(explain_value)
+
+    def show(
+        self,
+        *,
+        max_width: SupportsInt | None = None,
+        max_rows: SupportsInt | None = None,
+        max_col_width: SupportsInt | None = None,
+        null_value: str | None = None,
+        render_mode: duckdb.RenderMode | str | None = None,
+    ) -> None:
+        """Pretty-print the relation using DuckDB's ``show`` helper."""
+
+        helper = "Relation.show"
+        require_connection(self.duckcon, helper)
+
+        width = self._normalise_optional_int(
+            max_width, helper=helper, parameter="max_width"
+        )
+        rows = self._normalise_optional_int(
+            max_rows, helper=helper, parameter="max_rows"
+        )
+        col_width = self._normalise_optional_int(
+            max_col_width, helper=helper, parameter="max_col_width"
+        )
+
+        render = self._normalise_render_mode(render_mode, helper=helper)
+
+        self._relation.show(
+            max_width=width,
+            max_rows=rows,
+            max_col_width=col_width,
+            null_value=null_value,
+            render_mode=render,
+        )
+
+    def close(self) -> None:
+        """Close the materialised relation result."""
+
+        helper = "Relation.close"
+        require_connection(self.duckcon, helper)
+        self._relation.close()
+
+    def create(self, table_name: str) -> None:
+        """Create ``table_name`` with the relation contents."""
+
+        helper = "Relation.create"
+        require_connection(self.duckcon, helper)
+        name = self._normalise_relation_name(
+            table_name, helper=helper, parameter="table_name"
+        )
+
+        try:
+            self._relation.create(name)
+        except duckdb.Error as error:  # pragma: no cover - defensive
+            msg = "create failed: verify the destination table"
+            raise ValueError(msg) from error
+
+    def create_view(self, view_name: str, *, replace: bool = True) -> "Relation":
+        """Create a DuckDB view for the relation and return it."""
+
+        helper = "Relation.create_view"
+        require_connection(self.duckcon, helper)
+        name = self._normalise_relation_name(
+            view_name, helper=helper, parameter="view_name"
+        )
+        if not isinstance(replace, bool):
+            msg = f"{helper} replace must be a boolean"
+            raise TypeError(msg)
+
+        try:
+            relation = self._relation.create_view(name, replace=replace)
+        except duckdb.Error as error:  # pragma: no cover - defensive
+            msg = "create_view failed: verify the destination name"
+            raise ValueError(msg) from error
+
+        return self.__class__.from_relation(self.duckcon, relation)
+
+    def insert(self, values: object) -> None:
+        """Insert ``values`` into the relation's target table."""
+
+        helper = "Relation.insert"
+        require_connection(self.duckcon, helper)
+        if values is None:
+            msg = f"{helper} values cannot be None"
+            raise TypeError(msg)
+
+        try:
+            self._relation.insert(cast(Any, values))
+        except duckdb.Error as error:  # pragma: no cover - defensive
+            msg = "insert failed: verify the provided values"
+            raise ValueError(msg) from error
+
+    def insert_into(self, table_name: str) -> None:
+        """Insert the relation into ``table_name``."""
+
+        helper = "Relation.insert_into"
+        require_connection(self.duckcon, helper)
+        name = self._normalise_relation_name(
+            table_name, helper=helper, parameter="table_name"
+        )
+
+        try:
+            self._relation.insert_into(name)
+        except duckdb.Error as error:  # pragma: no cover - defensive
+            msg = "insert_into failed: verify the destination table"
+            raise ValueError(msg) from error
+
+    def update(self, assignments: object, *, condition: object | None = None) -> None:
+        """Update the underlying table using DuckDB's ``update`` helper."""
+
+        helper = "Relation.update"
+        require_connection(self.duckcon, helper)
+        if assignments is None:
+            msg = f"{helper} assignments cannot be None"
+            raise TypeError(msg)
+
+        try:
+            typed_assignments = cast(Any, assignments)
+            if condition is None:
+                self._relation.update(typed_assignments)
+            else:
+                self._relation.update(
+                    typed_assignments, condition=cast(Any, condition)
+                )
+        except duckdb.Error as error:  # pragma: no cover - defensive
+            msg = "update failed: verify assignments and conditions"
+            raise ValueError(msg) from error
 
     def sample_pandas(self, limit: int | None = 50) -> Any:
         """Return a Pandas DataFrame containing a sample of the relation."""
@@ -195,6 +593,1618 @@ class Relation:
         return self._iterate_polars_batches(
             relation, normalised, polars, list(self.columns)
         )
+
+    def describe(self) -> "Relation":
+        """Return DuckDB's descriptive statistics for the relation."""
+
+        relation = self._relation.describe()
+        return self.__class__.from_relation(self.duckcon, relation)
+
+    def _aggregate_helper(
+        self,
+        method: str,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        helper = f"Relation.{method}"
+        column_name = self._normalise_aggregate_parameter(
+            column,
+            helper=helper,
+            parameter="column",
+            allow_empty=False,
+        )
+        return self._call_relation_aggregate(
+            method,
+            (column_name,),
+            helper=helper,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def _call_relation_aggregate(
+        self,
+        method: str,
+        args: tuple[Any, ...],
+        *,
+        helper: str,
+        groups: str | None,
+        window_spec: str | None,
+        projected_columns: str | None,
+    ) -> "Relation":
+        group_clause = self._normalise_aggregate_parameter(
+            groups,
+            helper=helper,
+            parameter="groups",
+            allow_empty=True,
+        )
+        window_clause = self._normalise_aggregate_parameter(
+            window_spec,
+            helper=helper,
+            parameter="window_spec",
+            allow_empty=True,
+        )
+        projected = self._normalise_aggregate_parameter(
+            projected_columns,
+            helper=helper,
+            parameter="projected_columns",
+            allow_empty=True,
+        )
+
+        relation_method = getattr(self._relation, method)
+        call_args = (*args, group_clause, window_clause, projected)
+        try:
+            relation = relation_method(*call_args)
+        except TypeError:
+            if window_clause:
+                raise
+            fallback_args = (*args, group_clause, projected)
+            relation = relation_method(*fallback_args)
+        return self.__class__.from_relation(self.duckcon, relation)
+
+    def arg_max(
+        self,
+        arg_column: str,
+        value_column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return ``arg_column`` from the row where ``value_column`` is maximal."""
+
+        helper = "Relation.arg_max"
+        arg_name = self._normalise_aggregate_parameter(
+            arg_column,
+            helper=helper,
+            parameter="arg_column",
+            allow_empty=False,
+        )
+        value_name = self._normalise_aggregate_parameter(
+            value_column,
+            helper=helper,
+            parameter="value_column",
+            allow_empty=False,
+        )
+        return self._call_relation_aggregate(
+            "arg_max",
+            (arg_name, value_name),
+            helper=helper,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def arg_min(
+        self,
+        arg_column: str,
+        value_column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return ``arg_column`` from the row where ``value_column`` is minimal."""
+
+        helper = "Relation.arg_min"
+        arg_name = self._normalise_aggregate_parameter(
+            arg_column,
+            helper=helper,
+            parameter="arg_column",
+            allow_empty=False,
+        )
+        value_name = self._normalise_aggregate_parameter(
+            value_column,
+            helper=helper,
+            parameter="value_column",
+            allow_empty=False,
+        )
+        return self._call_relation_aggregate(
+            "arg_min",
+            (arg_name, value_name),
+            helper=helper,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def any_value(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return an arbitrary value from ``column``."""
+
+        return self._aggregate_helper(
+            "any_value",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def bit_and(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the bitwise ``AND`` of all values in ``column``."""
+
+        return self._aggregate_helper(
+            "bit_and",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def bit_or(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the bitwise ``OR`` of all values in ``column``."""
+
+        return self._aggregate_helper(
+            "bit_or",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def bit_xor(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the bitwise ``XOR`` of all values in ``column``."""
+
+        return self._aggregate_helper(
+            "bit_xor",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def avg(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the arithmetic mean of ``column``."""
+
+        return self._aggregate_helper(
+            "avg",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def bool_and(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return ``True`` when all values in ``column`` evaluate truthy."""
+
+        return self._aggregate_helper(
+            "bool_and",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def bool_or(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return ``True`` when any value in ``column`` evaluates truthy."""
+
+        return self._aggregate_helper(
+            "bool_or",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def count(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the number of rows in ``column``."""
+
+        return self._aggregate_helper(
+            "count",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def favg(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return DuckDB's floating-point average for ``column``."""
+
+        return self._aggregate_helper(
+            "favg",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def first(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the first row encountered in ``column``."""
+
+        return self._aggregate_helper(
+            "first",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def last(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the last row encountered in ``column``."""
+
+        return self._aggregate_helper(
+            "last",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def list(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return a list containing all values observed in ``column``."""
+
+        return self._aggregate_helper(
+            "list",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def max(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the maximum value in ``column``."""
+
+        return self._aggregate_helper(
+            "max",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def mean(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the arithmetic mean of ``column``."""
+
+        return self._aggregate_helper(
+            "mean",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def median(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the median value observed in ``column``."""
+
+        return self._aggregate_helper(
+            "median",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def min(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the minimum value in ``column``."""
+
+        return self._aggregate_helper(
+            "min",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def mode(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the most common value present in ``column``."""
+
+        return self._aggregate_helper(
+            "mode",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def product(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the product of all values in ``column``."""
+
+        return self._aggregate_helper(
+            "product",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def quantile(
+        self,
+        column: str,
+        q: float | Sequence[float] | None = None,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the exact quantile(s) for ``column``."""
+
+        helper = "Relation.quantile"
+        column_name = self._normalise_aggregate_parameter(
+            column,
+            helper=helper,
+            parameter="column",
+            allow_empty=False,
+        )
+        quantile_value = self._normalise_quantile_argument(q, helper)
+        return self._call_relation_aggregate(
+            "quantile",
+            (column_name, quantile_value),
+            helper=helper,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def quantile_cont(
+        self,
+        column: str,
+        q: float | Sequence[float] | None = None,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return interpolated quantile(s) for ``column``."""
+
+        helper = "Relation.quantile_cont"
+        column_name = self._normalise_aggregate_parameter(
+            column,
+            helper=helper,
+            parameter="column",
+            allow_empty=False,
+        )
+        quantile_value = self._normalise_quantile_argument(q, helper)
+        return self._call_relation_aggregate(
+            "quantile_cont",
+            (column_name, quantile_value),
+            helper=helper,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def quantile_disc(
+        self,
+        column: str,
+        q: float | Sequence[float] | None = None,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return discrete quantile(s) for ``column``."""
+
+        helper = "Relation.quantile_disc"
+        column_name = self._normalise_aggregate_parameter(
+            column,
+            helper=helper,
+            parameter="column",
+            allow_empty=False,
+        )
+        quantile_value = self._normalise_quantile_argument(q, helper)
+        return self._call_relation_aggregate(
+            "quantile_disc",
+            (column_name, quantile_value),
+            helper=helper,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def std(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the sample standard deviation for ``column``."""
+
+        return self._aggregate_helper(
+            "std",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def stddev(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Alias for :meth:`std` mirroring DuckDB's API."""
+
+        return self._aggregate_helper(
+            "stddev",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def stddev_pop(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the population standard deviation for ``column``."""
+
+        return self._aggregate_helper(
+            "stddev_pop",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def stddev_samp(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the sample standard deviation for ``column``."""
+
+        return self._aggregate_helper(
+            "stddev_samp",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def sum(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the sum of values in ``column``."""
+
+        return self._aggregate_helper(
+            "sum",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def string_agg(
+        self,
+        column: str,
+        sep: str = ",",
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Concatenate ``column`` values using ``sep``."""
+
+        helper = "Relation.string_agg"
+        column_name = self._normalise_aggregate_parameter(
+            column,
+            helper=helper,
+            parameter="column",
+            allow_empty=False,
+        )
+        if not isinstance(sep, str):
+            msg = "Relation.string_agg sep must be a string"
+            raise TypeError(msg)
+        return self._call_relation_aggregate(
+            "string_agg",
+            (column_name, sep),
+            helper=helper,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def var(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the sample variance for ``column``."""
+
+        return self._aggregate_helper(
+            "var",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def var_pop(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the population variance for ``column``."""
+
+        return self._aggregate_helper(
+            "var_pop",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def var_samp(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the sample variance for ``column``."""
+
+        return self._aggregate_helper(
+            "var_samp",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def variance(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Alias for :meth:`var` mirroring DuckDB's API."""
+
+        return self._aggregate_helper(
+            "variance",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def bitstring_agg(
+        self,
+        column: str,
+        *,
+        minimum: SupportsInt | None = None,
+        maximum: SupportsInt | None = None,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return a bitstring aggregation of ``column``."""
+
+        helper = "Relation.bitstring_agg"
+        column_name = self._normalise_aggregate_parameter(
+            column,
+            helper=helper,
+            parameter="column",
+            allow_empty=False,
+        )
+        min_value = self._normalise_optional_int(
+            minimum,
+            helper=helper,
+            parameter="minimum",
+        )
+        max_value = self._normalise_optional_int(
+            maximum,
+            helper=helper,
+            parameter="maximum",
+        )
+        return self._call_relation_aggregate(
+            "bitstring_agg",
+            (column_name, min_value, max_value),
+            helper=helper,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def fsum(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return DuckDB's floating-point summation for ``column``."""
+
+        return self._aggregate_helper(
+            "fsum",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def geomean(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the geometric mean of ``column``."""
+
+        return self._aggregate_helper(
+            "geomean",
+            column,
+            groups=groups,
+            window_spec=None,
+            projected_columns=projected_columns,
+        )
+
+    def histogram(
+        self,
+        column: str,
+        *,
+        groups: str | None = None,
+        window_spec: str | None = None,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return histogram buckets for ``column``."""
+
+        return self._aggregate_helper(
+            "histogram",
+            column,
+            groups=groups,
+            window_spec=window_spec,
+            projected_columns=projected_columns,
+        )
+
+    def _normalise_window_spec(
+        self,
+        window_spec: str | None,
+        *,
+        helper: str,
+        allow_empty: bool,
+    ) -> str:
+        return self._normalise_aggregate_parameter(
+            window_spec,
+            helper=helper,
+            parameter="window_spec",
+            allow_empty=allow_empty,
+        )
+
+    def _normalise_projected_columns(
+        self,
+        projected_columns: str | None,
+        *,
+        helper: str,
+    ) -> str:
+        return self._normalise_aggregate_parameter(
+            projected_columns,
+            helper=helper,
+            parameter="projected_columns",
+            allow_empty=True,
+        )
+
+    def _wrap_window_call(
+        self,
+        method: str,
+        args: tuple[Any, ...],
+        *,
+        helper: str,
+        projected_columns: str | None,
+    ) -> "Relation":
+        projection = self._normalise_projected_columns(
+            projected_columns,
+            helper=helper,
+        )
+        relation_method = getattr(self._relation, method)
+        relation = relation_method(*args, projection)
+        return self.__class__.from_relation(self.duckcon, relation)
+
+    def cume_dist(
+        self,
+        window_spec: str,
+        *,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the cumulative distribution within ``window_spec``."""
+
+        helper = "Relation.cume_dist"
+        window_clause = self._normalise_window_spec(
+            window_spec,
+            helper=helper,
+            allow_empty=False,
+        )
+        return self._wrap_window_call(
+            "cume_dist",
+            (window_clause,),
+            helper=helper,
+            projected_columns=projected_columns,
+        )
+
+    def dense_rank(
+        self,
+        window_spec: str,
+        *,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the dense rank within ``window_spec``."""
+
+        helper = "Relation.dense_rank"
+        window_clause = self._normalise_window_spec(
+            window_spec,
+            helper=helper,
+            allow_empty=False,
+        )
+        return self._wrap_window_call(
+            "dense_rank",
+            (window_clause,),
+            helper=helper,
+            projected_columns=projected_columns,
+        )
+
+    def rank(
+        self,
+        window_spec: str,
+        *,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the rank within ``window_spec``."""
+
+        helper = "Relation.rank"
+        window_clause = self._normalise_window_spec(
+            window_spec,
+            helper=helper,
+            allow_empty=False,
+        )
+        return self._wrap_window_call(
+            "rank",
+            (window_clause,),
+            helper=helper,
+            projected_columns=projected_columns,
+        )
+
+    def rank_dense(
+        self,
+        window_spec: str,
+        *,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Alias for :meth:`dense_rank` mirroring DuckDB's API."""
+
+        helper = "Relation.rank_dense"
+        window_clause = self._normalise_window_spec(
+            window_spec,
+            helper=helper,
+            allow_empty=False,
+        )
+        return self._wrap_window_call(
+            "rank_dense",
+            (window_clause,),
+            helper=helper,
+            projected_columns=projected_columns,
+        )
+
+    def percent_rank(
+        self,
+        window_spec: str,
+        *,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the relative rank within ``window_spec``."""
+
+        helper = "Relation.percent_rank"
+        window_clause = self._normalise_window_spec(
+            window_spec,
+            helper=helper,
+            allow_empty=False,
+        )
+        return self._wrap_window_call(
+            "percent_rank",
+            (window_clause,),
+            helper=helper,
+            projected_columns=projected_columns,
+        )
+
+    def row_number(
+        self,
+        window_spec: str,
+        *,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the row number within ``window_spec``."""
+
+        helper = "Relation.row_number"
+        window_clause = self._normalise_window_spec(
+            window_spec,
+            helper=helper,
+            allow_empty=False,
+        )
+        return self._wrap_window_call(
+            "row_number",
+            (window_clause,),
+            helper=helper,
+            projected_columns=projected_columns,
+        )
+
+    def n_tile(
+        self,
+        window_spec: str,
+        num_buckets: SupportsInt,
+        *,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Divide ``window_spec`` into ``num_buckets`` tiles."""
+
+        helper = "Relation.n_tile"
+        window_clause = self._normalise_window_spec(
+            window_spec,
+            helper=helper,
+            allow_empty=False,
+        )
+        buckets = self._coerce_positive_int(
+            num_buckets,
+            helper=helper,
+            parameter="num_buckets",
+        )
+        return self._wrap_window_call(
+            "n_tile",
+            (window_clause, buckets),
+            helper=helper,
+            projected_columns=projected_columns,
+        )
+
+    def first_value(
+        self,
+        column: str,
+        window_spec: str | None = None,
+        *,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the first value of ``column`` within ``window_spec``."""
+
+        helper = "Relation.first_value"
+        column_name = self._normalise_aggregate_parameter(
+            column,
+            helper=helper,
+            parameter="column",
+            allow_empty=False,
+        )
+        window_clause = self._normalise_window_spec(
+            window_spec,
+            helper=helper,
+            allow_empty=True,
+        )
+        return self._wrap_window_call(
+            "first_value",
+            (column_name, window_clause),
+            helper=helper,
+            projected_columns=projected_columns,
+        )
+
+    def last_value(
+        self,
+        column: str,
+        window_spec: str | None = None,
+        *,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the last value of ``column`` within ``window_spec``."""
+
+        helper = "Relation.last_value"
+        column_name = self._normalise_aggregate_parameter(
+            column,
+            helper=helper,
+            parameter="column",
+            allow_empty=False,
+        )
+        window_clause = self._normalise_window_spec(
+            window_spec,
+            helper=helper,
+            allow_empty=True,
+        )
+        return self._wrap_window_call(
+            "last_value",
+            (column_name, window_clause),
+            helper=helper,
+            projected_columns=projected_columns,
+        )
+
+    def _normalise_default_sql_literal(
+        self,
+        value: str,
+        *,
+        helper: str,
+        parameter: str,
+    ) -> str:
+        if not isinstance(value, str):
+            msg = f"{helper} {parameter} must be a string"
+            raise TypeError(msg)
+        normalised = value.strip()
+        if not normalised:
+            msg = f"{helper} {parameter} cannot be empty"
+            raise ValueError(msg)
+        return normalised
+
+    def _normalise_bool_flag(
+        self,
+        value: bool,
+        *,
+        helper: str,
+        parameter: str,
+    ) -> bool:
+        if not isinstance(value, bool):
+            msg = f"{helper} {parameter} must be a boolean"
+            raise TypeError(msg)
+        return value
+
+    def lag(
+        self,
+        column: str,
+        window_spec: str,
+        offset: SupportsInt = 1,
+        default_value: str = "NULL",
+        *,
+        ignore_nulls: bool = False,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the lag of ``column`` within ``window_spec``."""
+
+        helper = "Relation.lag"
+        column_name = self._normalise_aggregate_parameter(
+            column,
+            helper=helper,
+            parameter="column",
+            allow_empty=False,
+        )
+        window_clause = self._normalise_window_spec(
+            window_spec,
+            helper=helper,
+            allow_empty=False,
+        )
+        offset_value = self._coerce_positive_int(
+            offset,
+            helper=helper,
+            parameter="offset",
+        )
+        default_literal = self._normalise_default_sql_literal(
+            default_value,
+            helper=helper,
+            parameter="default_value",
+        )
+        null_flag = self._normalise_bool_flag(
+            ignore_nulls,
+            helper=helper,
+            parameter="ignore_nulls",
+        )
+        return self._wrap_window_call(
+            "lag",
+            (column_name, window_clause, offset_value, default_literal, null_flag),
+            helper=helper,
+            projected_columns=projected_columns,
+        )
+
+    def lead(
+        self,
+        column: str,
+        window_spec: str,
+        offset: SupportsInt = 1,
+        default_value: str = "NULL",
+        *,
+        ignore_nulls: bool = False,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the lead of ``column`` within ``window_spec``."""
+
+        helper = "Relation.lead"
+        column_name = self._normalise_aggregate_parameter(
+            column,
+            helper=helper,
+            parameter="column",
+            allow_empty=False,
+        )
+        window_clause = self._normalise_window_spec(
+            window_spec,
+            helper=helper,
+            allow_empty=False,
+        )
+        offset_value = self._coerce_positive_int(
+            offset,
+            helper=helper,
+            parameter="offset",
+        )
+        default_literal = self._normalise_default_sql_literal(
+            default_value,
+            helper=helper,
+            parameter="default_value",
+        )
+        null_flag = self._normalise_bool_flag(
+            ignore_nulls,
+            helper=helper,
+            parameter="ignore_nulls",
+        )
+        return self._wrap_window_call(
+            "lead",
+            (column_name, window_clause, offset_value, default_literal, null_flag),
+            helper=helper,
+            projected_columns=projected_columns,
+        )
+
+    def nth_value(
+        self,
+        column: str,
+        window_spec: str,
+        offset: SupportsInt,
+        *,
+        ignore_nulls: bool = False,
+        projected_columns: str | None = None,
+    ) -> "Relation":
+        """Return the nth value of ``column`` within ``window_spec``."""
+
+        helper = "Relation.nth_value"
+        column_name = self._normalise_aggregate_parameter(
+            column,
+            helper=helper,
+            parameter="column",
+            allow_empty=False,
+        )
+        window_clause = self._normalise_window_spec(
+            window_spec,
+            helper=helper,
+            allow_empty=False,
+        )
+        offset_value = self._coerce_positive_int(
+            offset,
+            helper=helper,
+            parameter="offset",
+        )
+        null_flag = self._normalise_bool_flag(
+            ignore_nulls,
+            helper=helper,
+            parameter="ignore_nulls",
+        )
+        return self._wrap_window_call(
+            "nth_value",
+            (column_name, window_clause, offset_value, null_flag),
+            helper=helper,
+            projected_columns=projected_columns,
+        )
+
+    def fetchall(self) -> List[tuple[Any, ...]]:
+        """Execute the relation and return all rows as tuples."""
+
+        rows = self._relation.fetchall()
+        return list(rows)
+
+    def fetchmany(self, size: SupportsInt = 1) -> List[tuple[Any, ...]]:
+        """Return the next ``size`` rows from the relation."""
+
+        helper = "Relation.fetchmany"
+        normalised_size = self._coerce_positive_int(size, helper=helper, parameter="size")
+        rows = self._relation.fetchmany(normalised_size)
+        return list(rows)
+
+    def fetchone(self) -> tuple[Any, ...] | None:
+        """Return the next row from the relation or ``None`` when exhausted."""
+
+        return self._relation.fetchone()
+
+    def fetchdf(self, *, date_as_object: bool = False) -> Any:
+        """Return all rows from the relation as a Pandas DataFrame."""
+
+        helper = "Relation.fetchdf"
+        self._require_module("pandas", helper, "pip install pandas")
+        return self._relation.fetchdf(date_as_object=date_as_object)
+
+    def df(self, *, date_as_object: bool = False) -> Any:
+        """Return all rows from the relation as a Pandas DataFrame."""
+
+        helper = "Relation.df"
+        self._require_module("pandas", helper, "pip install pandas")
+        return self._relation.df(date_as_object=date_as_object)
+
+    def to_df(self, *, date_as_object: bool = False) -> Any:
+        """Alias for :meth:`df` matching DuckDB's naming."""
+
+        return self.df(date_as_object=date_as_object)
+
+    def fetch_df_chunk(
+        self, vectors_per_chunk: SupportsInt | None = None, *, date_as_object: bool = False
+    ) -> Any:
+        """Return a chunk of rows from the relation as a DataFrame."""
+
+        helper = "Relation.fetch_df_chunk"
+        self._require_module("pandas", helper, "pip install pandas")
+        if vectors_per_chunk is None:
+            return self._relation.fetch_df_chunk(date_as_object=date_as_object)
+        normalised = self._coerce_positive_int(
+            vectors_per_chunk, helper=helper, parameter="vectors_per_chunk"
+        )
+        return self._relation.fetch_df_chunk(
+            normalised, date_as_object=date_as_object
+        )
+
+    def fetchnumpy(self) -> dict[str, Any]:
+        """Return all rows from the relation as NumPy arrays keyed by column."""
+
+        helper = "Relation.fetchnumpy"
+        self._require_module("numpy", helper, "pip install numpy")
+        arrays = self._relation.fetchnumpy()
+        return dict(arrays)
+
+    def fetch_arrow_table(
+        self, batch_size: SupportsInt | None = None
+    ) -> Any:
+        """Return all rows from the relation as a PyArrow table."""
+
+        helper = "Relation.fetch_arrow_table"
+        self._require_module("pyarrow", helper, "pip install pyarrow")
+        if batch_size is None:
+            return self._relation.fetch_arrow_table()
+        normalised = self._coerce_positive_int(
+            batch_size, helper=helper, parameter="batch_size"
+        )
+        return self._relation.fetch_arrow_table(normalised)
+
+    def to_arrow_table(self, batch_size: SupportsInt | None = None) -> Any:
+        """Alias for :meth:`fetch_arrow_table` matching DuckDB's naming."""
+
+        if batch_size is None:
+            return self.fetch_arrow_table()
+        return self.fetch_arrow_table(batch_size)
+
+    def fetch_arrow_reader(
+        self, batch_size: SupportsInt | None = None
+    ) -> Any:
+        """Return a PyArrow RecordBatchReader for the relation rows."""
+
+        helper = "Relation.fetch_arrow_reader"
+        self._require_module("pyarrow", helper, "pip install pyarrow")
+        if batch_size is None:
+            return self._relation.fetch_arrow_reader()
+        normalised = self._coerce_positive_int(
+            batch_size, helper=helper, parameter="batch_size"
+        )
+        return self._relation.fetch_arrow_reader(normalised)
+
+    def fetch_record_batch(
+        self, rows_per_batch: SupportsInt | None = None
+    ) -> Any:
+        """Return a PyArrow RecordBatchReader for the relation rows."""
+
+        helper = "Relation.fetch_record_batch"
+        self._require_module("pyarrow", helper, "pip install pyarrow")
+        if rows_per_batch is None:
+            return self._relation.fetch_record_batch()
+        normalised = self._coerce_positive_int(
+            rows_per_batch, helper=helper, parameter="rows_per_batch"
+        )
+        return self._relation.fetch_record_batch(normalised)
+
+    def arrow(self, batch_size: SupportsInt | None = None) -> Any:
+        """Return a PyArrow RecordBatchReader for the relation rows."""
+
+        helper = "Relation.arrow"
+        self._require_module("pyarrow", helper, "pip install pyarrow")
+        if batch_size is None:
+            return self._relation.arrow()
+        normalised = self._coerce_positive_int(
+            batch_size, helper=helper, parameter="batch_size"
+        )
+        return self._relation.arrow(normalised)
+
+    def record_batch(self, batch_size: SupportsInt = 1_000_000) -> Any:
+        """Return a PyArrow ``RecordBatchReader`` for the relation rows."""
+
+        helper = "Relation.record_batch"
+        self._require_module("pyarrow", helper, "pip install pyarrow")
+        normalised = self._coerce_positive_int(
+            batch_size, helper=helper, parameter="batch_size"
+        )
+        return self._relation.record_batch(normalised)
+
+    def pl(self, batch_size: SupportsInt = 1_000_000, *, lazy: bool = False) -> Any:
+        """Return the relation rows as a Polars ``DataFrame``."""
+
+        helper = "Relation.pl"
+        self._require_module("polars", helper, "pip install polars")
+        normalised = self._coerce_positive_int(
+            batch_size, helper=helper, parameter="batch_size"
+        )
+        return self._relation.pl(normalised, lazy=lazy)
+
+    def tf(self) -> Any:
+        """Return the relation rows as TensorFlow tensors."""
+
+        helper = "Relation.tf"
+        require_connection(self.duckcon, helper)
+        self._require_module("tensorflow", helper, "pip install tensorflow")
+        return self._relation.tf()
+
+    def torch(self) -> Any:
+        """Return the relation rows as a dictionary of PyTorch tensors."""
+
+        helper = "Relation.torch"
+        self._require_module("torch", helper, "pip install torch")
+        return self._relation.torch()
+
+    def to_csv(
+        self,
+        file_name: Path | PathLike[str] | str,
+        *,
+        sep: str | None = None,
+        na_rep: str | None = None,
+        header: bool | Sequence[str] | None = None,
+        quotechar: str | None = None,
+        escapechar: str | None = None,
+        date_format: str | None = None,
+        timestamp_format: str | None = None,
+        quoting: int | None = None,
+        encoding: str | None = None,
+        compression: str | None = None,
+        overwrite: bool | None = None,
+        per_thread_output: bool | None = None,
+        use_tmp_file: bool | None = None,
+        partition_by: Sequence[str] | str | None = None,
+        write_partition_columns: bool | None = None,
+    ) -> None:
+        """Write the relation rows to ``file_name`` in CSV format."""
+
+        helper = "Relation.to_csv"
+        require_connection(self.duckcon, helper)
+        file_path = self._normalise_file_name(file_name, helper=helper)
+        partition_columns = self._normalise_identifier_sequence(
+            partition_by,
+            helper=helper,
+            parameter="partition_by",
+        )
+
+        kwargs: dict[str, Any] = {}
+        if sep is not None:
+            kwargs["sep"] = sep
+        if na_rep is not None:
+            kwargs["na_rep"] = na_rep
+        if header is not None:
+            kwargs["header"] = header
+        if quotechar is not None:
+            kwargs["quotechar"] = quotechar
+        if escapechar is not None:
+            kwargs["escapechar"] = escapechar
+        if date_format is not None:
+            kwargs["date_format"] = date_format
+        if timestamp_format is not None:
+            kwargs["timestamp_format"] = timestamp_format
+        if quoting is not None:
+            kwargs["quoting"] = quoting
+        if encoding is not None:
+            kwargs["encoding"] = encoding
+        if compression is not None:
+            kwargs["compression"] = compression
+        if overwrite is not None:
+            kwargs["overwrite"] = overwrite
+        if per_thread_output is not None:
+            kwargs["per_thread_output"] = per_thread_output
+        if use_tmp_file is not None:
+            kwargs["use_tmp_file"] = use_tmp_file
+        if partition_columns is not None:
+            kwargs["partition_by"] = list(partition_columns)
+        if write_partition_columns is not None:
+            kwargs["write_partition_columns"] = write_partition_columns
+
+        self._relation.to_csv(file_path, **kwargs)
+
+    def write_csv(
+        self,
+        file_name: Path | PathLike[str] | str,
+        *,
+        sep: str | None = None,
+        na_rep: str | None = None,
+        header: bool | Sequence[str] | None = None,
+        quotechar: str | None = None,
+        escapechar: str | None = None,
+        date_format: str | None = None,
+        timestamp_format: str | None = None,
+        quoting: int | None = None,
+        encoding: str | None = None,
+        compression: str | None = None,
+        overwrite: bool | None = None,
+        per_thread_output: bool | None = None,
+        use_tmp_file: bool | None = None,
+        partition_by: Sequence[str] | str | None = None,
+        write_partition_columns: bool | None = None,
+    ) -> None:
+        """Alias for :meth:`to_csv` matching DuckDB's naming."""
+
+        self.to_csv(
+            file_name,
+            sep=sep,
+            na_rep=na_rep,
+            header=header,
+            quotechar=quotechar,
+            escapechar=escapechar,
+            date_format=date_format,
+            timestamp_format=timestamp_format,
+            quoting=quoting,
+            encoding=encoding,
+            compression=compression,
+            overwrite=overwrite,
+            per_thread_output=per_thread_output,
+            use_tmp_file=use_tmp_file,
+            partition_by=partition_by,
+            write_partition_columns=write_partition_columns,
+        )
+
+    def to_parquet(
+        self,
+        file_name: Path | PathLike[str] | str,
+        *,
+        compression: str | None = None,
+        field_ids: Sequence[int] | None = None,
+        row_group_size_bytes: SupportsInt | None = None,
+        row_group_size: SupportsInt | None = None,
+        overwrite: bool | None = None,
+        per_thread_output: bool | None = None,
+        use_tmp_file: bool | None = None,
+        partition_by: Sequence[str] | str | None = None,
+        write_partition_columns: bool | None = None,
+        append: bool | None = None,
+    ) -> None:
+        """Write the relation rows to ``file_name`` in Parquet format."""
+
+        helper = "Relation.to_parquet"
+        require_connection(self.duckcon, helper)
+        file_path = self._normalise_file_name(file_name, helper=helper)
+        partition_columns = self._normalise_identifier_sequence(
+            partition_by,
+            helper=helper,
+            parameter="partition_by",
+        )
+        size_bytes = self._normalise_optional_int(
+            row_group_size_bytes, helper=helper, parameter="row_group_size_bytes"
+        )
+        group_size = self._normalise_optional_int(
+            row_group_size, helper=helper, parameter="row_group_size"
+        )
+
+        kwargs: dict[str, Any] = {}
+        if compression is not None:
+            kwargs["compression"] = compression
+        if field_ids is not None:
+            kwargs["field_ids"] = list(field_ids)
+        if size_bytes is not None:
+            kwargs["row_group_size_bytes"] = size_bytes
+        if group_size is not None:
+            kwargs["row_group_size"] = group_size
+        if overwrite is not None:
+            kwargs["overwrite"] = overwrite
+        if per_thread_output is not None:
+            kwargs["per_thread_output"] = per_thread_output
+        if use_tmp_file is not None:
+            kwargs["use_tmp_file"] = use_tmp_file
+        if partition_columns is not None:
+            kwargs["partition_by"] = list(partition_columns)
+        if write_partition_columns is not None:
+            kwargs["write_partition_columns"] = write_partition_columns
+        if append is not None:
+            kwargs["append"] = append
+
+        self._relation.to_parquet(file_path, **kwargs)
+
+    def write_parquet(
+        self,
+        file_name: Path | PathLike[str] | str,
+        *,
+        compression: str | None = None,
+        field_ids: Sequence[int] | None = None,
+        row_group_size_bytes: SupportsInt | None = None,
+        row_group_size: SupportsInt | None = None,
+        overwrite: bool | None = None,
+        per_thread_output: bool | None = None,
+        use_tmp_file: bool | None = None,
+        partition_by: Sequence[str] | str | None = None,
+        write_partition_columns: bool | None = None,
+        append: bool | None = None,
+    ) -> None:
+        """Alias for :meth:`to_parquet` matching DuckDB's naming."""
+
+        self.to_parquet(
+            file_name,
+            compression=compression,
+            field_ids=field_ids,
+            row_group_size_bytes=row_group_size_bytes,
+            row_group_size=row_group_size,
+            overwrite=overwrite,
+            per_thread_output=per_thread_output,
+            use_tmp_file=use_tmp_file,
+            partition_by=partition_by,
+            write_partition_columns=write_partition_columns,
+            append=append,
+        )
+
+    def to_table(self, table_name: str) -> None:
+        """Materialise the relation into a DuckDB table."""
+
+        helper = "Relation.to_table"
+        require_connection(self.duckcon, helper)
+        normalised = self._normalise_relation_name(
+            table_name, helper=helper, parameter="table_name"
+        )
+        self._relation.to_table(normalised)
+
+    def to_view(self, view_name: str, *, replace: bool = True) -> "Relation":
+        """Create a DuckDB view pointing at the relation."""
+
+        helper = "Relation.to_view"
+        require_connection(self.duckcon, helper)
+        normalised = self._normalise_relation_name(
+            view_name, helper=helper, parameter="view_name"
+        )
+        relation = self._relation.to_view(normalised, replace=replace)
+        return self.__class__.from_relation(self.duckcon, relation)
 
     @classmethod
     def from_relation(cls, duckcon: DuckCon, relation: duckdb.DuckDBPyRelation) -> "Relation":
@@ -313,7 +2323,7 @@ class Relation:
 
         connection = duckcon.connection
 
-        arguments: list[str] = [cls._quote_sql_string(str(source))]
+        arguments: List[str] = [cls._quote_sql_string(str(source))]
 
         options = {
             "sheet": sheet,
@@ -434,7 +2444,7 @@ class Relation:
     @overload
     def transform(
         self,
-        **replacements: type[int] | type[float] | type[str] | type[bool] | type[bytes],
+        **replacements: Type[int] | Type[float] | Type[str] | Type[bool] | Type[bytes],
     ) -> "Relation":
         ...
 
@@ -479,7 +2489,7 @@ class Relation:
             msg = "transform expression references unknown columns"
             raise ValueError(msg) from error
 
-        return type(self).from_relation(self.duckcon, relation)
+        return self.__class__.from_relation(self.duckcon, relation)
 
     def add(
         self,
@@ -509,7 +2519,7 @@ class Relation:
             self._quote_identifier(column) for column in self.columns
         ]
 
-        collected: list[tuple[str, TypedExpression]] = []
+        collected: List[tuple[str, TypedExpression]] = []
         for expression in expressions:
             alias = self._extract_alias_from_expression(expression)
             collected.append((alias, expression))
@@ -526,7 +2536,7 @@ class Relation:
             raise ValueError(msg)
 
         seen_aliases: set[str] = set()
-        prepared: list[tuple[str, str]] = []
+        prepared: List[tuple[str, str]] = []
         for alias, expression in collected:
             if not isinstance(alias, str):  # pragma: no cover - defensive
                 msg = "Column names must be strings"
@@ -582,7 +2592,7 @@ class Relation:
             msg = "add expressions reference unknown columns"
             raise ValueError(msg) from error
 
-        return type(self).from_relation(self.duckcon, relation)
+        return self.__class__.from_relation(self.duckcon, relation)
 
     def join(
         self,
@@ -634,6 +2644,39 @@ class Relation:
 
         return self._join(other, join_type="semi", on=on)
 
+    def limit(self, count: SupportsInt, *, offset: SupportsInt = 0) -> "Relation":
+        """Return the relation limited to ``count`` rows starting at ``offset``."""
+
+        helper = "Relation.limit"
+
+        if isinstance(count, bool):
+            msg = f"{helper} count must be an integer"
+            raise TypeError(msg)
+        if isinstance(offset, bool):
+            msg = f"{helper} offset must be an integer"
+            raise TypeError(msg)
+
+        try:
+            normalised_count = int(count)
+        except (TypeError, ValueError) as error:
+            msg = f"{helper} count must be an integer"
+            raise TypeError(msg) from error
+        try:
+            normalised_offset = int(offset)
+        except (TypeError, ValueError) as error:
+            msg = f"{helper} offset must be an integer"
+            raise TypeError(msg) from error
+
+        if normalised_count < 0:
+            msg = f"{helper} count must be greater than or equal to zero"
+            raise ValueError(msg)
+        if normalised_offset < 0:
+            msg = f"{helper} offset must be greater than or equal to zero"
+            raise ValueError(msg)
+
+        relation = self._relation.limit(normalised_count, offset=normalised_offset)
+        return self.__class__.from_relation(self.duckcon, relation)
+
     def distinct(self) -> "Relation":
         """Return the relation with duplicate rows removed."""
 
@@ -642,7 +2685,84 @@ class Relation:
         except duckdb.BinderException as error:  # pragma: no cover - defensive
             msg = "distinct operation references unknown columns"
             raise ValueError(msg) from error
-        return type(self).from_relation(self.duckcon, relation)
+        return self.__class__.from_relation(self.duckcon, relation)
+
+    def _require_peer_relation(
+        self, other: "Relation", helper: str
+    ) -> duckdb.DuckDBPyRelation:
+        if not isinstance(other, Relation):
+            msg = f"{helper} requires another Relation instance"
+            raise TypeError(msg)
+        if self.duckcon is not other.duckcon:
+            msg = "Operations require both relations to originate from the same DuckCon"
+            raise ValueError(msg)
+        require_connection(self.duckcon, helper)
+        return other._relation
+
+    def cross(self, other: "Relation") -> "Relation":
+        """Return the cross join of two relations."""
+
+        helper = "Relation.cross"
+        other_relation = self._require_peer_relation(other, helper)
+        try:
+            relation = self._relation.cross(other_relation)
+        except duckdb.BinderException as error:
+            msg = "cross requires relations with compatible schemas"
+            raise ValueError(msg) from error
+        return self.__class__.from_relation(self.duckcon, relation)
+
+    def except_(self, other: "Relation") -> "Relation":
+        """Return rows present in ``self`` but not ``other``."""
+
+        helper = "Relation.except_"
+        other_relation = self._require_peer_relation(other, helper)
+        try:
+            relation = self._relation.except_(other_relation)
+        except duckdb.BinderException as error:
+            msg = "except_ requires relations with compatible schemas"
+            raise ValueError(msg) from error
+        return self.__class__.from_relation(self.duckcon, relation)
+
+    def intersect(self, other: "Relation") -> "Relation":
+        """Return rows present in both relations."""
+
+        helper = "Relation.intersect"
+        other_relation = self._require_peer_relation(other, helper)
+        try:
+            relation = self._relation.intersect(other_relation)
+        except duckdb.BinderException as error:
+            msg = "intersect requires relations with compatible schemas"
+            raise ValueError(msg) from error
+        return self.__class__.from_relation(self.duckcon, relation)
+
+    def project(self, *expressions: str) -> "Relation":
+        """Return the relation projected using raw SQL expressions."""
+
+        if not expressions:
+            msg = "project requires at least one expression"
+            raise ValueError(msg)
+        formatted: List[str] = []
+        for expression in expressions:
+            if not isinstance(expression, str):
+                msg = "project expressions must be strings"
+                raise TypeError(msg)
+            normalised = expression.strip()
+            if not normalised:
+                msg = "project expressions cannot be empty"
+                raise ValueError(msg)
+            formatted.append(normalised)
+        projection_sql = ", ".join(formatted)
+        try:
+            relation = self._relation.project(projection_sql)
+        except duckdb.BinderException as error:
+            msg = "project expressions reference unknown columns"
+            raise ValueError(msg) from error
+        return self.__class__.from_relation(self.duckcon, relation)
+
+    def sort(self, *clauses: str) -> "Relation":
+        """Alias for :meth:`order_by` to mirror the DuckDB API."""
+
+        return self.order_by(*clauses)
 
     def union(
         self,
@@ -687,7 +2807,7 @@ class Relation:
         except duckdb.BinderException as error:
             msg = "Union operation references incompatible columns"
             raise ValueError(msg) from error
-        return type(self).from_relation(self.duckcon, relation)
+        return self.__class__.from_relation(self.duckcon, relation)
 
     def order_by(self, *clauses: str) -> "Relation":
         """Return the relation ordered by the provided SQL clauses."""
@@ -713,7 +2833,7 @@ class Relation:
         except duckdb.BinderException as error:
             msg = "order_by clauses reference unknown columns"
             raise ValueError(msg) from error
-        return type(self).from_relation(self.duckcon, relation)
+        return self.__class__.from_relation(self.duckcon, relation)
 
     def materialize(
         self,
@@ -752,7 +2872,7 @@ class Relation:
         self._relation.to_view(view_name, replace=True)
 
         try:
-            statements: list[str] = ["CREATE"]
+            statements: List[str] = ["CREATE"]
             if replace:
                 statements.extend(["OR", "REPLACE"])
             if temporary:
@@ -763,7 +2883,7 @@ class Relation:
             connection.execute(f"DROP VIEW {quoted_view}")
 
         materialized = connection.table(table_name)
-        return type(self).from_relation(self.duckcon, materialized)
+        return self.__class__.from_relation(self.duckcon, materialized)
 
     def asof_join(
         self,
@@ -896,7 +3016,7 @@ class Relation:
             msg = "asof join expressions reference unknown columns"
             raise ValueError(msg) from error
 
-        return type(self).from_relation(self.duckcon, joined_relation)
+        return self.__class__.from_relation(self.duckcon, joined_relation)
 
     def _join(
         self,
@@ -955,7 +3075,7 @@ class Relation:
 
         select_list = ", ".join(projection_entries)
         projected = joined_relation.project(select_list)
-        return type(self).from_relation(self.duckcon, projected)
+        return self.__class__.from_relation(self.duckcon, projected)
 
     def aggregate(self) -> "_AggregateBuilder":
         """Build an aggregate query using a fluent grouping helper."""
@@ -1026,7 +3146,7 @@ class Relation:
             connection.execute(f"DROP VIEW {quoted_view}")
 
         materialised = connection.sql(f"SELECT * FROM {quoted_table}")
-        result = type(self).from_relation(self.duckcon, materialised)
+        result = self.__class__.from_relation(self.duckcon, materialised)
 
         if not mutate:
             materialised.execute()
@@ -1102,7 +3222,7 @@ class Relation:
             match_all_columns=match_all_columns,
         )
 
-        result = type(self).from_relation(self.duckcon, append_subset)
+        result = self.__class__.from_relation(self.duckcon, append_subset)
 
         if not mutate:
             return result
@@ -1281,7 +3401,7 @@ class Relation:
 
         select_list = ", ".join(self._quote_identifier(column) for column in resolved)
         relation = self._relation.project(select_list)
-        return type(self).from_relation(self.duckcon, relation)
+        return self.__class__.from_relation(self.duckcon, relation)
 
     def keep_if_exists(self, *columns: str) -> "Relation":
         """Return a new relation keeping available columns and skipping missing ones."""
@@ -1306,7 +3426,7 @@ class Relation:
 
         select_list = ", ".join(self._quote_identifier(column) for column in resolved)
         relation = self._relation.project(select_list)
-        return type(self).from_relation(self.duckcon, relation)
+        return self.__class__.from_relation(self.duckcon, relation)
 
     def drop(self, *columns: str) -> "Relation":
         """Return a new relation without the specified columns."""
@@ -1327,7 +3447,7 @@ class Relation:
         builder = SelectStatementBuilder().star(exclude=resolved)
         select_list = builder.build_select_list()
         relation = self._relation.project(select_list)
-        return type(self).from_relation(self.duckcon, relation)
+        return self.__class__.from_relation(self.duckcon, relation)
 
     def drop_if_exists(self, *columns: str) -> "Relation":
         """Return a new relation dropping available columns and skipping missing ones."""
@@ -1353,7 +3473,7 @@ class Relation:
         builder = SelectStatementBuilder().star(exclude=resolved)
         select_list = builder.build_select_list()
         relation = self._relation.project(select_list)
-        return type(self).from_relation(self.duckcon, relation)
+        return self.__class__.from_relation(self.duckcon, relation)
 
     def _rename(self, renames: Mapping[str, str], *, skip_missing: bool) -> "Relation":
         validated = self._prepare_renames(renames, skip_missing=skip_missing)
@@ -1378,7 +3498,7 @@ class Relation:
                 builder.column(quoted)
         select_list = builder.build_select_list()
         relation = self._relation.project(select_list)
-        return type(self).from_relation(self.duckcon, relation)
+        return self.__class__.from_relation(self.duckcon, relation)
 
     def _prepare_renames(
         self, renames: Mapping[str, str], *, skip_missing: bool
@@ -1436,8 +3556,8 @@ class Relation:
         *,
         skip_missing: bool,
         operation: str,
-    ) -> list[str]:
-        entries: list[tuple[str, None]] = []
+    ) -> List[str]:
+        entries: List[tuple[str, None]] = []
         for column in columns:
             if not isinstance(column, str):
                 msg = f"{operation} column names must be strings"
@@ -1467,7 +3587,7 @@ class Relation:
         self,
         other: "Relation",
         on: JoinCondition,
-    ) -> list[tuple[str, str]]:
+    ) -> List[tuple[str, str]]:
         left_casefold_map = self._build_casefold_map(self.columns)
         right_casefold_map = self._build_casefold_map(other.columns)
 
@@ -1512,11 +3632,11 @@ class Relation:
     def _prepare_explicit_join_pairs(
         self,
         on: JoinCondition,
-        left_casefold_map: Mapping[str, list[str]],
-        right_casefold_map: Mapping[str, list[str]],
-    ) -> tuple[list[tuple[str, str]], set[tuple[str, str]]]:
-        pairs: list[tuple[str, str]] = []
-        seen_pairs: set[tuple[str, str]] = set()
+        left_casefold_map: Mapping[str, List[str]],
+        right_casefold_map: Mapping[str, List[str]],
+    ) -> Tuple[List[tuple[str, str]], Set[tuple[str, str]]]:
+        pairs: List[tuple[str, str]] = []
+        seen_pairs: Set[tuple[str, str]] = set()
 
         for left_name, right_name in self._normalise_join_on_entries(on):
             left_resolved = self._resolve_casefolded_column(
@@ -1544,7 +3664,7 @@ class Relation:
     @staticmethod
     def _normalise_join_on_entries(
         on: JoinCondition,
-    ) -> list[tuple[str, str]]:
+    ) -> List[tuple[str, str]]:
         if on is None:
             return []
 
@@ -1555,7 +3675,7 @@ class Relation:
         else:
             entries = cast(Iterable[object], on)
 
-        normalised: list[tuple[str, str]] = []
+        normalised: List[tuple[str, str]] = []
         for entry in entries:
             if isinstance(entry, str):
                 left_name = right_name = entry
@@ -1604,7 +3724,7 @@ class Relation:
         *,
         alias: str,
         relation_label: str,
-        casefold_map: Mapping[str, list[str]],
+        casefold_map: Mapping[str, List[str]],
     ) -> tuple[str, frozenset[ExpressionDependency]]:
         if isinstance(operand, str):
             column = operand.strip()
@@ -1644,8 +3764,8 @@ class Relation:
         *,
         left_alias: str,
         right_alias: str,
-        left_casefold_map: Mapping[str, list[str]],
-        right_casefold_map: Mapping[str, list[str]],
+        left_casefold_map: Mapping[str, List[str]],
+        right_casefold_map: Mapping[str, List[str]],
     ) -> str:
         if isinstance(tolerance, bool):
             msg = "asof tolerance cannot be a boolean"
@@ -1684,7 +3804,7 @@ class Relation:
         self,
         dependencies: frozenset[ExpressionDependency],
         *,
-        allowed_aliases: Mapping[str, tuple[str, Mapping[str, list[str]]]],
+        allowed_aliases: Mapping[str, tuple[str, Mapping[str, List[str]]]],
         context: str,
     ) -> None:
         if not dependencies:
@@ -1695,7 +3815,7 @@ class Relation:
             for key, (name, mapping) in allowed_aliases.items()
         }
 
-        default_alias: tuple[str, Mapping[str, list[str]]] | None
+        default_alias: tuple[str, Mapping[str, List[str]]] | None
         if len(alias_items) == 1:
             default_alias = next(iter(alias_items.values()))
         else:
@@ -1742,11 +3862,11 @@ class Relation:
         right_alias: str,
         *,
         include_right_columns: bool,
-    ) -> list[str]:
+    ) -> List[str]:
         left_identifier = self._quote_identifier(left_alias)
         right_identifier = self._quote_identifier(right_alias)
 
-        entries: list[str] = []
+        entries: List[str] = []
         for column in self.columns:
             reference = f"{left_identifier}.{self._quote_identifier(column)}"
             entries.append(f"{reference} AS {self._quote_identifier(column)}")
@@ -1762,8 +3882,8 @@ class Relation:
         return entries
 
     @staticmethod
-    def _build_casefold_map(columns: Iterable[str]) -> dict[str, list[str]]:
-        mapping: dict[str, list[str]] = {}
+    def _build_casefold_map(columns: Iterable[str]) -> dict[str, List[str]]:
+        mapping: dict[str, List[str]] = {}
         for column in columns:
             mapping.setdefault(column.casefold(), []).append(column)
         return mapping
@@ -1771,7 +3891,7 @@ class Relation:
     @classmethod
     def _resolve_casefolded_column(
         cls,
-        casefold_map: Mapping[str, list[str]],
+        casefold_map: Mapping[str, List[str]],
         column: str,
         *,
         relation_label: str,
@@ -1793,7 +3913,7 @@ class Relation:
 
     def _normalise_group_by(
         self, group_by: Iterable[str] | str | None
-    ) -> list[str]:
+    ) -> List[str]:
         if group_by is None:
             return []
         columns: tuple[str, ...]
@@ -1840,7 +3960,7 @@ class Relation:
                 msg = f"{label} references unknown columns"
                 raise ValueError(msg) from error
 
-        return type(self).from_relation(self.duckcon, working_relation)
+        return self.__class__.from_relation(self.duckcon, working_relation)
 
     def _normalise_filter_clauses(
         self,
@@ -1848,8 +3968,8 @@ class Relation:
         *,
         label_prefix: str,
         error_context: str,
-    ) -> list[tuple[str, frozenset[ExpressionDependency] | None, str]]:
-        clauses: list[tuple[str, frozenset[ExpressionDependency] | None, str]] = []
+    ) -> List[tuple[str, frozenset[ExpressionDependency] | None, str]]:
+        clauses: List[tuple[str, frozenset[ExpressionDependency] | None, str]] = []
         for index, condition in enumerate(filters, start=1):
             label = f"{label_prefix} condition {index}"
             if isinstance(condition, str):
@@ -1903,9 +4023,9 @@ class Relation:
 
     def _resolve_column_items(
         self, items: Iterable[tuple[str, T]]
-    ) -> tuple[list[tuple[str, T]], list[str]]:
-        resolved: list[tuple[str, T]] = []
-        missing: list[str] = []
+    ) -> Tuple[List[tuple[str, T]], List[str]]:
+        resolved: List[tuple[str, T]] = []
+        missing: List[str] = []
         seen: set[str] = set()
 
         for column, payload in items:
@@ -1941,6 +4061,162 @@ class Relation:
         return self._relation.limit(limit)
 
     @staticmethod
+    def _normalise_nonempty_string(
+        value: str, *, helper: str, parameter: str
+    ) -> str:
+        if not isinstance(value, str):
+            msg = f"{helper} {parameter} must be a string"
+            raise TypeError(msg)
+        normalised = value.strip()
+        if not normalised:
+            msg = f"{helper} {parameter} cannot be empty"
+            raise ValueError(msg)
+        return normalised
+
+    @staticmethod
+    def _normalise_optional_string(
+        value: str | None, *, helper: str, parameter: str, allow_empty: bool
+    ) -> str:
+        if value is None:
+            return ""
+        if not isinstance(value, str):
+            msg = f"{helper} {parameter} must be a string"
+            raise TypeError(msg)
+        normalised = value.strip()
+        if not normalised and not allow_empty:
+            msg = f"{helper} {parameter} cannot be empty"
+            raise ValueError(msg)
+        return normalised
+
+    @staticmethod
+    def _normalise_expression_clause(
+        expressions: Sequence[str] | str | None,
+        *,
+        helper: str,
+        parameter: str,
+    ) -> str:
+        if expressions is None:
+            return ""
+        if isinstance(expressions, str):
+            clause = expressions.strip()
+            if not clause:
+                msg = f"{helper} {parameter} cannot be empty"
+                raise ValueError(msg)
+            return clause
+        if not isinstance(expressions, Sequence):
+            msg = (
+                f"{helper} {parameter} must be a string or sequence of strings"
+            )
+            raise TypeError(msg)
+        values: List[str] = []
+        for index, expression in enumerate(expressions):
+            if not isinstance(expression, str):
+                msg = (
+                    f"{helper} {parameter}[{index}] must be a string"
+                )
+                raise TypeError(msg)
+            trimmed = expression.strip()
+            if not trimmed:
+                msg = f"{helper} {parameter}[{index}] cannot be empty"
+                raise ValueError(msg)
+            values.append(trimmed)
+        if not values:
+            msg = f"{helper} {parameter} must contain at least one entry"
+            raise ValueError(msg)
+        return ", ".join(values)
+
+    @staticmethod
+    def _normalise_type_list(
+        types: Sequence[str] | str,
+        *,
+        helper: str,
+        parameter: str,
+    ) -> List[str]:
+        if isinstance(types, str):
+            candidates: List[str] = [types]
+        elif isinstance(types, Sequence) and not isinstance(types, (bytes, bytearray)):
+            candidates = [value for value in types]
+        else:
+            msg = f"{helper} {parameter} must be a string or sequence of strings"
+            raise TypeError(msg)
+
+        values: List[str] = []
+        for index, entry in enumerate(candidates):
+            if not isinstance(entry, str):
+                msg = f"{helper} {parameter}[{index}] must be a string"
+                raise TypeError(msg)
+            trimmed = entry.strip()
+            if not trimmed:
+                msg = f"{helper} {parameter}[{index}] cannot be empty"
+                raise ValueError(msg)
+            values.append(trimmed)
+
+        if not values:
+            msg = f"{helper} {parameter} must contain at least one value"
+            raise ValueError(msg)
+
+        return values
+
+    @staticmethod
+    def _normalise_schema_mapping(
+        schema: Mapping[str, object]
+        | Sequence[tuple[str, object]]
+        | None,
+        *,
+        helper: str,
+    ) -> dict[str, object] | None:
+        if schema is None:
+            return None
+        if isinstance(schema, Mapping):
+            items = list(schema.items())
+        elif isinstance(schema, Sequence):
+            if isinstance(schema, (str, bytes, bytearray)):
+                msg = f"{helper} schema must not be a string"
+                raise TypeError(msg)
+            items = list(schema)
+        else:
+            msg = f"{helper} schema must be a mapping or sequence of pairs"
+            raise TypeError(msg)
+
+        normalised: dict[str, object] = {}
+        for index, (key, value) in enumerate(items):
+            if not isinstance(key, str):
+                msg = f"{helper} schema[{index}] key must be a string"
+                raise TypeError(msg)
+            trimmed = key.strip()
+            if not trimmed:
+                msg = f"{helper} schema[{index}] key cannot be empty"
+                raise ValueError(msg)
+            normalised[trimmed] = value
+
+        if not normalised:
+            msg = f"{helper} schema must contain at least one entry"
+            raise ValueError(msg)
+
+        return normalised
+
+    @staticmethod
+    def _normalise_render_mode(
+        render_mode: duckdb.RenderMode | str | None, *, helper: str
+    ) -> duckdb.RenderMode | None:
+        if render_mode is None:
+            return None
+        if isinstance(render_mode, duckdb.RenderMode):
+            return render_mode
+        if not isinstance(render_mode, str):
+            msg = f"{helper} render_mode must be a string or RenderMode"
+            raise TypeError(msg)
+        normalised = render_mode.strip()
+        if not normalised:
+            msg = f"{helper} render_mode cannot be empty"
+            raise ValueError(msg)
+        try:
+            return getattr(duckdb.RenderMode, normalised.upper())
+        except AttributeError as error:
+            msg = f"{helper} render_mode '{render_mode}' is not supported"
+            raise ValueError(msg) from error
+
+    @staticmethod
     def _normalise_batch_size(batch_size: int, helper: str) -> int:
         if not isinstance(batch_size, int):
             msg = f"{helper} batch_size must be an integer"
@@ -1949,6 +4225,23 @@ class Relation:
             msg = f"{helper} batch_size must be greater than zero"
             raise ValueError(msg)
         return batch_size
+
+    @staticmethod
+    def _coerce_positive_int(
+        value: SupportsInt, *, helper: str, parameter: str
+    ) -> int:
+        if isinstance(value, bool):
+            msg = f"{helper} {parameter} must be an integer"
+            raise TypeError(msg)
+        try:
+            normalised = int(value)
+        except (TypeError, ValueError) as error:  # pragma: no cover - defensive
+            msg = f"{helper} {parameter} must be an integer"
+            raise TypeError(msg) from error
+        if normalised <= 0:
+            msg = f"{helper} {parameter} must be greater than zero"
+            raise ValueError(msg)
+        return normalised
 
     @staticmethod
     def _iterate_pandas_batches(
@@ -1987,6 +4280,79 @@ class Relation:
             yield polars_module.DataFrame(rows, schema=list(columns), orient="row")
 
     @staticmethod
+    def _normalise_aggregate_parameter(
+        value: str | None,
+        *,
+        helper: str,
+        parameter: str,
+        allow_empty: bool,
+    ) -> str:
+        if value is None:
+            return ""
+        if not isinstance(value, str):
+            msg = f"{helper} {parameter} must be a string"
+            raise TypeError(msg)
+        normalised = value.strip()
+        if not normalised and not allow_empty:
+            msg = f"{helper} {parameter} cannot be empty"
+            raise ValueError(msg)
+        return normalised
+
+    @staticmethod
+    def _normalise_optional_int(
+        value: SupportsInt | None,
+        *,
+        helper: str,
+        parameter: str,
+    ) -> int | None:
+        if value is None:
+            return None
+        if isinstance(value, bool):
+            msg = f"{helper} {parameter} must be an integer"
+            raise TypeError(msg)
+        if not isinstance(value, SupportsInt):
+            msg = f"{helper} {parameter} must implement __int__"
+            raise TypeError(msg)
+        return int(value)
+
+    @staticmethod
+    def _normalise_quantile_argument(
+        value: float | Sequence[float] | None,
+        helper: str,
+    ) -> float | List[float]:
+        def _validate_range(candidate: float) -> float:
+            if candidate < 0.0 or candidate > 1.0:
+                msg = f"{helper} q must be between 0 and 1 inclusive"
+                raise ValueError(msg)
+            return candidate
+
+        if value is None:
+            return 0.5
+        if isinstance(value, bool):
+            msg = f"{helper} q must be numeric"
+            raise TypeError(msg)
+        if isinstance(value, Real):
+            numeric = float(value)
+            return _validate_range(numeric)
+        if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+            entries: List[float] = []
+            for index, item in enumerate(value):
+                if isinstance(item, bool):
+                    msg = f"{helper} q[{index}] must be numeric"
+                    raise TypeError(msg)
+                if not isinstance(item, Real):
+                    msg = f"{helper} q[{index}] must be numeric"
+                    raise TypeError(msg)
+                numeric = float(item)
+                entries.append(_validate_range(numeric))
+            if not entries:
+                msg = f"{helper} q must contain at least one value"
+                raise ValueError(msg)
+            return entries
+        msg = f"{helper} q must be a float or sequence of floats"
+        raise TypeError(msg)
+
+    @staticmethod
     def _require_module(module: str, helper: str, install_hint: str) -> Any:
         try:
             return import_module(module)
@@ -2014,7 +4380,7 @@ class Relation:
                 raise TypeError(msg)
             values = list(columns)
 
-        normalised: list[str] = []
+        normalised: List[str] = []
         seen: set[str] = set()
         for column in values:
             if not isinstance(column, str):
@@ -2038,6 +4404,35 @@ class Relation:
         return tuple(normalised)
 
     @staticmethod
+    def _normalise_file_name(
+        file_name: Path | PathLike[str] | str,
+        *,
+        helper: str,
+    ) -> str:
+        try:
+            path = Path(file_name)
+        except TypeError as exc:  # pragma: no cover - defensive guard
+            msg = f"{helper} file_name must be a string or PathLike object"
+            raise TypeError(msg) from exc
+        return str(path)
+
+    @staticmethod
+    def _normalise_relation_name(
+        name: str,
+        *,
+        helper: str,
+        parameter: str,
+    ) -> str:
+        if not isinstance(name, str):
+            msg = f"{helper} {parameter} must be a string"
+            raise TypeError(msg)
+        normalised = name.strip()
+        if not normalised:
+            msg = f"{helper} {parameter} cannot be empty"
+            raise ValueError(msg)
+        return normalised
+
+    @staticmethod
     def _quote_identifier(identifier: str) -> str:
         escaped = identifier.replace("\"", "\"\"")
         return f'"{escaped}"'
@@ -2045,7 +4440,7 @@ class Relation:
     @staticmethod
     def _quote_qualified_identifier(identifier: str) -> str:
         parts = identifier.split(".")
-        quoted_parts: list[str] = []
+        quoted_parts: List[str] = []
         for part in parts:
             trimmed = part.strip()
             if not trimmed:
@@ -2071,7 +4466,7 @@ class Relation:
         if existing_relation is None:
             return self._relation
 
-        join_columns: list[str]
+        join_columns: List[str]
         if unique_id_columns is not None:
             join_columns = [
                 self._require_column(column, helper, parameter="unique_id_column")
@@ -2153,7 +4548,7 @@ class Relation:
         raise TypeError(msg)
 
     @staticmethod
-    def _python_type_to_duckdb(python_type: type[object]) -> str:
+    def _python_type_to_duckdb(python_type: Type[object]) -> str:
         mapping: Mapping[type[object], str]
         mapping = {
             int: "INTEGER",
@@ -2713,8 +5108,8 @@ class _AggregateBuilder(DependencyTrackingMixin):  # pylint: disable=too-many-in
     def by(self, *groupings: object) -> Relation:
         """Group by the specified columns or typed expressions."""
 
-        expressions: list[TypedExpression] = []
-        columns: list[str] = []
+        expressions: List[TypedExpression] = []
+        columns: List[str] = []
         for entry in self._iter_groupings(groupings):
             if isinstance(entry, TypedExpression):
                 base_expression, alias_name = self._relation._peel_expression_alias(entry)
@@ -2916,7 +5311,7 @@ class _AggregateBuilder(DependencyTrackingMixin):  # pylint: disable=too-many-in
         group_expressions = list(extra_group_expressions)
         group_expressions.extend(self._group_expressions)
 
-        group_expression_sql: list[str] = []
+        group_expression_sql: List[str] = []
         for index, group_expression in enumerate(group_expressions, start=1):
             dependencies = group_expression.dependencies
             if dependencies is not None:
@@ -2929,7 +5324,7 @@ class _AggregateBuilder(DependencyTrackingMixin):  # pylint: disable=too-many-in
             group_expression_sql.append(group_expression.render())
 
         seen_aliases: set[str] = set()
-        prepared: list[str] = []
+        prepared: List[str] = []
         aggregate_sql_aliases: dict[str, str] = {}
 
         collected_items = list(self._aggregate_entries)
