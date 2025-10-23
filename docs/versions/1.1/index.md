@@ -41,6 +41,7 @@ io/file_append
 community_extensions
 schema_management
 practitioner_demos
+api/index
 reference/index
 ```
 

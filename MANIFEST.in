@@ -1,1 +1,4 @@
-recursive-include duckplus *.pyi
+include duckplus/py.typed
+recursive-include spec *.py
+recursive-include docs/v1 *
+recursive-include docs/v2 *

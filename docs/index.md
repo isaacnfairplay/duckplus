@@ -1,17 +1,21 @@
 # DuckPlus documentation
 
-DuckPlus pairs typed expressions with immutable DuckDB relations to keep analytics
-pipelines debuggable. The documentation is versioned so changes in each release
-stay easy to follow.
+DuckPlus 2.0 ships alongside the archived 1.x guides. Use the version switcher
+in the navigation bar to toggle between the two generations, or browse via the
+links below.
 
 ```{toctree}
 :maxdepth: 2
+:caption: DuckPlus 2.0
 
-versions/1.4/index
-versions/1.3/index
-versions/1.2/index
-versions/1.1/index
-versions/1.0/index
+v2/index
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: DuckPlus 1.x (archived)
+
+v1/index
 ```
 
 ```{toctree}
@@ -31,11 +35,24 @@ ty_language_server
 ```
 
 ```{toctree}
+:maxdepth: 1
+:caption: Archived demos
+
+pi_demo
+sales_pipeline_demo
+```
+
+```{toctree}
 :maxdepth: 2
 :caption: Repository resources
 
 repository-map
+extensions_audit
 ```
 
-Use the version switcher in the navigation bar to browse documentation for
-older releases once they are published.
+```{toctree}
+:maxdepth: 1
+:caption: Legacy appendices
+
+typed_api
+```

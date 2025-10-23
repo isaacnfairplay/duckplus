@@ -8,6 +8,8 @@ jump into the enriched docstrings or explore the companion notebooks.
 :maxdepth: 1
 
 language_server_demo
+pi_demo
+sales_pipeline_demo
 reference/duckplus/examples/pi_demo/index
 reference/duckplus/examples/sales_pipeline/index
 traceability_pipeline_demo

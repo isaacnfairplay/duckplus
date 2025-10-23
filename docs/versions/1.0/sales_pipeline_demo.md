@@ -1,5 +1,12 @@
 # Sales analytics pipeline demo
 
+```{toctree}
+:maxdepth: 1
+:caption: Archived reference
+
+reference/duckplus/examples/sales_pipeline/index
+```
+
 The ``duckplus.examples.sales_pipeline`` module exercises the core DuckPlus
 primitives in a realistic reporting scenario.  It seeds a managed
 :class:`~duckplus.duckcon.DuckCon` with deterministic ``orders`` and ``returns``

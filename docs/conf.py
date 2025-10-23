@@ -16,8 +16,8 @@ project = "DuckPlus"
 author = "DuckPlus maintainers"
 current_year = _dt.date.today().year
 copyright = f"{current_year}, {author}"
-release = "1.4.7"
-version = "1.4"
+release = "2.0.1"
+version = "2.0"
 
 extensions = [
     "myst_parser",
@@ -50,13 +50,12 @@ exclude_patterns = [
     "Thumbs.db",
     ".DS_Store",
     "community_extension_targets.md",
-    "extensions_audit.md",
+    "duckdb_function_module_audit.md",
+    "pypi-assessment.md",
+    "registry_inventory.md",
     "io.md",
-    "language_server_demo.md",
-    "pi_demo.md",
     "relation.md",
     "schema.md",
-    "typed_api.md",
 ]
 autosectionlabel_prefix_document = True
 
