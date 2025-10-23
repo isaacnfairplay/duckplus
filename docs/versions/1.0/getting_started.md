@@ -20,7 +20,7 @@ so typed expressions and relation helpers share the same semantics as the
 underlying database.
 ```
 
-### Verifying your environment
+## Verifying your environment
 
 Immediately after installation, open a Python shell and run:
 

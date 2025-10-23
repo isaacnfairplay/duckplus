@@ -7,15 +7,13 @@ include = ["duckplus*"]
 exclude = ["node_modules*"]
 
 [tool.setuptools.package-data]
-"duckplus.static_typed" = ["*.pyi"]
-"duckplus.static_typed.expressions" = ["*.pyi"]
-"duckplus.typed" = ["*.pyi"]
+"duckplus" = ["py.typed"]
 
 [project]
 name = "duckplus"
-version = "1.4.7"
+version = "2.0.1"
 description = "Typed expression helpers for DuckDB"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 keywords = ["duckdb", "data-engineering", "analytics", "typed-expressions"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",

@@ -17,9 +17,8 @@ The first helper demonstrates how to combine catalogue fragments with recent log
 entries.  It uses CTEs to capture the probe barcode, correlate matching
 fragments, and prioritise results using ``ROW_NUMBER``.
 
-```{literalinclude} ../tests/test_examples_traceability_pipeline.py
-:language: python
-:pyobject: test_rank_program_candidates_prioritises_longest_match
+```{note}
+The full traceability pipeline example source was archived with the DuckPlus 1.x release bundle. Checkout the matching tag and rebuild the docs to review the exact implementation.
 ```
 
 ## Collecting companion barcodes
@@ -28,9 +27,8 @@ The panel lookup mirrors the private alternate search logic with neutral column
 names.  It performs a panel-based join and unions results from an alternate
 capture stream when available.
 
-```{literalinclude} ../tests/test_examples_traceability_pipeline.py
-:language: python
-:pyobject: test_collect_panel_companions_returns_panel_scope
+```{note}
+The full traceability pipeline example source was archived with the DuckPlus 1.x release bundle. Checkout the matching tag and rebuild the docs to review the exact implementation.
 ```
 
 ## Repairing unit costs
@@ -39,7 +37,6 @@ The final example rebuilds the rename-and-aggregate pipeline that restores
 missing costs.  It aggregates the latest price snapshots, computes fallbacks per
 item, and merges the healed rows with the untouched events.
 
-```{literalinclude} ../tests/test_examples_traceability_pipeline.py
-:language: python
-:pyobject: test_repair_unit_costs_replaces_zero_cost_rows
+```{note}
+The full traceability pipeline example source was archived with the DuckPlus 1.x release bundle. Checkout the matching tag and rebuild the docs to review the exact implementation.
 ```

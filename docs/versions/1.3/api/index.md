@@ -8,4 +8,5 @@ implementation.
 :maxdepth: 2
 
 reference/index
+typed/function_catalog
 ```

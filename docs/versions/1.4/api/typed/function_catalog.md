@@ -12,7 +12,7 @@ run the script after upgrading DuckDB to refresh the catalog.
 
 ## Scalar functions
 
-### Blob results
+### Scalar blob results
 - ``create_sort_key``
 - ``encode``
 - ``from_base64``
@@ -22,7 +22,7 @@ run the script after upgrading DuckDB to refresh the catalog.
 - ``unbin``
 - ``unhex``
 
-### Boolean results
+### Scalar boolean results
 - ``array_contains``
 - ``array_has``
 - ``array_has_all``
@@ -94,7 +94,7 @@ Symbolic operators:
 - ``~~*``
 - ``~~~``
 
-### Generic results
+### Scalar generic results
 - ``__internal_compress_string_uhugeint``
 - ``__internal_decompress_integral_uhugeint``
 - ``abs``
@@ -294,7 +294,7 @@ Symbolic operators:
 - ``||``
 - ``~``
 
-### Numeric results
+### Scalar numeric results
 - ``__internal_compress_integral_ubigint``
 - ``__internal_compress_integral_uinteger``
 - ``__internal_compress_integral_usmallint``
@@ -510,7 +510,7 @@ Symbolic operators:
 - ``|``
 - ``~``
 
-### Varchar results
+### Scalar varchar results
 - ``__internal_decompress_string``
 - ``alias``
 - ``array_extract``
@@ -770,7 +770,7 @@ Symbolic operators:
 
 ## Aggregate functions
 
-### Blob results
+### Aggregate blob results
 - ``arg_max``
 - ``arg_max_null``
 - ``arg_min``
@@ -780,11 +780,11 @@ Symbolic operators:
 - ``max_by``
 - ``min_by``
 
-### Boolean results
+### Aggregate boolean results
 - ``bool_and``
 - ``bool_or``
 
-### Generic results
+### Aggregate generic results
 - ``any_value``
 - ``approx_quantile``
 - ``approx_top_k``
@@ -818,7 +818,7 @@ Symbolic operators:
 - ``quantile_disc``
 - ``sum``
 
-### Numeric results
+### Aggregate numeric results
 - ``any_value``
 - ``approx_count_distinct``
 - ``approx_quantile``
@@ -876,7 +876,7 @@ Symbolic operators:
 - ``var_samp``
 - ``variance``
 
-### Varchar results
+### Aggregate varchar results
 - ``arg_max``
 - ``arg_max_null``
 - ``arg_min``
