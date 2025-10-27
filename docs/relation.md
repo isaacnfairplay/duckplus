@@ -177,7 +177,7 @@ the query so missing or ambiguous columns surface as descriptive errors.
 
 `Relation.aggregate` returns a transient builder that groups rows and computes
 named aggregate expressions. Aggregations must be provided as typed expressions
-from :mod:`duckplus.typed`, and optional filter predicates limit the input rows before
+from :mod:`duckplus` (which re-exports the static typed expression helpers), and optional filter predicates limit the input rows before
 aggregation. Call :meth:`~duckplus.relation._AggregateBuilder.by` to specify explicit
 grouping columns or :meth:`~duckplus.relation._AggregateBuilder.all` to group by the
 non-aggregate expressions passed positionally. Grouping columns are validated
@@ -185,7 +185,7 @@ against the original relation so typos surface immediately.
 
 ```python
 from duckplus import DuckCon, Relation
-from duckplus.typed import ducktype
+from duckplus import ducktype
 
 manager = DuckCon()
 with manager as connection:
@@ -253,7 +253,7 @@ metadata before DuckDB executes the query.
 
 ```python
 from duckplus import DuckCon, Relation
-from duckplus.typed import ducktype
+from duckplus import ducktype
 
 manager = DuckCon()
 with manager as connection:
@@ -389,7 +389,7 @@ underlying relations during query generation.
 
 ```python
 from duckplus import DuckCon, Relation
-from duckplus.typed import ducktype
+from duckplus import ducktype
 
 manager = DuckCon()
 with manager as connection:
