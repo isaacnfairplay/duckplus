@@ -1,7 +1,9 @@
 from collections.abc import Iterable, Mapping, Sequence
 import inspect
 import pickle
+import sys
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import duckdb
@@ -279,6 +281,20 @@ def test_extensions_returns_metadata() -> None:
     assert infos
     assert all(isinstance(info, ExtensionInfo) for info in infos)
     assert any(info.name for info in infos)
+
+
+def test_install_via_duckdb_extensions_succeeds(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[str] = []
+    monkeypatch.setitem(
+        sys.modules,
+        "duckdb_extensions",
+        SimpleNamespace(import_extension=calls.append),
+    )
+
+    manager = DuckCon()
+
+    assert manager._install_via_duckdb_extensions("nano_odbc") is True
+    assert calls == ["nano_odbc"]
 
 
 def test_load_nano_odbc_emits_deprecation(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -101,6 +101,56 @@ def test_read_csv_rejects_conflicting_delimiters(tmp_path: Path) -> None:
             )
 
 
+def test_read_csv_rejects_conflicting_skip_aliases(tmp_path: Path) -> None:
+    csv_path = tmp_path / "skip.csv"
+    csv_path.write_text("value\n1\n", encoding="utf-8")
+
+    manager = DuckCon()
+    with manager:
+        with pytest.raises(ValueError, match="Both 'skiprows' and alias 'skip'"):
+            io_helpers.read_csv(
+                manager,
+                csv_path,
+                skiprows=1,
+                skip=2,
+            )
+
+
+def test_read_csv_preserves_zero_valued_options(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    csv_path = tmp_path / "zero.csv"
+    csv_path.write_text("value\n1\n2\n", encoding="utf-8")
+
+    captured: dict[str, object] = {}
+
+    original = duckdb.DuckDBPyConnection.read_csv
+
+    def spy(
+        self: duckdb.DuckDBPyConnection,
+        path: str,
+        /,
+        **kwargs: object,
+    ) -> duckdb.DuckDBPyRelation:
+        captured.update(kwargs)
+        return original(self, path, **kwargs)
+
+    monkeypatch.setattr(duckdb.DuckDBPyConnection, "read_csv", spy)
+
+    manager = DuckCon()
+    with manager:
+        relation = io_helpers.read_csv(
+            manager,
+            csv_path,
+            header=True,
+            skip=0,
+        )
+
+        assert relation.relation.fetchall() == [(1,), (2,)]
+
+    assert captured["skiprows"] == 0
+
+
 def test_read_csv_filename_column(tmp_path: Path) -> None:
     csv_path = tmp_path / "data.csv"
     csv_path.write_text("value\n1\n", encoding="utf-8")
