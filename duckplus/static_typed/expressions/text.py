@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Iterable
 
 from ..dependencies import DependencyLike, ExpressionDependency
-from ..types import DuckDBType, VarcharType
+from ..types import DuckDBType, IntegerType, VarcharType
 from .base import TypedExpression, BooleanExpression, _scalar_varchar_namespace
 from .boolean import BooleanFactory
 from .case import CaseExpressionBuilder
@@ -108,6 +108,27 @@ class VarcharExpression(TypedExpression):
 
         sql = f"substr({self.render()}, {start}, {length})"
         return VarcharExpression._raw(sql, dependencies=self.dependencies)
+
+    def left(self, count: int | NumericExpression) -> "VarcharExpression":
+        """Return the left-most ``count`` characters of the expression."""
+
+        if isinstance(count, bool):
+            msg = "left count must be an integer expression"
+            raise TypeError(msg)
+
+        if isinstance(count, NumericExpression):
+            operand = count
+        elif isinstance(count, int):
+            if count < 0:
+                msg = "left count must be greater than or equal to zero"
+                raise ValueError(msg)
+            operand = NumericExpression.literal(count, duck_type=IntegerType("BIGINT"))
+        else:
+            msg = "left count must be an integer or numeric expression"
+            raise TypeError(msg)
+
+        namespace = _scalar_varchar_namespace()
+        return namespace.left(self, operand)
 
     def contains(self, needle: object) -> "BooleanExpression":
         """Return whether ``needle`` occurs within the expression."""
